@@ -1,0 +1,1318 @@
+{
+  "passed": true,
+  "checkedAt": "2026-09-08T04:58:10.531Z",
+  "url": "http://127.0.0.1:5207",
+  "assetSource": "server",
+  "browser": "Headless Chromium, --mute-audio",
+  "scope": "Real WebAudio asset decoding, material event mapping, continuous gain fades, release/completion/reset/mute cleanup and polyphony. Silent functional verification; not a listening judgment or physical headset check.",
+  "checkpoints": {
+    "decoded": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 0,
+      "lastClip": null,
+      "activeVoices": 0,
+      "contextState": "running",
+      "loopActive": false,
+      "loopGain": 0,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": null,
+      "fadingLoops": 0,
+      "eventCounts": {},
+      "lastEvents": []
+    },
+    "pickup": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 1,
+      "lastClip": "/audio/repair/pickup-02.wav",
+      "activeVoices": 1,
+      "contextState": "running",
+      "loopActive": false,
+      "loopGain": 0,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": null,
+      "fadingLoops": 0,
+      "eventCounts": {
+        "pickup": 1
+      },
+      "lastEvents": [
+        {
+          "type": "pickup",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-02.wav",
+          "gain": 0.58,
+          "time": 0.052
+        }
+      ]
+    },
+    "stationary": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 2,
+      "lastClip": "/audio/repair/drag-02.wav",
+      "activeVoices": 1,
+      "contextState": "running",
+      "loopActive": true,
+      "loopGain": 0,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": "cube",
+      "fadingLoops": 0,
+      "eventCounts": {
+        "pickup": 1,
+        "dragStart": 1
+      },
+      "lastEvents": [
+        {
+          "type": "pickup",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-02.wav",
+          "gain": 0.58,
+          "time": 0.052
+        },
+        {
+          "type": "dragStart",
+          "objectId": "cube",
+          "clip": "/audio/repair/drag-02.wav",
+          "gain": 0,
+          "time": 0.052
+        }
+      ]
+    },
+    "moving": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 2,
+      "lastClip": "/audio/repair/drag-02.wav",
+      "activeVoices": 1,
+      "contextState": "running",
+      "loopActive": true,
+      "loopGain": 0.11535,
+      "loopTargetGain": 0.12,
+      "loopMaxGain": 0.12,
+      "loopObjectId": "cube",
+      "fadingLoops": 0,
+      "eventCounts": {
+        "pickup": 1,
+        "dragStart": 1
+      },
+      "lastEvents": [
+        {
+          "type": "pickup",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-02.wav",
+          "gain": 0.58,
+          "time": 0.052
+        },
+        {
+          "type": "dragStart",
+          "objectId": "cube",
+          "clip": "/audio/repair/drag-02.wav",
+          "gain": 0,
+          "time": 0.052
+        }
+      ]
+    },
+    "idleFade": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 2,
+      "lastClip": "/audio/repair/drag-02.wav",
+      "activeVoices": 0,
+      "contextState": "running",
+      "loopActive": true,
+      "loopGain": 0.00035,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": "cube",
+      "fadingLoops": 0,
+      "eventCounts": {
+        "pickup": 1,
+        "dragStart": 1
+      },
+      "lastEvents": [
+        {
+          "type": "pickup",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-02.wav",
+          "gain": 0.58,
+          "time": 0.052
+        },
+        {
+          "type": "dragStart",
+          "objectId": "cube",
+          "clip": "/audio/repair/drag-02.wav",
+          "gain": 0,
+          "time": 0.052
+        }
+      ]
+    },
+    "complete": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 3,
+      "lastClip": "/audio/repair/pickup-01.wav",
+      "activeVoices": 4,
+      "contextState": "running",
+      "loopActive": false,
+      "loopGain": 0,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": null,
+      "fadingLoops": 1,
+      "eventCounts": {
+        "pickup": 1,
+        "dragStart": 1,
+        "dragStop": 1,
+        "complete": 1
+      },
+      "lastEvents": [
+        {
+          "type": "pickup",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-02.wav",
+          "gain": 0.58,
+          "time": 0.052
+        },
+        {
+          "type": "dragStart",
+          "objectId": "cube",
+          "clip": "/audio/repair/drag-02.wav",
+          "gain": 0,
+          "time": 0.052
+        },
+        {
+          "type": "complete",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-01.wav",
+          "gain": 0.42,
+          "time": 0.743
+        }
+      ]
+    },
+    "completedStop": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 3,
+      "lastClip": "/audio/repair/pickup-01.wav",
+      "activeVoices": 4,
+      "contextState": "running",
+      "loopActive": false,
+      "loopGain": 0,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": null,
+      "fadingLoops": 0,
+      "eventCounts": {
+        "pickup": 1,
+        "dragStart": 1,
+        "dragStop": 1,
+        "complete": 1
+      },
+      "lastEvents": [
+        {
+          "type": "pickup",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-02.wav",
+          "gain": 0.58,
+          "time": 0.052
+        },
+        {
+          "type": "dragStart",
+          "objectId": "cube",
+          "clip": "/audio/repair/drag-02.wav",
+          "gain": 0,
+          "time": 0.052
+        },
+        {
+          "type": "complete",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-01.wav",
+          "gain": 0.42,
+          "time": 0.743
+        }
+      ]
+    },
+    "contacts": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 15,
+      "lastClip": "/audio/repair/hit-metal-heavy-01.wav",
+      "activeVoices": 4,
+      "contextState": "running",
+      "loopActive": false,
+      "loopGain": 0,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": null,
+      "fadingLoops": 0,
+      "eventCounts": {
+        "pickup": 1,
+        "dragStart": 1,
+        "dragStop": 1,
+        "complete": 1,
+        "collision": 6,
+        "snap": 6
+      },
+      "lastEvents": [
+        {
+          "type": "pickup",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-02.wav",
+          "gain": 0.58,
+          "time": 0.052
+        },
+        {
+          "type": "dragStart",
+          "objectId": "cube",
+          "clip": "/audio/repair/drag-02.wav",
+          "gain": 0,
+          "time": 0.052
+        },
+        {
+          "type": "complete",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-01.wav",
+          "gain": 0.42,
+          "time": 0.743
+        },
+        {
+          "type": "collision",
+          "objectId": "vase",
+          "clip": "/audio/repair/hit-concrete-02.wav",
+          "gain": 0.322,
+          "time": 1.109
+        },
+        {
+          "type": "snap",
+          "objectId": "vase",
+          "clip": "/audio/repair/hit-concrete-01.wav",
+          "gain": 0.5,
+          "time": 1.225
+        },
+        {
+          "type": "collision",
+          "objectId": "cube",
+          "clip": "/audio/repair/hit-wood-02.wav",
+          "gain": 0.322,
+          "time": 1.335
+        },
+        {
+          "type": "snap",
+          "objectId": "cube",
+          "clip": "/audio/repair/hit-wood-01.wav",
+          "gain": 0.5,
+          "time": 1.445
+        },
+        {
+          "type": "collision",
+          "objectId": "orb",
+          "clip": "/audio/repair/hit-metal-light-02.wav",
+          "gain": 0.322,
+          "time": 1.556
+        },
+        {
+          "type": "snap",
+          "objectId": "orb",
+          "clip": "/audio/repair/hit-metal-light-01.wav",
+          "gain": 0.5,
+          "time": 1.672
+        },
+        {
+          "type": "collision",
+          "objectId": "gem",
+          "clip": "/audio/repair/hit-rock-01.wav",
+          "gain": 0.322,
+          "time": 1.782
+        },
+        {
+          "type": "snap",
+          "objectId": "gem",
+          "clip": "/audio/repair/hit-rock-02.wav",
+          "gain": 0.5,
+          "time": 1.892
+        },
+        {
+          "type": "collision",
+          "objectId": "bottle",
+          "clip": "/audio/repair/hit-glass-01.wav",
+          "gain": 0.322,
+          "time": 2.003
+        },
+        {
+          "type": "snap",
+          "objectId": "bottle",
+          "clip": "/audio/repair/hit-glass-02.wav",
+          "gain": 0.5,
+          "time": 2.113
+        },
+        {
+          "type": "collision",
+          "objectId": "tablet",
+          "clip": "/audio/repair/hit-metal-heavy-02.wav",
+          "gain": 0.322,
+          "time": 2.229
+        },
+        {
+          "type": "snap",
+          "objectId": "tablet",
+          "clip": "/audio/repair/hit-metal-heavy-01.wav",
+          "gain": 0.5,
+          "time": 2.339
+        }
+      ]
+    },
+    "drop": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 17,
+      "lastClip": "/audio/repair/drop-01.wav",
+      "activeVoices": 5,
+      "contextState": "running",
+      "loopActive": false,
+      "loopGain": 0,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": null,
+      "fadingLoops": 1,
+      "eventCounts": {
+        "pickup": 1,
+        "dragStart": 2,
+        "dragStop": 2,
+        "complete": 1,
+        "collision": 6,
+        "snap": 6,
+        "drop": 1
+      },
+      "lastEvents": [
+        {
+          "type": "pickup",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-02.wav",
+          "gain": 0.58,
+          "time": 0.052
+        },
+        {
+          "type": "dragStart",
+          "objectId": "cube",
+          "clip": "/audio/repair/drag-02.wav",
+          "gain": 0,
+          "time": 0.052
+        },
+        {
+          "type": "complete",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-01.wav",
+          "gain": 0.42,
+          "time": 0.743
+        },
+        {
+          "type": "collision",
+          "objectId": "vase",
+          "clip": "/audio/repair/hit-concrete-02.wav",
+          "gain": 0.322,
+          "time": 1.109
+        },
+        {
+          "type": "snap",
+          "objectId": "vase",
+          "clip": "/audio/repair/hit-concrete-01.wav",
+          "gain": 0.5,
+          "time": 1.225
+        },
+        {
+          "type": "collision",
+          "objectId": "cube",
+          "clip": "/audio/repair/hit-wood-02.wav",
+          "gain": 0.322,
+          "time": 1.335
+        },
+        {
+          "type": "snap",
+          "objectId": "cube",
+          "clip": "/audio/repair/hit-wood-01.wav",
+          "gain": 0.5,
+          "time": 1.445
+        },
+        {
+          "type": "collision",
+          "objectId": "orb",
+          "clip": "/audio/repair/hit-metal-light-02.wav",
+          "gain": 0.322,
+          "time": 1.556
+        },
+        {
+          "type": "snap",
+          "objectId": "orb",
+          "clip": "/audio/repair/hit-metal-light-01.wav",
+          "gain": 0.5,
+          "time": 1.672
+        },
+        {
+          "type": "collision",
+          "objectId": "gem",
+          "clip": "/audio/repair/hit-rock-01.wav",
+          "gain": 0.322,
+          "time": 1.782
+        },
+        {
+          "type": "snap",
+          "objectId": "gem",
+          "clip": "/audio/repair/hit-rock-02.wav",
+          "gain": 0.5,
+          "time": 1.892
+        },
+        {
+          "type": "collision",
+          "objectId": "bottle",
+          "clip": "/audio/repair/hit-glass-01.wav",
+          "gain": 0.322,
+          "time": 2.003
+        },
+        {
+          "type": "snap",
+          "objectId": "bottle",
+          "clip": "/audio/repair/hit-glass-02.wav",
+          "gain": 0.5,
+          "time": 2.113
+        },
+        {
+          "type": "collision",
+          "objectId": "tablet",
+          "clip": "/audio/repair/hit-metal-heavy-02.wav",
+          "gain": 0.322,
+          "time": 2.229
+        },
+        {
+          "type": "snap",
+          "objectId": "tablet",
+          "clip": "/audio/repair/hit-metal-heavy-01.wav",
+          "gain": 0.5,
+          "time": 2.339
+        },
+        {
+          "type": "dragStart",
+          "objectId": "orb",
+          "clip": "/audio/repair/drag-01.wav",
+          "gain": 0,
+          "time": 2.45
+        },
+        {
+          "type": "drop",
+          "objectId": "orb",
+          "clip": "/audio/repair/drop-01.wav",
+          "gain": 0.8,
+          "time": 2.612
+        }
+      ]
+    },
+    "droppedStop": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 17,
+      "lastClip": "/audio/repair/drop-01.wav",
+      "activeVoices": 2,
+      "contextState": "running",
+      "loopActive": false,
+      "loopGain": 0,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": null,
+      "fadingLoops": 0,
+      "eventCounts": {
+        "pickup": 1,
+        "dragStart": 2,
+        "dragStop": 2,
+        "complete": 1,
+        "collision": 6,
+        "snap": 6,
+        "drop": 1
+      },
+      "lastEvents": [
+        {
+          "type": "pickup",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-02.wav",
+          "gain": 0.58,
+          "time": 0.052
+        },
+        {
+          "type": "dragStart",
+          "objectId": "cube",
+          "clip": "/audio/repair/drag-02.wav",
+          "gain": 0,
+          "time": 0.052
+        },
+        {
+          "type": "complete",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-01.wav",
+          "gain": 0.42,
+          "time": 0.743
+        },
+        {
+          "type": "collision",
+          "objectId": "vase",
+          "clip": "/audio/repair/hit-concrete-02.wav",
+          "gain": 0.322,
+          "time": 1.109
+        },
+        {
+          "type": "snap",
+          "objectId": "vase",
+          "clip": "/audio/repair/hit-concrete-01.wav",
+          "gain": 0.5,
+          "time": 1.225
+        },
+        {
+          "type": "collision",
+          "objectId": "cube",
+          "clip": "/audio/repair/hit-wood-02.wav",
+          "gain": 0.322,
+          "time": 1.335
+        },
+        {
+          "type": "snap",
+          "objectId": "cube",
+          "clip": "/audio/repair/hit-wood-01.wav",
+          "gain": 0.5,
+          "time": 1.445
+        },
+        {
+          "type": "collision",
+          "objectId": "orb",
+          "clip": "/audio/repair/hit-metal-light-02.wav",
+          "gain": 0.322,
+          "time": 1.556
+        },
+        {
+          "type": "snap",
+          "objectId": "orb",
+          "clip": "/audio/repair/hit-metal-light-01.wav",
+          "gain": 0.5,
+          "time": 1.672
+        },
+        {
+          "type": "collision",
+          "objectId": "gem",
+          "clip": "/audio/repair/hit-rock-01.wav",
+          "gain": 0.322,
+          "time": 1.782
+        },
+        {
+          "type": "snap",
+          "objectId": "gem",
+          "clip": "/audio/repair/hit-rock-02.wav",
+          "gain": 0.5,
+          "time": 1.892
+        },
+        {
+          "type": "collision",
+          "objectId": "bottle",
+          "clip": "/audio/repair/hit-glass-01.wav",
+          "gain": 0.322,
+          "time": 2.003
+        },
+        {
+          "type": "snap",
+          "objectId": "bottle",
+          "clip": "/audio/repair/hit-glass-02.wav",
+          "gain": 0.5,
+          "time": 2.113
+        },
+        {
+          "type": "collision",
+          "objectId": "tablet",
+          "clip": "/audio/repair/hit-metal-heavy-02.wav",
+          "gain": 0.322,
+          "time": 2.229
+        },
+        {
+          "type": "snap",
+          "objectId": "tablet",
+          "clip": "/audio/repair/hit-metal-heavy-01.wav",
+          "gain": 0.5,
+          "time": 2.339
+        },
+        {
+          "type": "dragStart",
+          "objectId": "orb",
+          "clip": "/audio/repair/drag-01.wav",
+          "gain": 0,
+          "time": 2.45
+        },
+        {
+          "type": "drop",
+          "objectId": "orb",
+          "clip": "/audio/repair/drop-01.wav",
+          "gain": 0.8,
+          "time": 2.612
+        }
+      ]
+    },
+    "muted": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": true,
+      "playCount": 18,
+      "lastClip": "/audio/repair/drag-02.wav",
+      "activeVoices": 0,
+      "contextState": "running",
+      "loopActive": false,
+      "loopGain": 0,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": null,
+      "fadingLoops": 0,
+      "eventCounts": {
+        "pickup": 1,
+        "dragStart": 3,
+        "dragStop": 3,
+        "complete": 1,
+        "collision": 6,
+        "snap": 6,
+        "drop": 1
+      },
+      "lastEvents": [
+        {
+          "type": "pickup",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-02.wav",
+          "gain": 0.58,
+          "time": 0.052
+        },
+        {
+          "type": "dragStart",
+          "objectId": "cube",
+          "clip": "/audio/repair/drag-02.wav",
+          "gain": 0,
+          "time": 0.052
+        },
+        {
+          "type": "complete",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-01.wav",
+          "gain": 0.42,
+          "time": 0.743
+        },
+        {
+          "type": "collision",
+          "objectId": "vase",
+          "clip": "/audio/repair/hit-concrete-02.wav",
+          "gain": 0.322,
+          "time": 1.109
+        },
+        {
+          "type": "snap",
+          "objectId": "vase",
+          "clip": "/audio/repair/hit-concrete-01.wav",
+          "gain": 0.5,
+          "time": 1.225
+        },
+        {
+          "type": "collision",
+          "objectId": "cube",
+          "clip": "/audio/repair/hit-wood-02.wav",
+          "gain": 0.322,
+          "time": 1.335
+        },
+        {
+          "type": "snap",
+          "objectId": "cube",
+          "clip": "/audio/repair/hit-wood-01.wav",
+          "gain": 0.5,
+          "time": 1.445
+        },
+        {
+          "type": "collision",
+          "objectId": "orb",
+          "clip": "/audio/repair/hit-metal-light-02.wav",
+          "gain": 0.322,
+          "time": 1.556
+        },
+        {
+          "type": "snap",
+          "objectId": "orb",
+          "clip": "/audio/repair/hit-metal-light-01.wav",
+          "gain": 0.5,
+          "time": 1.672
+        },
+        {
+          "type": "collision",
+          "objectId": "gem",
+          "clip": "/audio/repair/hit-rock-01.wav",
+          "gain": 0.322,
+          "time": 1.782
+        },
+        {
+          "type": "snap",
+          "objectId": "gem",
+          "clip": "/audio/repair/hit-rock-02.wav",
+          "gain": 0.5,
+          "time": 1.892
+        },
+        {
+          "type": "collision",
+          "objectId": "bottle",
+          "clip": "/audio/repair/hit-glass-01.wav",
+          "gain": 0.322,
+          "time": 2.003
+        },
+        {
+          "type": "snap",
+          "objectId": "bottle",
+          "clip": "/audio/repair/hit-glass-02.wav",
+          "gain": 0.5,
+          "time": 2.113
+        },
+        {
+          "type": "collision",
+          "objectId": "tablet",
+          "clip": "/audio/repair/hit-metal-heavy-02.wav",
+          "gain": 0.322,
+          "time": 2.229
+        },
+        {
+          "type": "snap",
+          "objectId": "tablet",
+          "clip": "/audio/repair/hit-metal-heavy-01.wav",
+          "gain": 0.5,
+          "time": 2.339
+        },
+        {
+          "type": "dragStart",
+          "objectId": "orb",
+          "clip": "/audio/repair/drag-01.wav",
+          "gain": 0,
+          "time": 2.45
+        },
+        {
+          "type": "drop",
+          "objectId": "orb",
+          "clip": "/audio/repair/drop-01.wav",
+          "gain": 0.8,
+          "time": 2.612
+        },
+        {
+          "type": "dragStart",
+          "objectId": "gem",
+          "clip": "/audio/repair/drag-02.wav",
+          "gain": 0,
+          "time": 2.752
+        }
+      ]
+    },
+    "dock": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 19,
+      "lastClip": "/audio/repair/pickup-02.wav",
+      "activeVoices": 4,
+      "contextState": "running",
+      "loopActive": false,
+      "loopGain": 0,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": null,
+      "fadingLoops": 0,
+      "eventCounts": {
+        "pickup": 1,
+        "dragStart": 3,
+        "dragStop": 3,
+        "complete": 1,
+        "collision": 6,
+        "snap": 6,
+        "drop": 1,
+        "dock": 1
+      },
+      "lastEvents": [
+        {
+          "type": "pickup",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-02.wav",
+          "gain": 0.58,
+          "time": 0.052
+        },
+        {
+          "type": "dragStart",
+          "objectId": "cube",
+          "clip": "/audio/repair/drag-02.wav",
+          "gain": 0,
+          "time": 0.052
+        },
+        {
+          "type": "complete",
+          "objectId": "cube",
+          "clip": "/audio/repair/pickup-01.wav",
+          "gain": 0.42,
+          "time": 0.743
+        },
+        {
+          "type": "collision",
+          "objectId": "vase",
+          "clip": "/audio/repair/hit-concrete-02.wav",
+          "gain": 0.322,
+          "time": 1.109
+        },
+        {
+          "type": "snap",
+          "objectId": "vase",
+          "clip": "/audio/repair/hit-concrete-01.wav",
+          "gain": 0.5,
+          "time": 1.225
+        },
+        {
+          "type": "collision",
+          "objectId": "cube",
+          "clip": "/audio/repair/hit-wood-02.wav",
+          "gain": 0.322,
+          "time": 1.335
+        },
+        {
+          "type": "snap",
+          "objectId": "cube",
+          "clip": "/audio/repair/hit-wood-01.wav",
+          "gain": 0.5,
+          "time": 1.445
+        },
+        {
+          "type": "collision",
+          "objectId": "orb",
+          "clip": "/audio/repair/hit-metal-light-02.wav",
+          "gain": 0.322,
+          "time": 1.556
+        },
+        {
+          "type": "snap",
+          "objectId": "orb",
+          "clip": "/audio/repair/hit-metal-light-01.wav",
+          "gain": 0.5,
+          "time": 1.672
+        },
+        {
+          "type": "collision",
+          "objectId": "gem",
+          "clip": "/audio/repair/hit-rock-01.wav",
+          "gain": 0.322,
+          "time": 1.782
+        },
+        {
+          "type": "snap",
+          "objectId": "gem",
+          "clip": "/audio/repair/hit-rock-02.wav",
+          "gain": 0.5,
+          "time": 1.892
+        },
+        {
+          "type": "collision",
+          "objectId": "bottle",
+          "clip": "/audio/repair/hit-glass-01.wav",
+          "gain": 0.322,
+          "time": 2.003
+        },
+        {
+          "type": "snap",
+          "objectId": "bottle",
+          "clip": "/audio/repair/hit-glass-02.wav",
+          "gain": 0.5,
+          "time": 2.113
+        },
+        {
+          "type": "collision",
+          "objectId": "tablet",
+          "clip": "/audio/repair/hit-metal-heavy-02.wav",
+          "gain": 0.322,
+          "time": 2.229
+        },
+        {
+          "type": "snap",
+          "objectId": "tablet",
+          "clip": "/audio/repair/hit-metal-heavy-01.wav",
+          "gain": 0.5,
+          "time": 2.339
+        },
+        {
+          "type": "dragStart",
+          "objectId": "orb",
+          "clip": "/audio/repair/drag-01.wav",
+          "gain": 0,
+          "time": 2.45
+        },
+        {
+          "type": "drop",
+          "objectId": "orb",
+          "clip": "/audio/repair/drop-01.wav",
+          "gain": 0.8,
+          "time": 2.612
+        },
+        {
+          "type": "dragStart",
+          "objectId": "gem",
+          "clip": "/audio/repair/drag-02.wav",
+          "gain": 0,
+          "time": 2.752
+        },
+        {
+          "type": "dock",
+          "objectId": "gem",
+          "clip": "/audio/repair/pickup-02.wav",
+          "gain": 0.5,
+          "time": 2.862
+        }
+      ]
+    },
+    "burst": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 59,
+      "lastClip": "/audio/breaks/rock-02.wav",
+      "activeVoices": 12,
+      "contextState": "running",
+      "loopActive": false,
+      "loopGain": 0,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": null,
+      "fadingLoops": 0,
+      "eventCounts": {
+        "pickup": 1,
+        "dragStart": 3,
+        "dragStop": 3,
+        "complete": 1,
+        "collision": 6,
+        "snap": 6,
+        "drop": 1,
+        "dock": 1,
+        "break": 40
+      },
+      "lastEvents": [
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        }
+      ]
+    },
+    "reset": {
+      "loaded": 30,
+      "expected": 30,
+      "muted": false,
+      "playCount": 61,
+      "lastClip": "synth:restore",
+      "activeVoices": 12,
+      "contextState": "running",
+      "loopActive": false,
+      "loopGain": 0,
+      "loopTargetGain": 0,
+      "loopMaxGain": 0.12,
+      "loopObjectId": null,
+      "fadingLoops": 0,
+      "eventCounts": {
+        "pickup": 1,
+        "dragStart": 4,
+        "dragStop": 4,
+        "complete": 1,
+        "collision": 6,
+        "snap": 6,
+        "drop": 1,
+        "dock": 1,
+        "break": 40,
+        "restore": 1
+      },
+      "lastEvents": [
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-01.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "break",
+          "objectId": "gem",
+          "clip": "/audio/breaks/rock-02.wav",
+          "gain": 1,
+          "time": 2.862
+        },
+        {
+          "type": "dragStart",
+          "objectId": "gem",
+          "clip": "/audio/repair/drag-01.wav",
+          "gain": 0,
+          "time": 2.862
+        },
+        {
+          "type": "restore",
+          "objectId": null,
+          "clip": "synth:restore",
+          "gain": 0.06,
+          "time": 2.862
+        }
+      ]
+    }
+  },
+  "contextSampleRate": 44100,
+  "contextState": "running"
+}

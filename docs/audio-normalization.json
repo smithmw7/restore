@@ -1,0 +1,732 @@
+{
+  "requested_target_lufs": -20.0,
+  "common_target_lufs": -22.39,
+  "peak_ceiling_dbtp": -2.0,
+  "method": "Mono conversion and 48 kHz resampling; crop below -60 dBFS with 3 ms attack preroll and 30 ms tail; final 8 ms fade; fixed gain per clip. No compressor or limiter. Original recordings remain unchanged.",
+  "measurement": "FFmpeg loudnorm input measurements (EBU R128 integrated loudness and true peak). Audio is virtually padded to at least 0.8 seconds to measure very short effects; delivered WAV files have no padding. Pre/post measurements use the same mono signal and padding rule.",
+  "selection": "Two variants per material. Glass uses the available bottle breaks; other families use crisp attacks with usable decay and enough peak headroom to match loudness without limiting. Rock 5/8 have differing gritty tails; light metal 2/3 alternate longer and shorter rings.",
+  "ffmpeg_version": "ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers",
+  "total_bytes": 948306,
+  "clips": [
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Pirate Sounds Pro/Break bottle/Break bottle 1.wav",
+      "source_sha256": "1ad8fb798e0439cfa8a3acae600020c8e8e8a9a7e1733fc9828e86a4ab0c53eb",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.621338"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -23.47,
+        "true_peak_dbtp": -3.8,
+        "sample_peak_dbfs": -3.817
+      },
+      "source_duration_seconds": 1.621354,
+      "trim_start_seconds": 0.0995,
+      "trim_end_seconds": 1.305583,
+      "before_gain": {
+        "integrated_lufs": -23.16,
+        "true_peak_dbtp": -3.8,
+        "sample_peak_dbfs": -3.817
+      },
+      "family": "glass",
+      "output": "public/audio/breaks/glass-01.wav",
+      "fixed_gain_db": 0.77,
+      "after_gain": {
+        "integrated_lufs": -22.38,
+        "true_peak_dbtp": -3.03,
+        "sample_peak_dbfs": -3.047
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.206083"
+        }
+      },
+      "output_duration_seconds": 1.206083,
+      "output_onset_seconds": 0.002354,
+      "output_bytes": 115862,
+      "output_sha256": "0d4f2113697f9fcedb69f656407972fe31c284a260a76a9fbf1f82ce2fabd4a7",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Pirate Sounds Pro/Break bottle/Break bottle 2.wav",
+      "source_sha256": "b7cd1b35a323f2ea6eb159cfd2dec53aaf458c4f64bfe61b9278ffa5a6fa9a9b",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.400000"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -24.05,
+        "true_peak_dbtp": -5.41,
+        "sample_peak_dbfs": -5.572
+      },
+      "source_duration_seconds": 1.4,
+      "trim_start_seconds": 0.163167,
+      "trim_end_seconds": 1.276104,
+      "before_gain": {
+        "integrated_lufs": -24.27,
+        "true_peak_dbtp": -5.41,
+        "sample_peak_dbfs": -5.572
+      },
+      "family": "glass",
+      "output": "public/audio/breaks/glass-02.wav",
+      "fixed_gain_db": 1.88,
+      "after_gain": {
+        "integrated_lufs": -22.41,
+        "true_peak_dbtp": -3.53,
+        "sample_peak_dbfs": -3.692
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.112938"
+        }
+      },
+      "output_duration_seconds": 1.112937,
+      "output_onset_seconds": 6.3e-05,
+      "output_bytes": 106920,
+      "output_sha256": "3b6a5a8087daca43bd83fe4bb89654c28fb3af778b69fea63081dbee1f3b898c",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Real Recorded Guns/Concrete Impact/Concrete 3.wav",
+      "source_sha256": "7432aacf205572fb3aee47dbab378ed4da9129882925aaec38531cc3c8bcda88",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.461542"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -21.75,
+        "true_peak_dbtp": -2.26,
+        "sample_peak_dbfs": -2.273
+      },
+      "source_duration_seconds": 0.461562,
+      "trim_start_seconds": 0.011792,
+      "trim_end_seconds": 0.378167,
+      "before_gain": {
+        "integrated_lufs": -21.75,
+        "true_peak_dbtp": -2.26,
+        "sample_peak_dbfs": -2.273
+      },
+      "family": "concrete",
+      "output": "public/audio/breaks/concrete-01.wav",
+      "fixed_gain_db": -0.64,
+      "after_gain": {
+        "integrated_lufs": -22.35,
+        "true_peak_dbtp": -2.9,
+        "sample_peak_dbfs": -2.914
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.366375"
+        }
+      },
+      "output_duration_seconds": 0.366375,
+      "output_onset_seconds": 0.003,
+      "output_bytes": 35250,
+      "output_sha256": "734f8923a3d7767c2614d2b14ee5a4d8918519b11af2bd855962704d5eedb4aa",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Real Recorded Guns/Concrete Impact/Concrete 8.wav",
+      "source_sha256": "e4c0aff0cb36901307196aa60c0dcb0d3e569c46d199bb94ae3dd35db2f1cd71",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.692313"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -22.65,
+        "true_peak_dbtp": -2.36,
+        "sample_peak_dbfs": -2.373
+      },
+      "source_duration_seconds": 0.692333,
+      "trim_start_seconds": 0.0,
+      "trim_end_seconds": 0.460229,
+      "before_gain": {
+        "integrated_lufs": -22.65,
+        "true_peak_dbtp": -2.36,
+        "sample_peak_dbfs": -2.373
+      },
+      "family": "concrete",
+      "output": "public/audio/breaks/concrete-02.wav",
+      "fixed_gain_db": 0.26,
+      "after_gain": {
+        "integrated_lufs": -22.35,
+        "true_peak_dbtp": -2.1,
+        "sample_peak_dbfs": -2.113
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.460229"
+        }
+      },
+      "output_duration_seconds": 0.460229,
+      "output_onset_seconds": 0.002229,
+      "output_bytes": 44260,
+      "output_sha256": "45c495424e91366eb41cde3ff30000729b522a454680c9b373d9c2dd22a94eb6",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Real Recorded Guns/Rocks Impact/Rocks 5.wav",
+      "source_sha256": "99c628500fa14ef996c45650005664ddc0e3ddca0cfb3b27d7abb329c37b0e91",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.153855"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -28.26,
+        "true_peak_dbtp": -8.85,
+        "sample_peak_dbfs": -8.855
+      },
+      "source_duration_seconds": 1.153875,
+      "trim_start_seconds": 0.007646,
+      "trim_end_seconds": 0.492229,
+      "before_gain": {
+        "integrated_lufs": -25.35,
+        "true_peak_dbtp": -8.85,
+        "sample_peak_dbfs": -8.855
+      },
+      "family": "rock",
+      "output": "public/audio/breaks/rock-01.wav",
+      "fixed_gain_db": 2.96,
+      "after_gain": {
+        "integrated_lufs": -22.45,
+        "true_peak_dbtp": -5.89,
+        "sample_peak_dbfs": -5.895
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.484583"
+        }
+      },
+      "output_duration_seconds": 0.484583,
+      "output_onset_seconds": 0.002667,
+      "output_bytes": 46598,
+      "output_sha256": "b50bf832211bf7b21b294d6627dd792d6b327efc3195bad937da4281f15dd03a",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Real Recorded Guns/Rocks Impact/Rocks 8.wav",
+      "source_sha256": "dff61bbaf7910ab537659f85d3dfe22db3fe0486fcd0b4caf922bca976b38d22",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.153855"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -25.35,
+        "true_peak_dbtp": -3.7,
+        "sample_peak_dbfs": -3.703
+      },
+      "source_duration_seconds": 1.153875,
+      "trim_start_seconds": 0.002354,
+      "trim_end_seconds": 0.755708,
+      "before_gain": {
+        "integrated_lufs": -23.69,
+        "true_peak_dbtp": -3.7,
+        "sample_peak_dbfs": -3.703
+      },
+      "family": "rock",
+      "output": "public/audio/breaks/rock-02.wav",
+      "fixed_gain_db": 1.3,
+      "after_gain": {
+        "integrated_lufs": -22.39,
+        "true_peak_dbtp": -2.4,
+        "sample_peak_dbfs": -2.403
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.753354"
+        }
+      },
+      "output_duration_seconds": 0.753354,
+      "output_onset_seconds": 0.00125,
+      "output_bytes": 72400,
+      "output_sha256": "cb0d14cc0f1a2b54c88a140647a97032b8d55ff7140e5ad2c8d090f1ad3923c4",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Real Recorded Guns/Wood Hard Impact/Wood Hard 1.wav",
+      "source_sha256": "01557aaae034286a11eb690e274b75c81478f635d6e4bed448d1c455836cbd0e",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.692313"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -13.19,
+        "true_peak_dbtp": 2.82,
+        "sample_peak_dbfs": 2.799
+      },
+      "source_duration_seconds": 0.692333,
+      "trim_start_seconds": 0.021271,
+      "trim_end_seconds": 0.692333,
+      "before_gain": {
+        "integrated_lufs": -14.09,
+        "true_peak_dbtp": 2.82,
+        "sample_peak_dbfs": 2.799
+      },
+      "family": "wood",
+      "output": "public/audio/breaks/wood-01.wav",
+      "fixed_gain_db": -8.3,
+      "after_gain": {
+        "integrated_lufs": -22.39,
+        "true_peak_dbtp": -5.48,
+        "sample_peak_dbfs": -5.501
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.671063"
+        }
+      },
+      "output_duration_seconds": 0.671063,
+      "output_onset_seconds": 0.003229,
+      "output_bytes": 64500,
+      "output_sha256": "04208b7f9a39032d316efe2b00cf11cfdbf0ca339de45c3077a9d0ff2a88b0d4",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Real Recorded Guns/Wood Hard Impact/Wood Hard 5.wav",
+      "source_sha256": "978dbaf2d03db0aee9bccf9930fbb04631226b44a5e3f6945ce3ae082553a724",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.923084"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -18.15,
+        "true_peak_dbtp": -1.74,
+        "sample_peak_dbfs": -1.857
+      },
+      "source_duration_seconds": 0.923104,
+      "trim_start_seconds": 0.0,
+      "trim_end_seconds": 0.5845,
+      "before_gain": {
+        "integrated_lufs": -18.15,
+        "true_peak_dbtp": -1.74,
+        "sample_peak_dbfs": -1.857
+      },
+      "family": "wood",
+      "output": "public/audio/breaks/wood-02.wav",
+      "fixed_gain_db": -4.24,
+      "after_gain": {
+        "integrated_lufs": -22.36,
+        "true_peak_dbtp": -5.98,
+        "sample_peak_dbfs": -6.097
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.584500"
+        }
+      },
+      "output_duration_seconds": 0.5845,
+      "output_onset_seconds": 0.000229,
+      "output_bytes": 56190,
+      "output_sha256": "5116d9112a4cdd43d388cd15420180082b82a2585671f79156bdd5ab64a7c46d",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Real Recorded Guns/Metal light Impact/Metal light 2.wav",
+      "source_sha256": "bcbf480009eb24437b2b05bac67695334bed336dcbddec754c1233429378f4f5",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.846145"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -23.63,
+        "true_peak_dbtp": -4.28,
+        "sample_peak_dbfs": -4.41
+      },
+      "source_duration_seconds": 1.846146,
+      "trim_start_seconds": 0.033813,
+      "trim_end_seconds": 1.595104,
+      "before_gain": {
+        "integrated_lufs": -23.94,
+        "true_peak_dbtp": -4.28,
+        "sample_peak_dbfs": -4.41
+      },
+      "family": "metal-light",
+      "output": "public/audio/breaks/metal-light-01.wav",
+      "fixed_gain_db": 1.55,
+      "after_gain": {
+        "integrated_lufs": -22.34,
+        "true_peak_dbtp": -2.73,
+        "sample_peak_dbfs": -2.86
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.561292"
+        }
+      },
+      "output_duration_seconds": 1.561292,
+      "output_onset_seconds": 0.0025,
+      "output_bytes": 149962,
+      "output_sha256": "6207164933767523b568d0f3ff9db235750b9512a5e808c14ce59d71b230808e",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Real Recorded Guns/Metal light Impact/Metal light 3.wav",
+      "source_sha256": "a02472655c6ecc0155d3156efdb3fc0c399bd990b510923fb10108860e6a170e",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.846145"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -24.42,
+        "true_peak_dbtp": -7.61,
+        "sample_peak_dbfs": -7.848
+      },
+      "source_duration_seconds": 1.846146,
+      "trim_start_seconds": 0.034438,
+      "trim_end_seconds": 0.616271,
+      "before_gain": {
+        "integrated_lufs": -21.55,
+        "true_peak_dbtp": -7.61,
+        "sample_peak_dbfs": -7.848
+      },
+      "family": "metal-light",
+      "output": "public/audio/breaks/metal-light-02.wav",
+      "fixed_gain_db": -0.84,
+      "after_gain": {
+        "integrated_lufs": -22.45,
+        "true_peak_dbtp": -8.45,
+        "sample_peak_dbfs": -8.688
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.581833"
+        }
+      },
+      "output_duration_seconds": 0.581833,
+      "output_onset_seconds": 0.001917,
+      "output_bytes": 55934,
+      "output_sha256": "ac7933936e7d6a76969e974ea5a1f4de9a391baeece91467863b38ba6eccc350",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Real Recorded Guns/Metal hard Impact/Metal hard 1.wav",
+      "source_sha256": "a673306359a39664f94cb7629959816c04bad5a1b724ea74f0b634b8451a25f9",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.846145"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -18.1,
+        "true_peak_dbtp": -2.73,
+        "sample_peak_dbfs": -2.726
+      },
+      "source_duration_seconds": 1.846146,
+      "trim_start_seconds": 0.00675,
+      "trim_end_seconds": 0.802,
+      "before_gain": {
+        "integrated_lufs": -18.13,
+        "true_peak_dbtp": -2.73,
+        "sample_peak_dbfs": -2.726
+      },
+      "family": "metal-heavy",
+      "output": "public/audio/breaks/metal-heavy-01.wav",
+      "fixed_gain_db": -4.26,
+      "after_gain": {
+        "integrated_lufs": -22.43,
+        "true_peak_dbtp": -6.99,
+        "sample_peak_dbfs": -6.986
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.795250"
+        }
+      },
+      "output_duration_seconds": 0.79525,
+      "output_onset_seconds": 0.002729,
+      "output_bytes": 76422,
+      "output_sha256": "2d8717af898ce2dd58006e1e8008de87f2fe90fea6fa6ef6e8fe0b58c6662027",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Real Recorded Guns/Metal hard Impact/Metal hard 4.wav",
+      "source_sha256": "3efe6a806f1486586e073a61b17e6142c4a9fd959c808bb00f138bc30290f22c",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.846145"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -18.22,
+        "true_peak_dbtp": -3.27,
+        "sample_peak_dbfs": -3.42
+      },
+      "source_duration_seconds": 1.846146,
+      "trim_start_seconds": 0.0,
+      "trim_end_seconds": 1.290938,
+      "before_gain": {
+        "integrated_lufs": -18.22,
+        "true_peak_dbtp": -3.27,
+        "sample_peak_dbfs": -3.42
+      },
+      "family": "metal-heavy",
+      "output": "public/audio/breaks/metal-heavy-02.wav",
+      "fixed_gain_db": -4.17,
+      "after_gain": {
+        "integrated_lufs": -22.42,
+        "true_peak_dbtp": -7.44,
+        "sample_peak_dbfs": -7.59
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.290938"
+        }
+      },
+      "output_duration_seconds": 1.290938,
+      "output_onset_seconds": 0.001667,
+      "output_bytes": 124008,
+      "output_sha256": "7e5fb970a182c03e818b0a66c20b762a3d45bbc168fee7fe4cb82372f9157e39",
+      "clipped_samples": 0
+    }
+  ]
+}

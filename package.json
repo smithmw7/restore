@@ -1,0 +1,27 @@
+{
+  "name": "restore",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5207 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 5207 --strictPort",
+    "quest": "node scripts/quest.mjs",
+    "test:smoke": "node scripts/smoke.mjs",
+    "test:audio": "node scripts/audio-smoke.mjs",
+    "audio:prepare": "python3 scripts/prepare-audio.py",
+    "test:repair": "node scripts/repair-check.mjs",
+    "test:repair-browser": "node scripts/repair-browser.mjs",
+    "audio:prepare-repair": "python3 scripts/prepare-repair-audio.py"
+  },
+  "dependencies": {
+    "@dgreenheck/three-pinata": "2.0.1",
+    "@dimforge/rapier3d-compat": "0.20.0",
+    "three": "0.185.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.2",
+    "vite": "^7.3.1"
+  }
+}

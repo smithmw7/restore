@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f2eee5" />
+    <meta name="description" content="A little room to break things. A WebXR playground with real fractured objects, made with Three Pinata." />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Restore</title>
+  </head>
+  <body>
+    <canvas id="scene" aria-label="Restore interactive destruction room"></canvas>
+    <header class="masthead">
+      <a class="brand" href="/" aria-label="Restore home"><span class="brand-mark">r.</span><span>restore</span></a>
+      <div class="edition">AN EXPERIMENT IN LETTING GO<span>PLAYGROUND 001 / WEBXR</span></div>
+    </header>
+    <main class="intro" id="intro">
+      <div class="eyebrow"><span class="live-dot"></span><span id="mode-label">YOUR LITTLE BREAK ROOM</span></div>
+      <h1>Break a little.<br /><em>Begin again.</em></h1>
+      <p>Break it apart. Pick up a piece.<br />Draw the others in, then bring it home.</p>
+      <div class="actions"><button id="enter-vr" class="primary" disabled>Preparing the room…</button><button id="restore" class="secondary" disabled aria-label="Restore all objects">↻</button></div>
+      <p id="xr-status" class="small" role="status">Preparing the objects…</p>
+    </main>
+    <aside class="session" aria-label="Room status"><span class="session-caption">THE COLLECTION</span><span><b id="broken-count">00</b><span class="count-total"> / 08</span></span><span id="collection-status">OBJECTS BROKEN</span></aside>
+    <div class="hover-label" id="hover-label" hidden></div>
+    <footer><div class="controls"><span class="key">↗</span><span id="control-hint">CLICK TO BREAK<span class="control-separator">/</span>HOLD A PIECE TO REBUILD<span class="control-separator">/</span>SCROLL FOR DEPTH</span></div><button id="sound" class="sound" aria-pressed="true">SOUND ON</button><span class="credit">MADE WITH THREE PINATA</span></footer>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

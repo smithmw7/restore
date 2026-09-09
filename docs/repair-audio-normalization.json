@@ -1,0 +1,853 @@
+{
+  "targets_by_role_lufs": {
+    "pickup": -22.39,
+    "drop": -22.8,
+    "contact": -26.76,
+    "drag": -35.0
+  },
+  "requested_target_lufs": -22.39,
+  "drag_target_lufs": -35.0,
+  "peak_ceiling_dbtp": -2.0,
+  "method": "48 kHz mono PCM16, -60 dBFS trim with 3 ms preroll and 30 ms tail, 8 ms terminal fade, fixed gain. Dragging clips use interior excerpts with a 120 ms overlap crossfade forming a continuous loop. Original sources unchanged.",
+  "measurement": "FFmpeg EBU R128 integrated loudness and true peak with virtual padding to 0.8 seconds for short sounds. No padding in delivered assets; no compressor or limiter used in asset processing.",
+  "playback": "Pickup: Armor On; release: Heavy Kicks; contact and snap: material footsteps. Drag assets are -35 LUFS, runtime maximum gain 0.12 with 150 ms attack, 100 ms release, 15 ms stop on completed assembly. Playback pitch remains unchanged.",
+  "total_bytes": 1112920,
+  "clips": [
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Sci FI Sounds Pro/Armor On/Armor On 1.wav",
+      "source_sha256": "7f6db5c401ff263c415b12613b722300f04c8b0a7f61b89f0ec11bf3cd26df54",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.629342"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -21.43,
+        "true_peak_dbtp": -5.62,
+        "sample_peak_dbfs": -5.616
+      },
+      "source_duration_seconds": 0.629354,
+      "trim_start_seconds": 0.0,
+      "trim_end_seconds": 0.629354,
+      "before_gain": {
+        "integrated_lufs": -21.43,
+        "true_peak_dbtp": -5.62,
+        "sample_peak_dbfs": -5.616
+      },
+      "family": "pickup",
+      "output": "public/audio/repair/pickup-01.wav",
+      "target_lufs": -22.39,
+      "fixed_gain_db": -0.96,
+      "after_gain": {
+        "integrated_lufs": -22.36,
+        "true_peak_dbtp": -6.58,
+        "sample_peak_dbfs": -6.576
+      },
+      "output_duration_seconds": 0.629354,
+      "output_onset_seconds": 0.0,
+      "output_bytes": 60496,
+      "output_sha256": "5dd5bf6929b0bfb666d00d1d2c7bb734ca966c4a546c1c09e55752aad583054c",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Sci FI Sounds Pro/Armor On/Armor On 5.wav",
+      "source_sha256": "2b68a4569f7232c6834be0fabc0c02873799d4a3741fd50175c00a3c21e0947b",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.512018"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -25.79,
+        "true_peak_dbtp": -8.92,
+        "sample_peak_dbfs": -8.92
+      },
+      "source_duration_seconds": 0.512021,
+      "trim_start_seconds": 0.0,
+      "trim_end_seconds": 0.512021,
+      "before_gain": {
+        "integrated_lufs": -25.79,
+        "true_peak_dbtp": -8.92,
+        "sample_peak_dbfs": -8.92
+      },
+      "family": "pickup",
+      "output": "public/audio/repair/pickup-02.wav",
+      "target_lufs": -22.39,
+      "fixed_gain_db": 3.4,
+      "after_gain": {
+        "integrated_lufs": -22.39,
+        "true_peak_dbtp": -5.52,
+        "sample_peak_dbfs": -5.521
+      },
+      "output_duration_seconds": 0.512021,
+      "output_onset_seconds": 0.0,
+      "output_bytes": 49232,
+      "output_sha256": "110c900a5dd5d612cb6eff7d192fbe8c9b14da2f82e63954b953e99d201587f8",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Fighting Sounds Pro/Heavy Kicks/Kick 1.wav",
+      "source_sha256": "ab9005a8a7e5363a0189be977ec0157a8b4a331447d1bbd5f4694f6c72729999",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.130000"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -22.65,
+        "true_peak_dbtp": -2.3,
+        "sample_peak_dbfs": -2.301
+      },
+      "source_duration_seconds": 0.13,
+      "trim_start_seconds": 0.000708,
+      "trim_end_seconds": 0.13,
+      "before_gain": {
+        "integrated_lufs": -22.65,
+        "true_peak_dbtp": -2.3,
+        "sample_peak_dbfs": -2.301
+      },
+      "family": "drop",
+      "output": "public/audio/repair/drop-01.wav",
+      "target_lufs": -22.8,
+      "fixed_gain_db": -0.15,
+      "after_gain": {
+        "integrated_lufs": -22.75,
+        "true_peak_dbtp": -2.45,
+        "sample_peak_dbfs": -2.451
+      },
+      "output_duration_seconds": 0.129292,
+      "output_onset_seconds": 0.002333,
+      "output_bytes": 12490,
+      "output_sha256": "a51f06902764d6b27c8fb5da4f1487161d6e52e1d83bc3e324da5327fd5ed223",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Fighting Sounds Pro/Heavy Kicks/Kick 10.wav",
+      "source_sha256": "ab3ebacbefdf5d8e7e19a973790b9235deec58f399262c8d4c9351c8f55c881c",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.132313"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -26.25,
+        "true_peak_dbtp": -5.55,
+        "sample_peak_dbfs": -5.555
+      },
+      "source_duration_seconds": 0.132333,
+      "trim_start_seconds": 0.004188,
+      "trim_end_seconds": 0.132333,
+      "before_gain": {
+        "integrated_lufs": -26.25,
+        "true_peak_dbtp": -5.55,
+        "sample_peak_dbfs": -5.555
+      },
+      "family": "drop",
+      "output": "public/audio/repair/drop-02.wav",
+      "target_lufs": -22.8,
+      "fixed_gain_db": 3.45,
+      "after_gain": {
+        "integrated_lufs": -22.85,
+        "true_peak_dbtp": -2.1,
+        "sample_peak_dbfs": -2.106
+      },
+      "output_duration_seconds": 0.128146,
+      "output_onset_seconds": 0.002979,
+      "output_bytes": 12380,
+      "output_sha256": "1ca56882181fd58d67fcadd8794f406950c2bbd0888ce0dc83bb40ba89178f21",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Dragging Stone 2.wav",
+      "source_sha256": "86c3e044289c96e9fe0fabca9996946fd776373824b480ad25b37a5408896b12",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "5.076916"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -24.17,
+        "true_peak_dbtp": -7.76,
+        "sample_peak_dbfs": -7.822
+      },
+      "source_duration_seconds": 5.076917,
+      "trim_start_seconds": 0.004417,
+      "trim_end_seconds": 4.874292,
+      "before_gain": {
+        "integrated_lufs": -23.8,
+        "true_peak_dbtp": -7.76,
+        "sample_peak_dbfs": -7.822
+      },
+      "loop_crossfade_seconds": 0.12,
+      "interior_offset_seconds": 0.45,
+      "loop_seam_delta": 0.009082906879484653,
+      "family": "drag",
+      "output": "public/audio/repair/drag-01.wav",
+      "target_lufs": -35.0,
+      "fixed_gain_db": -11.2,
+      "after_gain": {
+        "integrated_lufs": -35.0,
+        "true_peak_dbtp": -18.96,
+        "sample_peak_dbfs": -19.023
+      },
+      "output_duration_seconds": 2.28,
+      "output_onset_seconds": 0.0,
+      "output_bytes": 218958,
+      "output_sha256": "0a644e20cfc7e3a072f348c13bb5fd0d3f5640675b7929f826bf93c258b6431e",
+      "clipped_samples": 0,
+      "output_loop_seam_delta": 0.00250244140625
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Dragging Stone 8.wav",
+      "source_sha256": "37e87ff38815b28b6cbb91cb43321c8093950c1c64f99a7843ef31f9eb1e3681",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "3.230748"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -22.73,
+        "true_peak_dbtp": -8.64,
+        "sample_peak_dbfs": -8.648
+      },
+      "source_duration_seconds": 3.23075,
+      "trim_start_seconds": 0.007583,
+      "trim_end_seconds": 3.050687,
+      "before_gain": {
+        "integrated_lufs": -22.53,
+        "true_peak_dbtp": -8.64,
+        "sample_peak_dbfs": -8.648
+      },
+      "loop_crossfade_seconds": 0.12,
+      "interior_offset_seconds": 0.45,
+      "loop_seam_delta": 0.003877006471157074,
+      "family": "drag",
+      "output": "public/audio/repair/drag-02.wav",
+      "target_lufs": -35.0,
+      "fixed_gain_db": -12.47,
+      "after_gain": {
+        "integrated_lufs": -34.99,
+        "true_peak_dbtp": -21.11,
+        "sample_peak_dbfs": -21.118
+      },
+      "output_duration_seconds": 2.28,
+      "output_onset_seconds": 0.0,
+      "output_bytes": 218958,
+      "output_sha256": "65a6fb91f88fa5ba725003533b4e119720c766c0b00f6164d564e2a51868d6d5",
+      "clipped_samples": 0,
+      "output_loop_seam_delta": 0.00091552734375
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ultimate Footstep Sounds/GLASS/Glass footsteps 9.wav",
+      "source_sha256": "70b95cb0ad540766a1832e7ba0a7051f9eb4fcea551fccbf2b34ef7f35f16916",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.661769"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -16.33,
+        "true_peak_dbtp": 2.31,
+        "sample_peak_dbfs": 2.176
+      },
+      "source_duration_seconds": 0.661771,
+      "trim_start_seconds": 0.0,
+      "trim_end_seconds": 0.629479,
+      "before_gain": {
+        "integrated_lufs": -16.33,
+        "true_peak_dbtp": 2.31,
+        "sample_peak_dbfs": 2.176
+      },
+      "family": "hit-glass",
+      "output": "public/audio/repair/hit-glass-01.wav",
+      "target_lufs": -26.76,
+      "fixed_gain_db": -10.43,
+      "after_gain": {
+        "integrated_lufs": -26.77,
+        "true_peak_dbtp": -8.12,
+        "sample_peak_dbfs": -8.253
+      },
+      "output_duration_seconds": 0.629479,
+      "output_onset_seconds": 0.0,
+      "output_bytes": 60508,
+      "output_sha256": "fa8515ef6ef232828966e78a5d4ec69380c6e1a0b4592931fc4d615728705c22",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ultimate Footstep Sounds/GLASS/Glass footsteps 17.wav",
+      "source_sha256": "f04723586b75d0798467bb6871302029ee8c718c67aa03f3df8db189c4925fee",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.554376"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -18.42,
+        "true_peak_dbtp": 0.9,
+        "sample_peak_dbfs": 0.319
+      },
+      "source_duration_seconds": 0.554396,
+      "trim_start_seconds": 0.0,
+      "trim_end_seconds": 0.554396,
+      "before_gain": {
+        "integrated_lufs": -18.42,
+        "true_peak_dbtp": 0.9,
+        "sample_peak_dbfs": 0.319
+      },
+      "family": "hit-glass",
+      "output": "public/audio/repair/hit-glass-02.wav",
+      "target_lufs": -26.76,
+      "fixed_gain_db": -8.34,
+      "after_gain": {
+        "integrated_lufs": -26.72,
+        "true_peak_dbtp": -7.44,
+        "sample_peak_dbfs": -8.021
+      },
+      "output_duration_seconds": 0.554396,
+      "output_onset_seconds": 0.002833,
+      "output_bytes": 53300,
+      "output_sha256": "a16c8e79f5a6d20417ce67536156d718f80e8302d00a6ecb68c457756d1fc4ba",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ultimate Footstep Sounds/CONCRETE/Heavy Running  Concrete footsteps 2.wav",
+      "source_sha256": "99e529c01d7639f2648a1bfa510b4c6ea19755281f52a481325db27109bff5f7",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.282993"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -21.85,
+        "true_peak_dbtp": 2.02,
+        "sample_peak_dbfs": 2.019
+      },
+      "source_duration_seconds": 0.283,
+      "trim_start_seconds": 0.0,
+      "trim_end_seconds": 0.283,
+      "before_gain": {
+        "integrated_lufs": -21.85,
+        "true_peak_dbtp": 2.02,
+        "sample_peak_dbfs": 2.019
+      },
+      "family": "hit-concrete",
+      "output": "public/audio/repair/hit-concrete-01.wav",
+      "target_lufs": -26.76,
+      "fixed_gain_db": -4.91,
+      "after_gain": {
+        "integrated_lufs": -26.75,
+        "true_peak_dbtp": -2.89,
+        "sample_peak_dbfs": -2.891
+      },
+      "output_duration_seconds": 0.283,
+      "output_onset_seconds": 2.1e-05,
+      "output_bytes": 27246,
+      "output_sha256": "f2a3415f44eb325109071ef99b1cd857af485740d5fae1b01a3b75d697a95fe5",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ultimate Footstep Sounds/CONCRETE/Heavy Running  Concrete footsteps 1.wav",
+      "source_sha256": "658cb110fb1b6b972a80f93f681c3bcb7e09ae2132e259de4d7edf4fa8bf760e",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.269206"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -23.25,
+        "true_peak_dbtp": 1.41,
+        "sample_peak_dbfs": 1.365
+      },
+      "source_duration_seconds": 0.269208,
+      "trim_start_seconds": 0.0,
+      "trim_end_seconds": 0.259021,
+      "before_gain": {
+        "integrated_lufs": -23.25,
+        "true_peak_dbtp": 1.41,
+        "sample_peak_dbfs": 1.365
+      },
+      "family": "hit-concrete",
+      "output": "public/audio/repair/hit-concrete-02.wav",
+      "target_lufs": -26.76,
+      "fixed_gain_db": -3.51,
+      "after_gain": {
+        "integrated_lufs": -26.75,
+        "true_peak_dbtp": -2.1,
+        "sample_peak_dbfs": -2.145
+      },
+      "output_duration_seconds": 0.259021,
+      "output_onset_seconds": 0.0,
+      "output_bytes": 24944,
+      "output_sha256": "3c859bf6c595b7df49c9816d46057ab82b2aee8fc23cb296dc34fb62946709b7",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ultimate Footstep Sounds/STONE/Stone footsteps 14.wav",
+      "source_sha256": "4cf700bd80b9f9386b384195a73fcd10ce7ce4ce13b00ed04028fe3ff4e4c703",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.654512"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -17.24,
+        "true_peak_dbtp": 4.05,
+        "sample_peak_dbfs": 4.045
+      },
+      "source_duration_seconds": 0.654521,
+      "trim_start_seconds": 0.0,
+      "trim_end_seconds": 0.553479,
+      "before_gain": {
+        "integrated_lufs": -17.24,
+        "true_peak_dbtp": 4.05,
+        "sample_peak_dbfs": 4.045
+      },
+      "family": "hit-rock",
+      "output": "public/audio/repair/hit-rock-01.wav",
+      "target_lufs": -26.76,
+      "fixed_gain_db": -9.52,
+      "after_gain": {
+        "integrated_lufs": -26.74,
+        "true_peak_dbtp": -5.48,
+        "sample_peak_dbfs": -5.475
+      },
+      "output_duration_seconds": 0.553479,
+      "output_onset_seconds": 0.000125,
+      "output_bytes": 53212,
+      "output_sha256": "66554df8b0e77d72537c6da05f8b4b6b942d4a1f59a11b56a1ea825463f7701c",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ultimate Footstep Sounds/STONE/Heavy Running  Stone footsteps 3.wav",
+      "source_sha256": "845abcb3cb16f73dbce971619a16fc5c8ef9ad3c2515ca64348b6762a2a8b5d4",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.410703"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -20.85,
+        "true_peak_dbtp": -0.01,
+        "sample_peak_dbfs": -0.031
+      },
+      "source_duration_seconds": 0.410708,
+      "trim_start_seconds": 0.0,
+      "trim_end_seconds": 0.333708,
+      "before_gain": {
+        "integrated_lufs": -20.85,
+        "true_peak_dbtp": -0.01,
+        "sample_peak_dbfs": -0.031
+      },
+      "family": "hit-rock",
+      "output": "public/audio/repair/hit-rock-02.wav",
+      "target_lufs": -26.76,
+      "fixed_gain_db": -5.91,
+      "after_gain": {
+        "integrated_lufs": -26.75,
+        "true_peak_dbtp": -5.92,
+        "sample_peak_dbfs": -5.941
+      },
+      "output_duration_seconds": 0.333708,
+      "output_onset_seconds": 2.1e-05,
+      "output_bytes": 32114,
+      "output_sha256": "ddd5cb9667f81492b0a66675380411404ec09ae0d4a074dc8e4519b24b166fdf",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ultimate Footstep Sounds/WOOD/Wood footsteps 10.wav",
+      "source_sha256": "5583f063263d29c98e017a8d5e61dd61b8889371494a3489e25f87bb13d72824",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.432472"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -19.05,
+        "true_peak_dbtp": -0.54,
+        "sample_peak_dbfs": -0.709
+      },
+      "source_duration_seconds": 0.432479,
+      "trim_start_seconds": 0.000667,
+      "trim_end_seconds": 0.414062,
+      "before_gain": {
+        "integrated_lufs": -19.05,
+        "true_peak_dbtp": -0.54,
+        "sample_peak_dbfs": -0.709
+      },
+      "family": "hit-wood",
+      "output": "public/audio/repair/hit-wood-01.wav",
+      "target_lufs": -26.76,
+      "fixed_gain_db": -7.71,
+      "after_gain": {
+        "integrated_lufs": -26.75,
+        "true_peak_dbtp": -8.25,
+        "sample_peak_dbfs": -8.419
+      },
+      "output_duration_seconds": 0.413396,
+      "output_onset_seconds": 0.003,
+      "output_bytes": 39764,
+      "output_sha256": "6e77443442da6246b1e6d4d49e7567ba2ecc372a8abef934b88835446bba8f8b",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ultimate Footstep Sounds/WOOD/Wood footsteps 1.wav",
+      "source_sha256": "2ddec769010c655e4adc5ca8d5c3dfc151ce8d4936f3a08cd9b8ab0c413f033f",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.331429"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -19.55,
+        "true_peak_dbtp": -0.36,
+        "sample_peak_dbfs": -0.367
+      },
+      "source_duration_seconds": 0.331437,
+      "trim_start_seconds": 0.0,
+      "trim_end_seconds": 0.32225,
+      "before_gain": {
+        "integrated_lufs": -19.55,
+        "true_peak_dbtp": -0.36,
+        "sample_peak_dbfs": -0.367
+      },
+      "family": "hit-wood",
+      "output": "public/audio/repair/hit-wood-02.wav",
+      "target_lufs": -26.76,
+      "fixed_gain_db": -7.21,
+      "after_gain": {
+        "integrated_lufs": -26.75,
+        "true_peak_dbtp": -7.57,
+        "sample_peak_dbfs": -7.577
+      },
+      "output_duration_seconds": 0.32225,
+      "output_onset_seconds": 0.000896,
+      "output_bytes": 31014,
+      "output_sha256": "bdc2f0beb28405b6bfa64d3eaa51d6a48a194abd19d1128cc5d429b01e877a9d",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ultimate Footstep Sounds/METAL/Light  Metal footsteps 3.wav",
+      "source_sha256": "5caede12de6ba881f229e949b06c942a4ee46fa665fc1cb47c7b7c767b2808d7",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.545669"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -21.62,
+        "true_peak_dbtp": 0.52,
+        "sample_peak_dbfs": 0.429
+      },
+      "source_duration_seconds": 0.545687,
+      "trim_start_seconds": 0.009417,
+      "trim_end_seconds": 0.501771,
+      "before_gain": {
+        "integrated_lufs": -18.75,
+        "true_peak_dbtp": 0.52,
+        "sample_peak_dbfs": 0.429
+      },
+      "family": "hit-metal-light",
+      "output": "public/audio/repair/hit-metal-light-01.wav",
+      "target_lufs": -26.76,
+      "fixed_gain_db": -8.01,
+      "after_gain": {
+        "integrated_lufs": -26.75,
+        "true_peak_dbtp": -7.49,
+        "sample_peak_dbfs": -7.582
+      },
+      "output_duration_seconds": 0.492354,
+      "output_onset_seconds": 0.003021,
+      "output_bytes": 47344,
+      "output_sha256": "d3c3952b73064a4b2544cb25de1519bae154023601003f25066bafa69b6d2ec1",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ultimate Footstep Sounds/METAL/Light  Metal footsteps 4.wav",
+      "source_sha256": "d0a0269142162c0f2e35471dfe2836c04adc265d97df551d1c2e5601c7b87627",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.911383"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -18.45,
+        "true_peak_dbtp": 3.01,
+        "sample_peak_dbfs": 2.977
+      },
+      "source_duration_seconds": 0.911396,
+      "trim_start_seconds": 0.010021,
+      "trim_end_seconds": 0.809083,
+      "before_gain": {
+        "integrated_lufs": -18.45,
+        "true_peak_dbtp": 3.01,
+        "sample_peak_dbfs": 2.977
+      },
+      "family": "hit-metal-light",
+      "output": "public/audio/repair/hit-metal-light-02.wav",
+      "target_lufs": -26.76,
+      "fixed_gain_db": -8.31,
+      "after_gain": {
+        "integrated_lufs": -26.75,
+        "true_peak_dbtp": -5.3,
+        "sample_peak_dbfs": -5.332
+      },
+      "output_duration_seconds": 0.799063,
+      "output_onset_seconds": 0.003,
+      "output_bytes": 76788,
+      "output_sha256": "9c6d702f3a8180f1340fa6be170afb316f4efe483e6d30aa056db8b217de3715",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ultimate Footstep Sounds/METAL/Metal footsteps 6.wav",
+      "source_sha256": "0f684f83c4b0a5e86684d69965d019cb11a3985fe9c0dace0c41483baacdefef",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.455692"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -18.04,
+        "true_peak_dbtp": 2.68,
+        "sample_peak_dbfs": 2.684
+      },
+      "source_duration_seconds": 0.455708,
+      "trim_start_seconds": 0.006437,
+      "trim_end_seconds": 0.444063,
+      "before_gain": {
+        "integrated_lufs": -15.15,
+        "true_peak_dbtp": 2.68,
+        "sample_peak_dbfs": 2.684
+      },
+      "family": "hit-metal-heavy",
+      "output": "public/audio/repair/hit-metal-heavy-01.wav",
+      "target_lufs": -26.76,
+      "fixed_gain_db": -11.61,
+      "after_gain": {
+        "integrated_lufs": -26.75,
+        "true_peak_dbtp": -8.93,
+        "sample_peak_dbfs": -8.927
+      },
+      "output_duration_seconds": 0.437625,
+      "output_onset_seconds": 0.003,
+      "output_bytes": 42090,
+      "output_sha256": "8b0661bd282166531e32bfe250e4bac6c1a3607fe901015693cdf14bcfe21885",
+      "clipped_samples": 0
+    },
+    {
+      "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ultimate Footstep Sounds/METAL/Metal footsteps 10.wav",
+      "source_sha256": "47a80e5e0aae8254851af3961d0a62bed93d9a701b5de6b933de4f151848d81c",
+      "source_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "44100",
+            "channels": 2,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.653061"
+        }
+      },
+      "source_mono_measurement": {
+        "integrated_lufs": -17.16,
+        "true_peak_dbtp": 2.56,
+        "sample_peak_dbfs": 2.557
+      },
+      "source_duration_seconds": 0.653062,
+      "trim_start_seconds": 0.008708,
+      "trim_end_seconds": 0.550417,
+      "before_gain": {
+        "integrated_lufs": -17.22,
+        "true_peak_dbtp": 2.56,
+        "sample_peak_dbfs": 2.557
+      },
+      "family": "hit-metal-heavy",
+      "output": "public/audio/repair/hit-metal-heavy-02.wav",
+      "target_lufs": -26.76,
+      "fixed_gain_db": -9.54,
+      "after_gain": {
+        "integrated_lufs": -26.72,
+        "true_peak_dbtp": -6.98,
+        "sample_peak_dbfs": -6.983
+      },
+      "output_duration_seconds": 0.541708,
+      "output_onset_seconds": 0.003042,
+      "output_bytes": 52082,
+      "output_sha256": "c969636f53947545b9b7b4e73ddd58d47aaebb4feedbe6356a17e85d1ec0b0d5",
+      "clipped_samples": 0
+    }
+  ]
+}
