@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { DestructibleMesh, FractureOptions } from '@dgreenheck/three-pinata';
+import { nudgeBody } from './tap-influence.js';
 
 // Dimensions are metres. The stage uses these same specs for its pedestal visuals.
 export const OBJECT_SPECS = Object.freeze([
@@ -447,18 +448,38 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     return true;
   }
 
+  function nudge(mesh, point, direction, strength) {
+    if (!ready || disposed || restoring || grab) return false;
+    const object = objectById.get(mesh?.userData?.labObject);
+    // Only exposed, complete props accept ray taps. Fragments retain their
+    // immediate grab gesture and hidden contents cannot be touched through wood.
+    if (!object?.enabled || object.docking || !targets.includes(mesh) || mesh !== object.mesh || (object.broken ? !isComplete(object) : !wholeObjects)) return false;
+    if (!point?.isVector3 || !direction?.isVector3 || !Number.isFinite(point.x + point.y + point.z + direction.x + direction.y + direction.z + strength) || strength <= 0 || direction.lengthSq() < 1e-8) return false;
+    const unit = activateWholeObject(object);
+    if (!unit.body) addBody(unit);
+    if (!nudgeBody(unit?.body, point, direction, strength)) return false;
+    refreshTargets();
+    emit('nudge', object, point, { strength });
+    return true;
+  }
+
+  function activateWholeObject(object) {
+    if (object.broken) return object.units[0];
+    const rotation = object.mesh.quaternion.clone().multiply(object.homeQuaternion.clone().invert());
+    const anchor = object.fragments[0].homePosition.clone().sub(object.homePosition).applyQuaternion(rotation).add(object.mesh.position);
+    if (object.intactCollider) world.removeCollider(object.intactCollider, true);
+    object.intactCollider = null;
+    object.broken = true;
+    return makeUnit(object, object.fragments, anchor, rotation);
+  }
+
   function beginGrab(mesh, worldPoint, handId = 'primary') {
     if (!ready || disposed || restoring || grab || !worldPoint?.isVector3 || !Number.isFinite(worldPoint.x + worldPoint.y + worldPoint.z)) return false;
     const object = objectById.get(mesh?.userData?.labObject);
     if (!object?.enabled || object.docking || !grabTargets.includes(mesh)) return false;
     if (!object.broken) {
       if (!wholeObjects || mesh !== object.mesh) return false;
-      const rotation = object.mesh.quaternion.clone().multiply(object.homeQuaternion.clone().invert());
-      const anchor = object.fragments[0].homePosition.clone().sub(object.homePosition).applyQuaternion(rotation).add(object.mesh.position);
-      if (object.intactCollider) world.removeCollider(object.intactCollider, true);
-      object.intactCollider = null;
-      object.broken = true;
-      makeUnit(object, object.fragments, anchor, rotation);
+      activateWholeObject(object);
     }
     const fragment = Number.isInteger(mesh.userData.fragmentIndex) ? object.fragments[mesh.userData.fragmentIndex] : null;
     const unit = fragment?.unit || (mesh === object.mesh && isComplete(object) ? object.units[0] : null);
@@ -809,5 +830,5 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   ready = true;
   refreshTargets();
   notify();
-  return { targets, grabTargets, step, hit, beginGrab, moveGrab, endGrab, cancelGrabs, restore, getState, getGrabState, dispose, placeObject, resetImmediately, physicsWorld: world, registerExternalCollider, unregisterExternalCollider };
+  return { targets, grabTargets, step, hit, nudge, beginGrab, moveGrab, endGrab, cancelGrabs, restore, getState, getGrabState, dispose, placeObject, resetImmediately, physicsWorld: world, registerExternalCollider, unregisterExternalCollider };
 }

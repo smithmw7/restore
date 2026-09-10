@@ -44,6 +44,10 @@ try {
         audio.playSnap(id,p,.8,true); await wait(110);
       }
       checkpoints.contacts = audio.getState();
+      audio.playNudge('cube',p,.8,true); await wait(110);
+      audio.playNudge('cube',p,.05,true); await wait(110);
+      audio.playNudge('orb',p,.005,true); await wait(110);
+      checkpoints.nudges = audio.getState();
       audio.startDrag('orb',p,true); audio.updateDrag({position:p,speed:1}); await wait(160);
       audio.playDrop('orb',p,true); checkpoints.drop = audio.getState(); await wait(140);
       checkpoints.droppedStop = audio.getState();
@@ -70,6 +74,13 @@ try {
     assert.ok(c.contacts.lastEvents.some(event => event.type==='collision' && event.clip.includes(`hit-${family}-`)));
     assert.ok(c.contacts.lastEvents.some(event => event.type==='snap' && event.clip.includes(`hit-${family}-`)));
   }
+  const nudges=c.nudges.lastEvents.filter(event=>event.type==='nudge');
+  assert.equal(c.nudges.eventCounts.nudge,3);
+  assert.match(nudges[0].clip,/hit-wood-/); assert.match(nudges[2].clip,/hit-metal-light-/);
+  assert.ok(nudges[1].gain<nudges[0].gain*.3 && nudges[2].gain<nudges[1].gain*.4,'distant nudges should become much quieter');
+  assert.equal(c.nudges.eventCounts.break,c.contacts.eventCounts.break);
+  assert.equal(c.nudges.eventCounts.pickup,c.contacts.eventCounts.pickup);
+  assert.equal(c.nudges.eventCounts.drop,c.contacts.eventCounts.drop);
   assert.match(c.drop.lastClip,/repair\/drop-/); assert.equal(c.droppedStop.fadingLoops,0);
   assert.equal(c.muted.muted,true); assert.equal(c.muted.loopActive,false); assert.equal(c.muted.fadingLoops,0);
   assert.equal(c.dock.eventCounts.dock,1); assert.ok(c.burst.activeVoices<=12);

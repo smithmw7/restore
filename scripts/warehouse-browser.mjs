@@ -65,13 +65,24 @@ try {
   checks.push('an aged crate falls after a stationary pointer release, plays one drop, and stops dragging audio');
   await page.locator('#restore').click();
 
-  await page.mouse.click(crate.screen.x,crate.screen.y);
+  // Breaking now requires proximity. Walk into reach and aim at the newly
+  // projected crate instead of expecting a distant tap to open it from spawn.
+  await page.keyboard.down('KeyW');
+  await page.evaluate(()=>window.advanceTime(450));
+  await page.keyboard.up('KeyW');
+  const closeCrate=(await read()).state.objects.find(object=>object.id==='crate-02');
+  await page.mouse.click(closeCrate.screen.x,closeCrate.screen.y);
   await page.waitForFunction(()=>window.__restoreDiagnostics().state.openedCrates===1);
   let current=await read();
   assert.ok(current.state.objects.some(object=>object.id==='artifact-02'));
   assert.equal(current.audio.eventCounts.break,1);
   assert.match(current.audio.lastEvents.findLast(event=>event.type==='break').clip,/breaks\/wood-/);
   checks.push('a short pointer tap breaks a crate, plays wood, and reveals its artifact');
+  // Step back for a clear view of the newly dropped contents; distance does
+  // not prevent the existing hold-to-grab interaction.
+  await page.keyboard.down('KeyS');
+  await page.evaluate(()=>window.advanceTime(450));
+  await page.keyboard.up('KeyS');
   await page.waitForTimeout(950);
   await page.screenshot({path:`${out}/browser-open.png`});
 
@@ -134,6 +145,14 @@ try {
   // Aim after landing, rather than chasing a falling centroid with coordinates
   // sampled before the next display frame. Small offsets cover a tapered face.
   await page.evaluate(()=>window.advanceTime(2200));
+  current=await read();
+  const landed=current.state.objects.find(object=>object.id==='artifact-02');
+  const approachMs=Math.max(0,current.input.camera.position[2]-landed.position[2]-1.45)/2.2*1000;
+  await page.keyboard.down('KeyW');
+  await page.evaluate(ms=>window.advanceTime(ms),approachMs);
+  await page.keyboard.up('KeyW');
+  await page.mouse.move(720,550);await page.mouse.down({button:'right'});
+  await page.mouse.move(720,700,{steps:12});await page.mouse.up({button:'right'});
   await page.screenshot({path:`${out}/browser-artifact-settled.png`});
   let artifactBroken=false;
   for(const [dx,dy] of [[0,0],[5,0],[-5,0],[0,-5],[0,5],[9,0],[-9,0],[0,-9],[0,9]]){

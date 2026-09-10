@@ -9,6 +9,7 @@ import { createArchiveAtmosphere } from './atmosphere.js';
 import { createWarehouseGameplay } from './warehouse-gameplay.js';
 import { createLocomotion } from './locomotion.js';
 import { createHoldPull, stepHoldPull } from './hold-pull.js';
+import { dispatchTap } from './tap-influence.js';
 
 const canvas=document.querySelector('#scene');
 const scene=new THREE.Scene();
@@ -26,8 +27,10 @@ resetDesktopCamera();
 const audio=createRestoreAudio();
 let lab,warehouse,metalStorage,atmosphere,locomotion,ready=false,xrSupported=false,muted=false,lastTime=0,frameDelta=0;
 let xrFrames=0,selectCount=0,contactCount=0,lastInput='none',sessionError=null,sessionVisibility=null;
+let lastTap=null;
 const raycaster=new THREE.Raycaster(),rotation=new THREE.Matrix4(),point=new THREE.Vector3(),direction=new THREE.Vector3();
 const viewerPosition=new THREE.Vector3(),viewerForward=new THREE.Vector3(),viewerUp=new THREE.Vector3();
+const tapViewerPosition=new THREE.Vector3();
 const touchBox=new THREE.Box3(),triangle=new THREE.Triangle(),localContact=new THREE.Vector3(),closest=new THREE.Vector3(),inverse=new THREE.Matrix4();
 const inputs=[],keys=new Set(),handFactory=new XRHandModelFactory();
 let desktopGrab=null,pointerState=null,hovered=null;
@@ -42,6 +45,7 @@ function handleEvent(event){
   if(type==='enddrag')audio.stopDrag({immediate:event.reason!=='release'});
   if(type==='drop')audio.playDrop(id,position,spatial);
   if(type==='collision')audio.playCollision(id,position,strength,spatial);
+  if(type==='nudge')audio.playNudge(id,position,strength,spatial);
   if(type==='snap')audio.playSnap(id,position,strength,spatial);
   if(type==='complete')audio.playComplete(id,position,spatial);
   if(type==='dock'){audio.playDock(id,position,spatial);for(const input of inputs)input.clearContact=true;}
@@ -67,6 +71,11 @@ function intersect(){
   if(!hit)return null;
   // Structural walls and beams also stop selection rays.
   for(const box of warehouse.obstacles){const blocked=raycaster.ray.intersectBox(box,point);if(blocked&&blocked.distanceTo(raycaster.ray.origin)<hit.distance-.025)return null;}
+  return rememberHitPoint(hit);
+}
+function rememberHitPoint(hit){
+  hit.object.updateWorldMatrix(true,false);
+  hit.localPoint=hit.object.worldToLocal(hit.point.clone());
   return hit;
 }
 function surfaceTouch(mesh,p,radius){
@@ -77,16 +86,22 @@ function surfaceTouch(mesh,p,radius){
   for(let i=0;i<count;i+=3){triangle.a.fromBufferAttribute(positions,index?index.getX(i):i);triangle.b.fromBufferAttribute(positions,index?index.getX(i+1):i+1);triangle.c.fromBufferAttribute(positions,index?index.getX(i+2):i+2);triangle.closestPointToPoint(localContact,closest);if(closest.distanceToSquared(localContact)<=r*r)return true;}
   return false;
 }
-function breakHit(hit,input){
+function tapHit(hit,input){
   if(!hit||!ready||!lab.targets.includes(hit.object))return false;
   clearHover();
-  const success=lab.hit(hit.object,hit.point,raycaster.ray.direction);
-  if(success){lastInput=input?.kind||'pointer';input?.source?.gamepad?.hapticActuators?.[0]?.pulse(.4,40)?.catch(()=>{});}
-  return success;
+  const viewer=renderer.xr.isPresenting?renderer.xr.getCamera():camera;
+  viewer.getWorldPosition(tapViewerPosition);
+  const effect=dispatchTap(lab,hit,tapViewerPosition,raycaster.ray.direction);
+  if(effect){
+    lastTap={...effect,objectId:hit.object.userData.labObject};
+    lastInput=input?.kind||'pointer';
+    input?.source?.gamepad?.hapticActuators?.[0]?.pulse((effect.kind==='break'?.4:.16)*effect.strength,effect.kind==='break'?40:20)?.catch(()=>{});
+  }
+  return !!effect;
 }
 function inputRay(input){input.controller.updateWorldMatrix(true,false);rotation.extractRotation(input.controller.matrixWorld);raycaster.ray.origin.setFromMatrixPosition(input.controller.matrixWorld);raycaster.ray.direction.set(0,0,-1).applyMatrix4(rotation);}
 function chooseHit(input){
-  if(input.contactValid){const mesh=targets().find(mesh=>surfaceTouch(mesh,input.contactPoint,.045));if(mesh)return {object:mesh,point:input.contactPoint.clone(),distance:0,near:true};}
+  if(input.contactValid){const mesh=targets().find(mesh=>surfaceTouch(mesh,input.contactPoint,.045));if(mesh)return rememberHitPoint({object:mesh,point:input.contactPoint.clone(),distance:0,near:true});}
   return intersect();
 }
 function holdPullFor(mesh,hitPoint){
@@ -127,7 +142,7 @@ for(let i=0;i<2;i++){
   controller.addEventListener('selectstart',()=>{
     if(!ready)return;audio.unlock();selectCount++;inputRay(input);
     if(palmTurns.visible){const turn=raycaster.intersectObjects(turnButtons,false)[0];if(turn){locomotion.turn(turn.object.userData.turn);return;}}
-    if(input.grabbing){if(input.grabButton==='grip'){const held=lab.getGrabState().heldMesh;endInputGrab(input);if(held)breakHit({object:held,point:held.getWorldPosition(new THREE.Vector3())},input);}return;}
+    if(input.grabbing){if(input.grabButton==='grip'){const held=lab.getGrabState().heldMesh;endInputGrab(input);if(held)tapHit({object:held,point:held.getWorldPosition(new THREE.Vector3())},input);}return;}
     if(locomotion.isAiming(input))return;
     const hit=chooseHit(input);
     if(hit){
@@ -137,7 +152,7 @@ for(let i=0;i<2;i++){
   });
   controller.addEventListener('selectend',()=>{
     if(!ready)return;
-    if(input.pending){inputRay(input);breakHit(input.pending.hit,input);input.pending=null;input.clearContact=true;}
+    if(input.pending){inputRay(input);tapHit(input.pending.hit,input);input.pending=null;input.clearContact=true;}
     endInputGrab(input,'select');if(locomotion.isAiming(input))locomotion.endAim(input,true);
   });
   controller.addEventListener('squeezestart',()=>{if(!ready||input.grabbing)return;inputRay(input);input.pending=null;startGrab(input,chooseHit(input),'grip');});
@@ -190,7 +205,7 @@ function updateXRInputs(time,frame,dt){
     const contact=lab.targets.find(mesh=>mesh.visible&&surfaceTouch(mesh,input.touchPoint,source.hand ? .012 : .025));
     const id=contact?.uuid;
     if(contact&&id!==input.contactId&&time-input.lastContact>500&&input.touchSpeed>.65){
-      if(breakHit({object:contact,point:input.touchPoint.clone()},input)){contactCount++;input.lastContact=time;input.contactId=id;input.clearContact=true;}
+      if(tapHit({object:contact,point:input.touchPoint.clone()},input)){contactCount++;input.lastContact=time;input.contactId=id;input.clearContact=true;}
     }
     if(!contact)input.contactId=null;
   }
@@ -223,7 +238,7 @@ canvas.addEventListener('pointermove',event=>{
 canvas.addEventListener('pointerup',event=>{
   if(renderer.xr.isPresenting)return;
   if(desktopGrab){lab.endGrab('pointer');desktopGrab=null;clearHover();}
-  else if(pointerState?.button===0&&pointerState.hit){pointerRay(event);breakHit(pointerState.hit);}
+  else if(pointerState?.button===0&&pointerState.hit){pointerRay(event);tapHit(pointerState.hit);}
   pointerState=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
 });
 canvas.addEventListener('wheel',event=>{
@@ -283,7 +298,7 @@ renderer.setAnimationLoop((time,frame)=>{frameDelta=lastTime?Math.min((time-last
 window.advanceTime=ms=>{for(let i=0;i<Math.max(1,Math.round(ms/(1000/72)));i++)update(1/72,performance.now());renderer.info.reset();renderer.render(scene,camera);};
 function project(mesh){const p=mesh.getWorldPosition(new THREE.Vector3()),screen=p.clone().project(camera);return {id:mesh.userData.labObject,uuid:mesh.uuid,kind:mesh.userData.kind,position:p.toArray(),screen:{x:Math.round((screen.x*.5+.5)*innerWidth),y:Math.round((-screen.y*.5+.5)*innerHeight)}};}
 window.render_game_to_text=()=>JSON.stringify({app:'Restore',version:'warehouse',ready,coordinateSystem:'Meters, +Y up, -Z forward.',mode:renderer.xr.isPresenting?'immersive-vr':'desktop',...lab?.getState(),objectStates:lab?.getState().objects,objects:(lab?.targets||[]).filter(x=>x.visible).map(project),pieces:(lab?.grabTargets||[]).filter(x=>x.visible).map(project),locomotion:locomotion?.getState(),warehouse:warehouse?.stats,mode:renderer.xr.isPresenting?'immersive-vr':'desktop',xr:{supported:xrSupported,presenting:renderer.xr.isPresenting,frames:xrFrames,selectCount,contactCount,lastInput,visibility:sessionVisibility,error:sessionError,frameMs:Math.round(frameDelta*1000),sources:inputs.filter(x=>x.source).map(x=>({kind:x.kind,handedness:x.source.handedness,tracked:x.controller.visible}))}});
-window.__restoreDiagnostics=()=>({secureContext:isSecureContext,webxr:!!navigator.xr,state:JSON.parse(window.render_game_to_text()),audio:audio.getState(),input:{desktopGrab:desktopGrab?{point:desktopGrab.point.toArray(),normal:dragPlane.normal.toArray(),constant:dragPlane.constant}:null,camera:{position:camera.getWorldPosition(new THREE.Vector3()).toArray(),quaternion:camera.getWorldQuaternion(new THREE.Quaternion()).toArray(),fov:camera.fov,aspect:camera.aspect}},drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries});
+window.__restoreDiagnostics=()=>({secureContext:isSecureContext,webxr:!!navigator.xr,state:JSON.parse(window.render_game_to_text()),audio:audio.getState(),input:{lastTap,desktopGrab:desktopGrab?{point:desktopGrab.point.toArray(),normal:dragPlane.normal.toArray(),constant:dragPlane.constant}:null,camera:{position:camera.getWorldPosition(new THREE.Vector3()).toArray(),quaternion:camera.getWorldQuaternion(new THREE.Quaternion()).toArray(),fov:camera.fov,aspect:camera.aspect}},drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries});
 try{
   await refreshXR();
   const [materials]=await Promise.all([loadWarehouseMaterials(),audio.load()]);

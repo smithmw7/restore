@@ -21,6 +21,8 @@ A 96 × 180 × 28 metre enclosed archive with towering steel trusses, long stora
 
 The experience itself displays no instructions. These controls are documented here for development and testing.
 
+Taps break exposed crates and whole artifacts within **8 feet (2.44m)** of your head, measured to the surface you touch. Farther taps give a physical nudge instead, with inverse-square force falloff: twice the distance means one quarter of the influence. Small upward rocking makes floor contact readable, and material contact sounds and controller feedback become quieter/weaker with range. Far taps never accumulate fracture damage; sealed metal scenery remains fixed.
+
 Distant held objects gradually reel toward you after a short pause, speeding up gently and easing to a stop with room for the object's size. Manual depth adjustments restart the gentle ramp. Objects picked up by direct hand contact continue to follow your hand.
 
 **Quest controllers**
@@ -91,6 +93,8 @@ npm run test:repair       # Original magnetic repair API regression
 npm run test:warehouse    # Crate / artifact / physics integration
 npm run test:storage      # All 176 crates, stack collapse, live obstacles and reset
 npm run test:settling     # Disturbed piles, natural rest and smooth display updates
+npm run test:tap          # Reach boundary, distance falloff, native nudges and retained grabs
+npm run test:tap-browser  # Real pointer distant nudges, approach/break and remote grabbing
 npm run test:artifacts    # Artifact manifold geometry and scaled fracture volume
 npm run test:fracture-cache # Shared cut templates, independent state and finish
 npm run test:locomotion   # Head pivot, teleport, collision, input latches

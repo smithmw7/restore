@@ -230,15 +230,15 @@ export function createRestoreAudio() {
 
   function contact(type, objectId, position, strength = 0.5, spatial = false) {
     if (muted || !context) return false;
-    const now = context.currentTime, snap = type === 'snap';
+    const now = context.currentTime, snap = type === 'snap', nudge = type === 'nudge';
     // Burst collisions share a small budget so a whole fracture cannot make a
     // wall of footsteps. The snap is allowed to cut through softer contacts.
     if (now - lastContact < (snap ? 0.032 : 0.065)) return false;
     if (now - (lastObjectContact.get(objectId) ?? -Infinity) < (snap ? 0.04 : 0.095)) return false;
     if (!snap && now < quietContactsUntil) return false;
     const force = clamp(Number(strength) || 0, 0, 1);
-    if (!snap && force < 0.04) return false;
-    const volume = snap ? 0.3 + force * 0.25 : 0.13 + force * 0.24;
+    if (!snap && force < (nudge ? 0.0001 : 0.04)) return false;
+    const volume = nudge ? 0.25 * Math.sqrt(force) : snap ? 0.3 + force * 0.25 : 0.13 + force * 0.24;
     const played = playClip(type, objectId, 'repair', `hit-${OBJECT_SOUNDS[objectId] || 'concrete'}`, position, spatial, volume, snap ? 2 : 0);
     if (played) { lastContact = now; lastObjectContact.set(objectId, now); }
     return played;
@@ -246,6 +246,10 @@ export function createRestoreAudio() {
 
   function playCollision(objectId, position, strength = 0.5, spatial = false) {
     return contact('collision', objectId, position, strength, spatial);
+  }
+
+  function playNudge(objectId, position, strength = 0.5, spatial = false) {
+    return contact('nudge', objectId, position, strength, spatial);
   }
 
   function playSnap(objectId, position, strength = 0.5, spatial = false) {
@@ -299,6 +303,6 @@ export function createRestoreAudio() {
 
   return {
     load, unlock, playBreak, playRestore, setMuted, updateListener, getState,
-    playPickup, startDrag, updateDrag, stopDrag, playDrop, playCollision, playSnap, playComplete, playDock,
+    playPickup, startDrag, updateDrag, stopDrag, playDrop, playCollision, playNudge, playSnap, playComplete, playDock,
   };
 }

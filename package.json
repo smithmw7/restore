@@ -1,6 +1,6 @@
 {
   "name": "restore",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -24,7 +24,9 @@
     "test:archive": "node scripts/archive-check.mjs",
     "test:archive-browser": "node scripts/archive-browser.mjs",
     "test:hold-pull": "node scripts/hold-pull-check.mjs",
-    "test:settling": "node scripts/settling-check.mjs"
+    "test:settling": "node scripts/settling-check.mjs",
+    "test:tap": "node scripts/tap-check.mjs",
+    "test:tap-browser": "node scripts/tap-browser.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

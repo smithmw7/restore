@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { nudgeBody } from './tap-influence.js';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createDestructionLab } from './destruction.js';
@@ -303,6 +304,16 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     return true;
   }
 
+  function nudge(mesh, point, direction, strength) {
+    if (!ready || disposed || held || lab.getGrabState().active) return false;
+    const crate = crateById.get(mesh?.userData?.labObject);
+    if (!crate) return lab.nudge(mesh, point, direction, strength);
+    if (crate.open || mesh !== crate.mesh || !crate.mesh.visible) return false;
+    if (!nudgeBody(crate.body, point, direction, strength)) return false;
+    emit('nudge', crate, point, { strength });
+    return true;
+  }
+
   function beginGrab(mesh, worldPoint, handId = 'primary') {
     if (!ready || disposed || held || lab.getGrabState().active || !finitePoint(worldPoint) || !grabTargets.includes(mesh)) return false;
     const crate = crateById.get(mesh?.userData?.labObject);
@@ -461,5 +472,5 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
 
   ready = true;
   refreshTargets(); notify();
-  return { targets, grabTargets, occluders, hit, beginGrab, moveGrab, endGrab, cancelGrabs, restore, step, getGrabState, getState, getObstacles, dispose };
+  return { targets, grabTargets, occluders, hit, nudge, beginGrab, moveGrab, endGrab, cancelGrabs, restore, step, getGrabState, getState, getObstacles, dispose };
 }
