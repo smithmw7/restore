@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = path.join(projectRoot, 'dist');
-const port = 5209;
+const port = 5212;
 // Horizon's system launcher rejects localhost hostnames on some OS versions.
 // Numeric loopback remains a secure context and uses the same USB reverse.
 const origin = `http://127.0.0.1:${port}/`;
@@ -112,7 +112,8 @@ async function existingServerIsRestore() {
     ]);
     if (!identityResponse.ok || !pageResponse.ok) return false;
     const [identity, html] = await Promise.all([identityResponse.json(), pageResponse.text()]);
-    return identity.app === 'restore' && hasRestoreTitle(html);
+    const expected = JSON.parse(await readFile(path.join(distRoot, 'restore.json'), 'utf8'));
+    return identity.app === 'restore' && identity.version === expected.version && identity.edition === expected.edition && hasRestoreTitle(html);
   } catch { return false; }
 }
 

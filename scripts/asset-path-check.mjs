@@ -13,7 +13,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const scratch = await mkdtemp(path.join(tmpdir(), 'restore-asset-paths-'));
 const contentTypes = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
-  '.svg': 'image/svg+xml', '.webp': 'image/webp', '.wav': 'audio/wav',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.wav': 'audio/wav',
   '.json': 'application/json', '.webmanifest': 'application/manifest+json',
   '.wasm': 'application/wasm',
 };
@@ -61,7 +61,7 @@ try {
         const iconUrls = manifest.icons.map(icon => new URL(icon.src, manifestUrl).href);
         const iconStatuses = await Promise.all(iconUrls.map(async url => (await fetch(url)).status));
         return {
-          ready: diagnostics.state.ready, closedCrates: diagnostics.state.closedCrates,
+          ready: diagnostics.state.ready, closedCrates: diagnostics.state.closedCrates,opening:diagnostics.state.opening,mechanism:diagnostics.state.mechanism,
           audio: diagnostics.audio, manifestUrl, startUrl, iconUrls, iconStatuses,
           id: new URL(manifest.id, startUrl).href,
           scope: new URL(manifest.scope, manifestUrl).href,
@@ -69,8 +69,10 @@ try {
           entryUrls: [...document.querySelectorAll('script[src],link[rel="stylesheet"]')].map(node => node.src || node.href),
         };
       });
-      assert.equal(result.closedCrates, 176, `${base} did not initialize the actual warehouse`);
-      assert.equal(result.audio.loaded, 40);
+      assert.ok(result.closedCrates > 140 && result.closedCrates < 176, `${base} did not initialize the warehouse with clear opening approaches`);
+      assert.equal(result.opening.caseUnlocked,false);
+      assert.equal(result.mechanism.total,24);
+      assert.equal(result.audio.loaded, 48);
       assert.equal(result.audio.loaded, result.audio.expected, `${base} left undecoded audio`);
       assert.equal(result.manifestUrl, `${origin}${base}manifest.webmanifest`);
       for (const field of ['startUrl', 'id', 'scope']) assert.equal(result[field], `${origin}${base}`, `incorrect manifest ${field}`);
@@ -81,7 +83,8 @@ try {
       for (const url of result.entryUrls) assert.ok(url.startsWith(`${origin}${base}assets/`), `incorrect bundle URL: ${url}`);
       const audioFiles = [...requests].filter(url => url.startsWith(`${base}audio/`) && url.endsWith('.wav'));
       const textures = [...requests].filter(url => url.startsWith(`${base}materials/`) && url.endsWith('.webp'));
-      assert.equal(audioFiles.length, 40, `${base} did not request every sound`);
+      assert.equal(audioFiles.length, 48, `${base} did not request every sound`);
+      assert.ok(requests.has(`${base}textures/opening/archive-photos.png`),`${base} photograph atlas not loaded`);
       assert.equal(textures.length, 24, `${base} did not request every material texture`);
       assert.deepEqual(failures, [], `${base} has missing or escaped files`);
       assert.deepEqual(errors, [], `${base} has browser errors`);

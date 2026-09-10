@@ -1,12 +1,12 @@
 {
   "name": "restore",
-  "version": "0.4.10",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 5209 --strictPort",
+    "dev": "vite --host 127.0.0.1 --port 5211 --strictPort",
     "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1 --port 5209 --strictPort",
+    "preview": "vite preview --host 127.0.0.1 --port 5212 --strictPort",
     "quest": "node scripts/quest.mjs",
     "test:smoke": "node scripts/warehouse-browser.mjs",
     "test:audio": "node scripts/repair-audio-check.mjs",
@@ -45,7 +45,10 @@
     "test:completion-audio": "node scripts/completion-audio-check.mjs",
     "test:ambient-occlusion": "node scripts/ambient-occlusion-browser.mjs",
     "build:pages": "vite build --base=/restore/ --outDir=dist-pages",
-    "test:asset-paths": "node scripts/asset-path-check.mjs"
+    "test:asset-paths": "node scripts/asset-path-check.mjs",
+    "test:opening": "node scripts/opening-puzzles-check.mjs && node scripts/opening-assembly-check.mjs",
+    "test:opening-browser": "node scripts/opening-browser.mjs",
+    "test:opening-audio": "node scripts/opening-audio-check.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

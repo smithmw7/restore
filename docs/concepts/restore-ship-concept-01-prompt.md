@@ -1,0 +1,17 @@
+# Restore ship concept 01: generation record
+
+Generated with the built-in image generation tool. This is exploratory concept art for a proposed game direction, not a mesh, orthographic blueprint, or validated mechanical design.
+
+Image: [restore-ship-concept-01.png](restore-ship-concept-01.png)
+
+## Exact prompt
+
+Use case: stylized-concept
+Asset type: first spaceship concept development board for Restore, a tactile WebXR archaeology and reconstruction game.
+Primary request: Design ONE coherent, original alien spacecraft that can eventually be built as a real 3D ship and separated into hundreds of meaningful recoverable mechanical components. This is an exploratory concept, not a claim of a finished engineering blueprint.
+Subject: An ancient alien survey vessel, approximately 24 metres long, 16 metres wide and 7 metres high. Strong memorable silhouette: a long layered central keel, a compact forward sensor/bridge shell, two swept crescent hull arms framing a partly exposed gyroscopic reactor, and two substantial rear bell-engine assemblies. A restrained tall dorsal sensor fin. The design feels plausibly assembled from distinct interlocking physical modules: ribbed reactor spindles, bronze gyroscopic couplers, copper thruster bells, shaped crescent hull plates, ceramic navigation prisms. These forms need recognizable large silhouette differences and visible actual attachment interfaces. A beautiful, elegant found artifact, not a generic human military fighter.
+Composition/framing: Wide landscape professional concept sheet, no text. Upper roughly two thirds is one large, beautifully lit three-quarter view of the WHOLE completed ship on low restoration supports inside a vast enclosed archive warehouse. Keep the entire ship comfortably inside the frame, clearly readable against atmosphere. Beneath, in a clean secondary strip, show a smaller matching assembly study of the SAME ship: central keel and reactor in place with only 6 to 8 major matching subassemblies pulled apart slightly along plausible attachment directions. The exploded study must visibly agree with the completed ship, not show a different design or a cloud of unrelated tiny parts. Include a few loose large recovered components near wooden and metal storage crates to communicate scale and tactile salvage. Nobody holding a weapon.
+Materials/textures: restrained aged copper and oxidized bronze structural hardware, dark satin metallic framing, worn ivory ceramic heat shields, fine turquoise emissive circuit inlays. Layered hull plates with clear purposeful seams and keyed mating surfaces. Surfaces are worn but carefully designed, with legible medium-scale details rather than indiscriminate greebles.
+Lighting/mood: Warm overhead focused warehouse light shafts, cool teal reactor glow, thin volumetric haze and subtle dust. Cinematic and mysterious, but bright enough to understand every major ship part. Rough dark concrete floor, towering trusses and rows of crates receding into shadow. Modest atmospheric background, ship remains the hero.
+Style/medium: High-end grounded science-fiction game concept art with convincing hard-surface forms, painterly realism and crisp industrial-design silhouette. Clear assembly logic and compelling sense of discovery.
+Constraints: no typography, no labels, no numbers, no logos, no watermark, no HUD, no starscape, no explosions, no guns. Preserve one consistent ship between hero and assembly study. Do not imitate a recognizable existing franchise spacecraft.

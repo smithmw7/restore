@@ -2,6 +2,22 @@
 
 A Three.js / WebXR playground for collecting, breaking, and restoring objects. The original bright-room demo is preserved at Git tag **restore-demo-v1** and on `main`. The default **warehouse** branch extends it into an enclosed artifact storehouse.
 
+## Opening discovery prototype 0.6.0
+
+The `opening-discovery` branch adds the first playable office and workshop. Start in the office, explore the desk and lockers, and follow any of the three leads: a notebook and locked photograph case, wearable lifting gauntlets, or workshop bolt cutters and a large shipping container. The case contains three grainy component photographs. The handwritten note and physical lock numerals are the only required puzzle text.
+
+The gauntlets enable the existing warehouse pull, break and repair interactions. Sixteen small procedural mechanism parts sit on the workshop sorting table; eight larger frame sections are prepared when the shipping-container doors open. Bring compatible parts to the neutral work cradle to build a 24-part field mechanism. Physical supports determine the construction order, including placing the core before closing its upper lens. Local light and latch sounds acknowledge successful seating. This prototype does not reveal or implement the full 240-part saucer.
+
+Opening access, equipment, clue discoveries and mechanism installation save locally in the browser. The ordinary restore button recovers loose props and resets the sandbox collection while keeping earned opening/assembly progress. `?sandbox` starts the earlier warehouse interaction layout with all 176 crates and unrestricted powers. A separate new-game UI and deliberate disassembly of installed mechanism parts remain later work.
+
+Run this branch with `npm install` and `npm run dev`, then open `http://127.0.0.1:5211/`. For a stable build, use `npm run build` and `npm run preview` at `http://127.0.0.1:5212/`. `npm run quest` serves that same production port over USB and verifies the matching edition/version before reusing a server. The public play link below continues to follow the `warehouse` branch until this branch is merged and deployed.
+
+On desktop, use WASD and right-drag to look, Q/E to turn, and Shift-click clear floor to teleport. Tap reachable puzzle handles or wheels; hold and drag loose objects. Tapping a glove equips it for desktop testing. Tapping the cutters carries them; a short right-click drops them. In VR, bring a glove to its matching wrist and release, or bring the matching wrist into the cuff and select. Controller grip grabs tools; release drops them. A grip press/release also drops tap-equipped cutters. Existing teleport and snap-turn controls are available before equipment is found.
+
+Checks: `npm run test:opening`, `npm run test:opening-browser` (development server on 5211), `npm run test:opening-audio`, and `npm run test:asset-paths`. Native tests cover progression, shared ownership, physics and completion; browser tests exercise the actual clue/tool pointer chain and persistence. Physical Quest reach, stereo comfort, frame time and sound balance require a headset session.
+
+The [opening photograph atlas](public/textures/opening/archive-photos.png) was generated with the built-in image tool; its [exact prompt](docs/concepts/restore-opening-photographs-prompt.md) is saved. Eight new normalized Foley recordings bring the shared audio preload to 48 clips; sources and measured levels are in [the normalization record](docs/opening-audio-normalization.json).
+
 **[Play Restore](https://smithmw7.github.io/restore/)** · [Public repository](https://github.com/smithmw7/restore)
 
 Open the play link in Quest Browser, wait for the warehouse to load, then select the headset icon and accept the system permission prompt to enter VR. No USB connection, local server, APK or store submission is needed. The same link supports the desktop controls below.
@@ -21,7 +37,7 @@ Open `http://127.0.0.1:5208/restore/` after confirming port 5208 is free.
 
 ## Warehouse
 
-A 96 × 180 × 28 metre enclosed archive with towering steel trusses, long storage aisles, muted clerestory light and warm pendants over the working collection. Lower overall lighting, subtle bloom and warm grading give the room a subdued finish. Fifteen volumetric light shafts, twelve shallow mist banks concentrated in darker storage bays, and 900 drifting dust motes add depth. Dry, mottled concrete uses stronger grain normals, high roughness and a faint, broadly blurred planar reflection. Short-range screen-space ambient occlusion deepens contact under and between nearby items. Global fill is restrained so focused pendant pools and atmospheric beams carry the lighting. There is no visible text, tutorial copy, score, or magnetic-range sphere. The small headset, reset, and sound icons retain accessible names.
+A 96 × 180 × 28 metre enclosed archive with towering steel trusses, long storage aisles, muted clerestory light and warm pendants over the working collection. Lower overall lighting, subtle bloom and warm grading give the room a subdued finish. Fifteen volumetric light shafts, twelve shallow mist banks concentrated in darker storage bays, and 900 drifting dust motes add depth. Dry, mottled concrete uses stronger grain normals, high roughness and a faint, broadly blurred planar reflection. Short-range screen-space ambient occlusion deepens contact under and between nearby items. Global fill is restrained so focused pendant pools and atmospheric beams carry the lighting. There is no tutorial copy, score, or magnetic-range sphere. The opening has a handwritten combination clue and physical lock numerals. The small headset, reset, and sound icons retain accessible names.
 
 - All 176 wooden crates can be lifted, moved, dropped, and broken into six physical panels, including every side, back, and upper tier of the original collection. Removing a supporting box lets its stack fall.
 - All 36 pendant fixtures are attached to fixed ceiling anchors. They remain still until tapped or pulled, swing within their wire length, and gradually return to complete rest after release. Nearby real lights and their volumetric beams follow the moving fixtures; the first pendant owns the single 1024px shadow map so its shadows follow its pool. All fixtures share four render batches. Dust becomes more visible inside the actual beam volumes, while low mist stays subdued to preserve dark contacts.
@@ -99,7 +115,7 @@ npx vite --host 127.0.0.1 --port 5208 --strictPort
 
 ## Audio and materials
 
-The 40 predecoded sounds include timber breaks, quiet wood strain, wood scraping against concrete or other wood, and metal creaks for pulled lamps. Armor On pickups, Heavy Kick drops, artifact stone-dragging loops, and material-specific footstep contacts/snaps remain. Wooden scraping follows the actual contact surface and relative tangential velocity, including rotation; airborne and stationary wood is silent. Low hand targets can press crates and boards against the solid floor for dragging. Wood strain only triggers on constrained contact with cooldown and hysteresis.
+The 48 predecoded sounds include timber breaks, quiet wood strain, wood scraping against concrete or other wood, and metal creaks for pulled lamps. Armor On pickups, Heavy Kick drops, artifact stone-dragging loops, and material-specific footstep contacts/snaps remain. Wooden scraping follows the actual contact surface and relative tangential velocity, including rotation; airborne and stationary wood is silent. Low hand targets can press crates and boards against the solid floor for dragging. Wood strain only triggers on constrained contact with cooldown and hysteresis.
 
 Textures are normalized to -35 LUFS and fade with motion; wood/stone loops stay at or below .12 gain, and distant hanging lights use a .22 cap. Surface changes crossfade after 120 ms of stable contact. At most two loop sources and twelve one-shot voices can coexist. Release fades loops out; reset, mute and complete reconstruction stop them within 15 ms. New timber breaks are matched to -22.39 LUFS and load creaks to -28 LUFS.
 

@@ -1,0 +1,599 @@
+{
+  "requested_targets_by_role_lufs": {
+    "handling": -29.5,
+    "paper": -34.0,
+    "dial": -35.0,
+    "cut": -27.0
+  },
+  "targets_by_role_lufs": {
+    "handling": -29.5,
+    "paper": -34.0,
+    "dial": -35.0,
+    "cut": -27.0
+  },
+  "peak_ceiling_dbtp": -4.0,
+  "method": "48 kHz mono PCM16. Sources trimmed at -60 dBFS with shared prepare-audio.py; fixed excerpts, band filters, 2 ms start and 18 ms terminal fades. Fixed per-clip gain, with common loudness by role and no compressor or limiter. Originals unchanged.",
+  "measurement": "FFmpeg EBU R128 integrated loudness and true peak. Measurements virtually pad clips to at least 0.8 seconds; delivered assets do not include that padding. Encoded outputs are remeasured.",
+  "playback": "Eight single-variant one-shots. Existing Armor On pickup assets equip the gauntlets. Existing soft metal contact helps alignment. Installation is a physical latch; full completion reveal is a separate game milestone. One-shots share the twelve-voice limit and respect mute. No new audio loops.",
+  "validation": "Measured role loudness, true peak at or below -4 dBTP, mono PCM16 format, zero clipped samples, zero-valued excerpt edges, and unchanged original source hashes. Physical headset listening is separate.",
+  "ffmpeg_version": "ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers",
+  "total_bytes": 833248,
+  "clips": [
+    {
+      "family": "drawer",
+      "role": "handling",
+      "description": "Recorded drawer travel for the office drawer.",
+      "source": {
+        "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Opening Drawer 2.wav",
+        "source_sha256": "ca78752f55611087cc18fe227456ce09408b885cea735f30a34525b95bc51d6d",
+        "source_format": {
+          "programs": [],
+          "stream_groups": [],
+          "streams": [
+            {
+              "codec_name": "pcm_s16le",
+              "sample_rate": "44100",
+              "channels": 2,
+              "bits_per_sample": 16
+            }
+          ],
+          "format": {
+            "duration": "1.783628"
+          }
+        },
+        "source_mono_measurement": {
+          "integrated_lufs": -36.12,
+          "true_peak_dbtp": -18.17,
+          "sample_peak_dbfs": -18.166
+        },
+        "source_duration_seconds": 1.783646,
+        "trim_start_seconds": 0.036646,
+        "trim_end_seconds": 1.472687,
+        "before_gain": {
+          "integrated_lufs": -35.63,
+          "true_peak_dbtp": -18.17,
+          "sample_peak_dbfs": -18.166
+        }
+      },
+      "excerpt_offset_after_trim_seconds": 0,
+      "excerpt_duration_seconds": 1.4360416666666667,
+      "filters": "highpass=f=70,lowpass=f=4200",
+      "output": "public/audio/opening/drawer-01.wav",
+      "before_gain": {
+        "integrated_lufs": -36.55,
+        "true_peak_dbtp": -20.45,
+        "sample_peak_dbfs": -20.446
+      },
+      "target_lufs": -29.5,
+      "fixed_gain_db": 7.05,
+      "after_gain": {
+        "integrated_lufs": -29.47,
+        "true_peak_dbtp": -13.4,
+        "sample_peak_dbfs": -13.396
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.436042"
+        }
+      },
+      "output_duration_seconds": 1.436042,
+      "output_bytes": 137938,
+      "output_sha256": "5c629c17f4e9033098a5fad374967d39050629792cc14f7753ece4f65346d54a",
+      "clipped_samples": 0
+    },
+    {
+      "family": "paper",
+      "role": "paper",
+      "description": "Book page Foley for notebook and photograph handling.",
+      "source": {
+        "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ui & Item Sounds - HD Remake/Book page flip 2.wav",
+        "source_sha256": "ba2b25524cda2e4367ce61272eeb075e11924da20527ab8da75d0d821a385c8f",
+        "source_format": {
+          "programs": [],
+          "stream_groups": [],
+          "streams": [
+            {
+              "codec_name": "pcm_s16le",
+              "sample_rate": "48000",
+              "channels": 2,
+              "bits_per_sample": 16
+            }
+          ],
+          "format": {
+            "duration": "2.147313"
+          }
+        },
+        "source_mono_measurement": {
+          "integrated_lufs": -40.7,
+          "true_peak_dbtp": -11.98,
+          "sample_peak_dbfs": -11.981
+        },
+        "source_duration_seconds": 2.147312,
+        "trim_start_seconds": 0.0,
+        "trim_end_seconds": 2.008646,
+        "before_gain": {
+          "integrated_lufs": -40.84,
+          "true_peak_dbtp": -11.98,
+          "sample_peak_dbfs": -11.981
+        }
+      },
+      "excerpt_offset_after_trim_seconds": 0,
+      "excerpt_duration_seconds": 1.0,
+      "filters": "highpass=f=130,lowpass=f=5000",
+      "output": "public/audio/opening/paper-01.wav",
+      "before_gain": {
+        "integrated_lufs": -42.4,
+        "true_peak_dbtp": -18.19,
+        "sample_peak_dbfs": -18.196
+      },
+      "target_lufs": -34.0,
+      "fixed_gain_db": 8.4,
+      "after_gain": {
+        "integrated_lufs": -34.0,
+        "true_peak_dbtp": -9.8,
+        "sample_peak_dbfs": -9.796
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.000000"
+        }
+      },
+      "output_duration_seconds": 1.0,
+      "output_bytes": 96078,
+      "output_sha256": "418787fcb306da6f1208b6de975ec21e1a7cc1ff93eda4f3ac9649ccf9a06f30",
+      "clipped_samples": 0
+    },
+    {
+      "family": "dial",
+      "role": "dial",
+      "description": "A UI-library click used as a mechanical lock detent.",
+      "source": {
+        "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Ui & Item Sounds - HD Remake/Click sound 13.wav",
+        "source_sha256": "8ddc26da2237436efb88674ea2c89f9cad58672434cc1615780c27e098830848",
+        "source_format": {
+          "programs": [],
+          "stream_groups": [],
+          "streams": [
+            {
+              "codec_name": "pcm_s16le",
+              "sample_rate": "48000",
+              "channels": 2,
+              "bits_per_sample": 16
+            }
+          ],
+          "format": {
+            "duration": "0.321417"
+          }
+        },
+        "source_mono_measurement": {
+          "integrated_lufs": -38.45,
+          "true_peak_dbtp": -9.04,
+          "sample_peak_dbfs": -9.036
+        },
+        "source_duration_seconds": 0.321417,
+        "trim_start_seconds": 0.002875,
+        "trim_end_seconds": 0.143208,
+        "before_gain": {
+          "integrated_lufs": -38.45,
+          "true_peak_dbtp": -9.04,
+          "sample_peak_dbfs": -9.036
+        }
+      },
+      "excerpt_offset_after_trim_seconds": 0,
+      "excerpt_duration_seconds": 0.14033333333333334,
+      "filters": "highpass=f=160,lowpass=f=4300",
+      "output": "public/audio/opening/dial-01.wav",
+      "before_gain": {
+        "integrated_lufs": -50.05,
+        "true_peak_dbtp": -20.8,
+        "sample_peak_dbfs": -21.095
+      },
+      "target_lufs": -35.0,
+      "fixed_gain_db": 15.05,
+      "after_gain": {
+        "integrated_lufs": -34.95,
+        "true_peak_dbtp": -5.75,
+        "sample_peak_dbfs": -6.045
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.140333"
+        }
+      },
+      "output_duration_seconds": 0.140333,
+      "output_bytes": 13550,
+      "output_sha256": "87bb030c07134462594f49ccc32d872026fe1316804b658928b680eeb6a57898",
+      "clipped_samples": 0
+    },
+    {
+      "family": "latch",
+      "role": "handling",
+      "description": "Metal trap mechanism Foley for a briefcase latch or fitted part lock.",
+      "source": {
+        "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Metal Trap Opening.wav",
+        "source_sha256": "d7f587e3bd925e7472c9904d9c97dba35b2c4c3e072efbd9931b9e9a37ca1957",
+        "source_format": {
+          "programs": [],
+          "stream_groups": [],
+          "streams": [
+            {
+              "codec_name": "pcm_s16le",
+              "sample_rate": "44100",
+              "channels": 2,
+              "bits_per_sample": 16
+            }
+          ],
+          "format": {
+            "duration": "1.846145"
+          }
+        },
+        "source_mono_measurement": {
+          "integrated_lufs": -29.99,
+          "true_peak_dbtp": -9.07,
+          "sample_peak_dbfs": -9.07
+        },
+        "source_duration_seconds": 1.846146,
+        "trim_start_seconds": 0.022667,
+        "trim_end_seconds": 1.596292,
+        "before_gain": {
+          "integrated_lufs": -29.57,
+          "true_peak_dbtp": -9.07,
+          "sample_peak_dbfs": -9.07
+        }
+      },
+      "excerpt_offset_after_trim_seconds": 0,
+      "excerpt_duration_seconds": 1.573625,
+      "filters": "highpass=f=95,lowpass=f=4200",
+      "output": "public/audio/opening/latch-01.wav",
+      "before_gain": {
+        "integrated_lufs": -34.97,
+        "true_peak_dbtp": -13.9,
+        "sample_peak_dbfs": -13.974
+      },
+      "target_lufs": -29.5,
+      "fixed_gain_db": 5.47,
+      "after_gain": {
+        "integrated_lufs": -29.48,
+        "true_peak_dbtp": -8.43,
+        "sample_peak_dbfs": -8.504
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.573625"
+        }
+      },
+      "output_duration_seconds": 1.573625,
+      "output_bytes": 151146,
+      "output_sha256": "614ae22c7bb8ac65474ec5d0bf8a7bb9997e95f97f5d4474bcf1598f6ffbaa4e",
+      "clipped_samples": 0
+    },
+    {
+      "family": "locker",
+      "role": "handling",
+      "description": "Recorded locker opening with a short metal rattle.",
+      "source": {
+        "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Opening Locker 4.wav",
+        "source_sha256": "23ad9d08776ffe1bb7cc5cd4a2301b6e65fb7fced6bfe93c1d5ab7b4f8626ac6",
+        "source_format": {
+          "programs": [],
+          "stream_groups": [],
+          "streams": [
+            {
+              "codec_name": "pcm_s16le",
+              "sample_rate": "44100",
+              "channels": 2,
+              "bits_per_sample": 16
+            }
+          ],
+          "format": {
+            "duration": "0.923061"
+          }
+        },
+        "source_mono_measurement": {
+          "integrated_lufs": -28.5,
+          "true_peak_dbtp": -5.15,
+          "sample_peak_dbfs": -5.215
+        },
+        "source_duration_seconds": 0.923063,
+        "trim_start_seconds": 0.160833,
+        "trim_end_seconds": 0.632625,
+        "before_gain": {
+          "integrated_lufs": -29.33,
+          "true_peak_dbtp": -5.15,
+          "sample_peak_dbfs": -5.215
+        }
+      },
+      "excerpt_offset_after_trim_seconds": 0,
+      "excerpt_duration_seconds": 0.47179166666666666,
+      "filters": "highpass=f=85,lowpass=f=4500",
+      "output": "public/audio/opening/locker-01.wav",
+      "before_gain": {
+        "integrated_lufs": -30.24,
+        "true_peak_dbtp": -5.62,
+        "sample_peak_dbfs": -5.624
+      },
+      "target_lufs": -29.5,
+      "fixed_gain_db": 0.74,
+      "after_gain": {
+        "integrated_lufs": -29.51,
+        "true_peak_dbtp": -4.88,
+        "sample_peak_dbfs": -4.884
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.471792"
+        }
+      },
+      "output_duration_seconds": 0.471792,
+      "output_bytes": 45370,
+      "output_sha256": "c5face1dddbfa2020a7e6c8ea572362b52a70e8e1cc8f633da034cb11807ab36",
+      "clipped_samples": 0
+    },
+    {
+      "family": "tool",
+      "role": "handling",
+      "description": "Metal tools handling for collecting the bolt cutters.",
+      "source": {
+        "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Metal Tools Foley 5.wav",
+        "source_sha256": "9c8b07764512c7b749c953dc9ba4bd879a9cc8f409bb5114d9985d10660d8e61",
+        "source_format": {
+          "programs": [],
+          "stream_groups": [],
+          "streams": [
+            {
+              "codec_name": "pcm_s16le",
+              "sample_rate": "44100",
+              "channels": 2,
+              "bits_per_sample": 16
+            }
+          ],
+          "format": {
+            "duration": "1.845351"
+          }
+        },
+        "source_mono_measurement": {
+          "integrated_lufs": -37.9,
+          "true_peak_dbtp": -16.71,
+          "sample_peak_dbfs": -16.762
+        },
+        "source_duration_seconds": 1.845354,
+        "trim_start_seconds": 0.077271,
+        "trim_end_seconds": 1.7525,
+        "before_gain": {
+          "integrated_lufs": -37.93,
+          "true_peak_dbtp": -16.71,
+          "sample_peak_dbfs": -16.762
+        }
+      },
+      "excerpt_offset_after_trim_seconds": 0,
+      "excerpt_duration_seconds": 1.6752291666666668,
+      "filters": "highpass=f=95,lowpass=f=4500",
+      "output": "public/audio/opening/tool-01.wav",
+      "before_gain": {
+        "integrated_lufs": -40.96,
+        "true_peak_dbtp": -19.49,
+        "sample_peak_dbfs": -19.492
+      },
+      "target_lufs": -29.5,
+      "fixed_gain_db": 11.46,
+      "after_gain": {
+        "integrated_lufs": -29.51,
+        "true_peak_dbtp": -8.03,
+        "sample_peak_dbfs": -8.032
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.675229"
+        }
+      },
+      "output_duration_seconds": 1.675229,
+      "output_bytes": 160900,
+      "output_sha256": "fe1d9049785620deb7089334ccb2a6c6342de1cfc9117919068dbf54244fdfaa",
+      "clipped_samples": 0
+    },
+    {
+      "family": "cut",
+      "role": "cut",
+      "description": "Metal trap closure used as a cutter fastener snap; not a bolt-cutting source recording.",
+      "source": {
+        "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Metal Trap Closing 2.wav",
+        "source_sha256": "7be021fc71c6526235814f59621aff8d19fca175bdce1fc3d1609bade69d3089",
+        "source_format": {
+          "programs": [],
+          "stream_groups": [],
+          "streams": [
+            {
+              "codec_name": "pcm_s16le",
+              "sample_rate": "44100",
+              "channels": 2,
+              "bits_per_sample": 16
+            }
+          ],
+          "format": {
+            "duration": "1.384603"
+          }
+        },
+        "source_mono_measurement": {
+          "integrated_lufs": -16.16,
+          "true_peak_dbtp": -1.05,
+          "sample_peak_dbfs": -1.051
+        },
+        "source_duration_seconds": 1.384604,
+        "trim_start_seconds": 0.00675,
+        "trim_end_seconds": 0.732896,
+        "before_gain": {
+          "integrated_lufs": -16.22,
+          "true_peak_dbtp": -1.05,
+          "sample_peak_dbfs": -1.051
+        }
+      },
+      "excerpt_offset_after_trim_seconds": 0,
+      "excerpt_duration_seconds": 0.7261458333333334,
+      "filters": "highpass=f=100,lowpass=f=4800",
+      "output": "public/audio/opening/cut-01.wav",
+      "before_gain": {
+        "integrated_lufs": -17.47,
+        "true_peak_dbtp": -2.13,
+        "sample_peak_dbfs": -2.128
+      },
+      "target_lufs": -27.0,
+      "fixed_gain_db": -9.53,
+      "after_gain": {
+        "integrated_lufs": -26.99,
+        "true_peak_dbtp": -11.66,
+        "sample_peak_dbfs": -11.659
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.726146"
+        }
+      },
+      "output_duration_seconds": 0.726146,
+      "output_bytes": 69788,
+      "output_sha256": "e43e853368f9d40e14023720bdb2c2c6d2158c4d32bd8ba73e5c0716200ea479",
+      "clipped_samples": 0
+    },
+    {
+      "family": "hinge",
+      "role": "handling",
+      "description": "A door creak excerpt for heavy container hinges; original door material unspecified.",
+      "source": {
+        "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Door Creak 4.wav",
+        "source_sha256": "bee1a054bdfadb99643d4f0e12c085e85bf70839a20ef14ad1f468064ffa1140",
+        "source_format": {
+          "programs": [],
+          "stream_groups": [],
+          "streams": [
+            {
+              "codec_name": "pcm_s16le",
+              "sample_rate": "44100",
+              "channels": 2,
+              "bits_per_sample": 16
+            }
+          ],
+          "format": {
+            "duration": "3.004807"
+          }
+        },
+        "source_mono_measurement": {
+          "integrated_lufs": -28.21,
+          "true_peak_dbtp": -12.61,
+          "sample_peak_dbfs": -12.646
+        },
+        "source_duration_seconds": 3.004812,
+        "trim_start_seconds": 0.008521,
+        "trim_end_seconds": 2.781104,
+        "before_gain": {
+          "integrated_lufs": -28.07,
+          "true_peak_dbtp": -12.61,
+          "sample_peak_dbfs": -12.646
+        }
+      },
+      "excerpt_offset_after_trim_seconds": 0.2,
+      "excerpt_duration_seconds": 1.65,
+      "filters": "highpass=f=95,lowpass=f=2800",
+      "output": "public/audio/opening/hinge-01.wav",
+      "before_gain": {
+        "integrated_lufs": -27.11,
+        "true_peak_dbtp": -13.43,
+        "sample_peak_dbfs": -13.486
+      },
+      "target_lufs": -29.5,
+      "fixed_gain_db": -2.39,
+      "after_gain": {
+        "integrated_lufs": -29.49,
+        "true_peak_dbtp": -15.82,
+        "sample_peak_dbfs": -15.876
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.650000"
+        }
+      },
+      "output_duration_seconds": 1.65,
+      "output_bytes": 158478,
+      "output_sha256": "72f2f441deafb75da1e179d23acd4784a59e394097166137fb1496b6b78cd0fa",
+      "clipped_samples": 0
+    }
+  ]
+}

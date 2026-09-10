@@ -103,7 +103,7 @@ try {
     } finally { audio.stopDrag({ immediate: true }); await realContext.close(); window.AudioContext = NativeContext; }
   });
   const c = result.checkpoints;
-  assert.equal(c.decoded.loaded, 40); assert.equal(c.decoded.expected, 40);
+  assert.equal(c.decoded.loaded, 48); assert.equal(c.decoded.expected, 48);
   assert.equal(result.contextState, 'running');
   assert.match(c.timber1.lastClip, /actions\/timber-break-/);
   assert.match(c.timber2.lastClip, /actions\/timber-break-/);
@@ -145,7 +145,7 @@ try {
   assert.ok(result.sampleStarts.length > 20);
   assert.ok(result.sampleStarts.every(sample => sample.duration > .01 && sample.rms > .0001));
   assert.deepEqual(errors, []);
-  const checks = ['40 real WAVs decode and timber breaks alternate, with original nonwood breaks/pickups/drops intact',
+  const checks = ['48 real WAVs decode and timber breaks alternate, with original nonwood breaks/pickups/drops intact',
     'wood texture requires actual sliding contact, follows spatial position, and fades when still or airborne',
     'contact chatter is debounced and stable wood/concrete changes crossfade within a two-loop budget',
     'wood strain uses hysteresis and cooldown; lamp metal creaks require actual held motion',

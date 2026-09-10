@@ -81,9 +81,12 @@ function createPanelDefinitions(spec) {
 
 /** One physical world for packed crates, revealed artifacts, and loose pieces. */
 export async function createWarehouseGameplay({ scene, materials = {}, onEvent = () => {}, onProgress = () => {}, onChange = () => {},
-  obstacles = [], bounds = WAREHOUSE_BOUNDS, crateCount = 24, seed = 1701, additionalCrates = [],
+  obstacles = [], bounds = WAREHOUSE_BOUNDS, crateCount = 24, seed = 1701, additionalCrates = [], excludeRegions = [],
 } = {}) {
-  const crateSpecs = [...createCrateSpecs(crateCount, seed), ...additionalCrates].map((spec, index) => ({ ...spec, index }));
+  const crateSpecs = [...createCrateSpecs(crateCount, seed), ...additionalCrates].filter(spec => {
+    const box = new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(spec.x,spec.y,spec.z),new THREE.Vector3(spec.width+.2,spec.height,spec.depth+.2));
+    return !excludeRegions.some(region=>region.intersectsBox(box));
+  }).map((spec, index) => ({ ...spec, index }));
   const targets = [];
   const grabTargets = [];
   const occluders = [];
@@ -486,5 +489,5 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
 
   ready = true;
   refreshTargets(); notify();
-  return { targets, grabTargets, occluders, hit, nudge, beginGrab, moveGrab, endGrab, cancelGrabs, restore, step, getGrabState, getState, getObstacles, dispose };
+  return { targets, grabTargets, occluders, hit, nudge, beginGrab, moveGrab, endGrab, cancelGrabs, restore, step, getGrabState, getState, getObstacles, dispose, physicsWorld: world };
 }

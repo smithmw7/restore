@@ -12,6 +12,10 @@ import { createHoldPull, stepHoldPull, adjustHoldDistance } from './hold-pull.js
 import { dispatchTap } from './tap-influence.js';
 import { createSceneInteractions } from './scene-interactions.js';
 import { createRestorePostprocessing } from './postprocessing.js';
+import { createOpeningEnvironment } from './opening-environment.js';
+import { createOpeningPuzzles } from './opening-puzzles.js';
+import { createOpeningAssembly } from './opening-assembly.js';
+import { createOpeningInteractions } from './opening-interactions.js';
 
 const canvas=document.querySelector('#scene');
 const scene=new THREE.Scene();
@@ -28,7 +32,9 @@ function resetDesktopCamera(){camera.position.set(0,1.65,0);camera.rotation.set(
 resetDesktopCamera();
 const postprocessing=createRestorePostprocessing(renderer);
 const audio=createRestoreAudio();
-let lab,warehouse,metalStorage,atmosphere,locomotion,ready=false,xrSupported=false,muted=false,lastTime=0,frameDelta=0;
+let lab,warehouse,metalStorage,atmosphere,locomotion,opening,openingEnvironment,assembly,ready=false,xrSupported=false,muted=false,lastTime=0,frameDelta=0;
+const openingEnabled=!new URLSearchParams(location.search).has('sandbox');
+let saveStorage;try{saveStorage=localStorage;}catch{}
 let xrFrames=0,selectCount=0,contactCount=0,lastInput='none',sessionError=null,sessionVisibility=null;
 let lastTap=null;
 const raycaster=new THREE.Raycaster(),rotation=new THREE.Matrix4(),point=new THREE.Vector3(),direction=new THREE.Vector3();
@@ -43,6 +49,7 @@ const ui={vr:document.querySelector('#enter-vr'),sound:document.querySelector('#
 function objectAudio(mesh){return mesh?.userData.soundId||mesh?.userData.labObject||'cube';}
 function handleEvent(event){
   const {type,position,strength=1}=event,id=event.soundId||event.objectId,spatial=renderer.xr.isPresenting;
+  if(type==='puzzle'){audio.unlock();if(event.action==='drop')audio.playDrop(id||'tablet',position,spatial);else audio.playPuzzle?.(event.action,position,spatial);return;}
   if(type==='pickup'){audio.unlock();audio.playPickup(id,position,spatial);if(!event.complete||event.whole)audio.startDrag(id,position,spatial,{kind:event.kind});}
   if(type==='break')audio.playBreak(id,position,spatial);
   if(type==='enddrag')audio.stopDrag({immediate:event.reason!=='release'});
@@ -74,8 +81,11 @@ function intersect(){
   if(!hit)return null;
   // Structural walls and beams also stop selection rays.
   for(const box of warehouse.obstacles){const blocked=raycaster.ray.intersectBox(box,point);if(blocked&&blocked.distanceTo(raycaster.ray.origin)<hit.distance-.025)return null;}
+  for(const box of opening?.getObstacles()||[]){const blocked=raycaster.ray.intersectBox(box,point);if(blocked&&blocked.distanceTo(raycaster.ray.origin)<hit.distance-.075)return null;}
   return rememberHitPoint(hit);
 }
+function inputContext(input){return {handId:input?.id||'pointer',handedness:input?.source?.handedness||'right',kind:input?.kind||'desktop',viewerPosition:tapViewerPosition};}
+function powerAvailable(input){return !opening||(input?opening.canPower(input.source?.handedness||'right'):opening.canPower('right')||opening.canPower('left'));}
 function rememberHitPoint(hit){
   hit.object.updateWorldMatrix(true,false);
   hit.localPoint=hit.object.worldToLocal(hit.point.clone());
@@ -94,6 +104,8 @@ function tapHit(hit,input){
   clearHover();
   const viewer=renderer.xr.isPresenting?renderer.xr.getCamera():camera;
   viewer.getWorldPosition(tapViewerPosition);
+  if(opening?.owns(hit.object))return !!opening.tap(hit.object,hit.point,inputContext(input));
+  if(!powerAvailable(input)||assembly?.owns(hit.object))return false;
   const effect=dispatchTap(lab,hit,tapViewerPosition,raycaster.ray.direction);
   if(effect){
     lastTap={...effect,objectId:hit.object.userData.labObject};
@@ -118,7 +130,10 @@ function holdPullFor(mesh,hitPoint){
   return createHoldPull(Math.max(.85,reach+.38));
 }
 function startGrab(input,hit,button='select'){
-  if(!hit||!lab.beginGrab(hit.object,hit.point,input.id))return false;
+  if(!hit||(!opening?.owns(hit.object)&&!powerAvailable(input)))return false;
+  camera.getWorldPosition(tapViewerPosition);if(renderer.xr.isPresenting)renderer.xr.getCamera().getWorldPosition(tapViewerPosition);
+  if(!opening?.owns(hit.object))opening?.releaseTool(input.id);
+  if(!lab.beginGrab(hit.object,hit.point,input.id,inputContext(input)))return false;
   clearHover();input.grabbing=true;input.grabButton=button;input.grabKind=hit.object.userData.kind;input.near=!!hit.near;input.grabDistance=Math.max(.15,hit.distance);
   input.previousHandDepth=input.contactValid?input.contactPoint.distanceTo(viewerPosition):null;input.manualHandDepth=input.previousHandDepth;
   input.holdPull=holdPullFor(hit.object,hit.point);input.pending=null;lastInput=`${input.kind}-grab`;return true;
@@ -145,11 +160,11 @@ for(let i=0;i<2;i++){
   controller.addEventListener('selectstart',()=>{
     if(!ready)return;audio.unlock();selectCount++;inputRay(input);
     if(palmTurns.visible){const turn=raycaster.intersectObjects(turnButtons,false)[0];if(turn){locomotion.turn(turn.object.userData.turn);return;}}
-    if(input.grabbing){if(input.grabButton==='grip'){const held=lab.getGrabState().heldMesh;endInputGrab(input);if(held)tapHit({object:held,point:held.getWorldPosition(new THREE.Vector3())},input);}return;}
+    if(input.grabbing){if(input.grabButton==='grip'){const held=lab.getGrabState().heldMesh;if(opening?.owns(held)){const hit=intersect();if(hit)tapHit(hit,input);}else{endInputGrab(input);if(held)tapHit({object:held,point:held.getWorldPosition(new THREE.Vector3())},input);}}return;}
     if(locomotion.isAiming(input))return;
     const hit=chooseHit(input);
     if(hit){
-      if(['fragment','crate-piece'].includes(hit.object.userData.kind)||Number.isInteger(hit.object.userData.fragmentIndex))startGrab(input,hit);
+      if(['fragment','crate-piece','mechanism-part'].includes(hit.object.userData.kind)||Number.isInteger(hit.object.userData.fragmentIndex))startGrab(input,hit);
       else input.pending={hit,time:performance.now()};
     }else if(input.source?.hand)locomotion.beginAim(input);
   });
@@ -159,7 +174,7 @@ for(let i=0;i<2;i++){
     endInputGrab(input,'select');if(locomotion.isAiming(input))locomotion.endAim(input,true);
   });
   controller.addEventListener('squeezestart',()=>{if(!ready||input.grabbing)return;inputRay(input);input.pending=null;startGrab(input,chooseHit(input),'grip');});
-  controller.addEventListener('squeezeend',()=>endInputGrab(input,'grip'));
+  controller.addEventListener('squeezeend',()=>{if(input.grabbing)endInputGrab(input,'grip');else opening?.releaseTool(input.id);});
 }
 function updateXRInputs(time,frame,dt){
   palmTurns.visible=false;
@@ -184,6 +199,7 @@ function updateXRInputs(time,frame,dt){
     input.touchSpeed=input.contactValid&&input.hadContact?input.touchPoint.distanceTo(input.previousTouch)/Math.max(frameDelta,.008):0;
     if(input.contactValid)input.previousTouch.copy(input.touchPoint);input.hadContact=input.contactValid;
     if(input.pending&&time-input.pending.time>190)startGrab(input,input.pending.hit);
+    if(input.grabbing&&!lab.getGrabState().active){input.grabbing=false;input.clearContact=true;}
     if(input.grabbing){
       beam.visible=false;
       if(input.near){if(input.contactValid)lab.moveGrab(input.contactPoint,input.id);else{lab.endGrab(input.id,{cancelled:true});input.grabbing=false;}}
@@ -216,14 +232,17 @@ function updateXRInputs(time,frame,dt){
 
 function pointerRay(event){const rect=canvas.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1),camera);}
 function beginDesktopGrab(hit,event){
-  if(!lab.beginGrab(hit.object,hit.point,'pointer'))return false;
+  if(!opening?.owns(hit.object)&&!powerAvailable())return false;
+  camera.getWorldPosition(tapViewerPosition);
+  if(!opening?.owns(hit.object))opening?.releaseTool('pointer');
+  if(!lab.beginGrab(hit.object,hit.point,'pointer',inputContext()))return false;
   desktopGrab={point:hit.point.clone(),id:event.pointerId,holdPull:holdPullFor(hit.object,hit.point)};camera.getWorldDirection(direction);dragPlane.setFromNormalAndCoplanarPoint(direction,hit.point);clearHover();canvas.style.cursor='grabbing';return true;
 }
 canvas.addEventListener('contextmenu',event=>event.preventDefault());
 canvas.addEventListener('pointerdown',event=>{
   if(!ready||renderer.xr.isPresenting)return;audio.unlock();pointerRay(event);const hit=intersect();
   pointerState={x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,button:event.button,time:performance.now(),hit,pointerId:event.pointerId};canvas.setPointerCapture(event.pointerId);
-  if(event.button===0&&hit&&(['fragment','crate-piece'].includes(hit.object.userData.kind)||Number.isInteger(hit.object.userData.fragmentIndex)))beginDesktopGrab(hit,event);
+  if(event.button===0&&hit&&(['fragment','crate-piece','mechanism-part'].includes(hit.object.userData.kind)||Number.isInteger(hit.object.userData.fragmentIndex)))beginDesktopGrab(hit,event);
   if(event.button===0&&event.shiftKey){const ground=new THREE.Plane(new THREE.Vector3(0,1,0),0);if(raycaster.ray.intersectPlane(ground,point))locomotion.teleportTo(point);pointerState=null;}
 });
 canvas.addEventListener('pointermove',event=>{
@@ -242,6 +261,7 @@ canvas.addEventListener('pointerup',event=>{
   if(renderer.xr.isPresenting)return;
   if(desktopGrab){lab.endGrab('pointer');desktopGrab=null;clearHover();}
   else if(pointerState?.button===0&&pointerState.hit){pointerRay(event);tapHit(pointerState.hit);}
+  else if(pointerState?.button===2&&Math.hypot(event.clientX-pointerState.x,event.clientY-pointerState.y)<6)opening?.releaseTool('pointer');
   pointerState=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
 });
 canvas.addEventListener('wheel',event=>{
@@ -255,6 +275,7 @@ addEventListener('keydown',event=>{
 });
 addEventListener('keyup',event=>keys.delete(event.code));addEventListener('blur',()=>{keys.clear();cancelInteractions();locomotion?.reset();});
 function updateDesktop(dt,time){
+  if(desktopGrab&&!lab.getGrabState().active){desktopGrab=null;pointerState=null;clearHover();}
   if(pointerState?.button===0&&pointerState.hit&&!desktopGrab&&time-pointerState.time>190)beginDesktopGrab(pointerState.hit,pointerState);
   if(desktopGrab){
     camera.getWorldPosition(viewerPosition);direction.copy(desktopGrab.point).sub(viewerPosition);const distance=direction.length();direction.normalize();
@@ -293,19 +314,34 @@ function update(dt,time,frame){
     xrFrames++;
     if(sessionVisibility==='visible'){updateXRInputs(time,frame,dt);locomotion.update(dt,inputs);}else palmTurns.visible=false;
   }else {updateDesktop(dt,time);camera.getWorldPosition(viewerPosition);}
+  if(opening){
+    const poses=[];
+    if(renderer.xr.isPresenting){for(const input of inputs)if(input.source&&input.controller.visible){
+      const tracked=input.source.hand?input.hand.joints?.wrist:input.grip;
+      if(tracked?.visible!==false)poses.push({handId:input.id,handedness:input.source.handedness,position:(tracked||input.controller).getWorldPosition(new THREE.Vector3()),quaternion:(tracked||input.controller).getWorldQuaternion(new THREE.Quaternion())});
+    }}else{
+      const q=camera.getWorldQuaternion(new THREE.Quaternion());
+      for(const [side,x] of [['left',-.23],['right',.23]])poses.push({handId:side==='left'?'pointer-left':'pointer',handedness:side,position:new THREE.Vector3(x,-.30,-.65).applyQuaternion(q).add(viewerPosition),quaternion:q.clone()});
+    }
+    opening.updateHands(poses);
+  }
   lab.step(dt);warehouse.update(dt,time/1000);
   atmosphere.update(dt,time/1000,viewerPosition);
   const grab=lab.getGrabState();if(grab.active)audio.updateDrag({position:point.fromArray(grab.anchor),speed:grab.speed,kind:grab.kind,surface:grab.surface,scrapeSpeed:grab.scrapeSpeed,load:grab.load});
 }
 renderer.setAnimationLoop((time,frame)=>{frameDelta=lastTime?Math.min((time-lastTime)/1000,.05):1/72;lastTime=time;update(frameDelta,time,frame);renderer.info.reset();postprocessing.render(scene,camera);});
 window.advanceTime=ms=>{for(let i=0;i<Math.max(1,Math.round(ms/(1000/72)));i++)update(1/72,performance.now());renderer.info.reset();postprocessing.render(scene,camera);};
-function project(mesh){const p=mesh.getWorldPosition(new THREE.Vector3()),screen=p.clone().project(camera);return {id:mesh.userData.labObject,uuid:mesh.uuid,kind:mesh.userData.kind,position:p.toArray(),screen:{x:Math.round((screen.x*.5+.5)*innerWidth),y:Math.round((-screen.y*.5+.5)*innerHeight)}};}
+function project(mesh){const p=mesh.getWorldPosition(new THREE.Vector3()),screen=p.clone().project(camera);return {id:mesh.userData.labObject||mesh.userData.openingId||mesh.name,uuid:mesh.uuid,kind:mesh.userData.kind,position:p.toArray(),screen:{x:Math.round((screen.x*.5+.5)*innerWidth),y:Math.round((-screen.y*.5+.5)*innerHeight)}};}
 window.render_game_to_text=()=>JSON.stringify({app:'Restore',version:'warehouse',ready,coordinateSystem:'Meters, +Y up, -Z forward.',mode:renderer.xr.isPresenting?'immersive-vr':'desktop',...lab?.getState(),objectStates:lab?.getState().objects,objects:(lab?.targets||[]).filter(x=>x.visible).map(project),pieces:(lab?.grabTargets||[]).filter(x=>x.visible).map(project),locomotion:locomotion?.getState(),warehouse:warehouse?.stats,postprocessing:postprocessing.getState(),mode:renderer.xr.isPresenting?'immersive-vr':'desktop',xr:{supported:xrSupported,presenting:renderer.xr.isPresenting,frames:xrFrames,selectCount,contactCount,lastInput,visibility:sessionVisibility,error:sessionError,frameMs:Math.round(frameDelta*1000),sources:inputs.filter(x=>x.source).map(x=>({kind:x.kind,handedness:x.source.handedness,tracked:x.controller.visible}))}});
 window.__restoreDiagnostics=()=>({secureContext:isSecureContext,webxr:!!navigator.xr,state:JSON.parse(window.render_game_to_text()),audio:audio.getState(),input:{lastTap,desktopGrab:desktopGrab?{point:desktopGrab.point.toArray(),normal:dragPlane.normal.toArray(),constant:dragPlane.constant}:null,camera:{position:camera.getWorldPosition(new THREE.Vector3()).toArray(),quaternion:camera.getWorldQuaternion(new THREE.Quaternion()).toArray(),fov:camera.fov,aspect:camera.aspect}},drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries});
 try{
   await refreshXR();
   const [materials]=await Promise.all([loadWarehouseMaterials(),audio.load()]);
   warehouse=createWarehouse({scene,renderer,materials,onEvent:handleEvent});
+  if(openingEnabled){
+    openingEnvironment=createOpeningEnvironment({scene,materials});warehouse.obstacles.push(...openingEnvironment.obstacles);warehouse.stats.opening=openingEnvironment.stats;
+    rig.position.copy(openingEnvironment.spawn.position);rig.updateMatrixWorld(true);camera.lookAt(openingEnvironment.spawn.lookAt);
+  }
   metalStorage=createMetalStorage({scene,materials,bounds:warehouse.bounds});
   warehouse.stats.structuralObstacleCount=warehouse.obstacles.length;
   warehouse.obstacles.push(...metalStorage.obstacles);
@@ -313,8 +349,20 @@ try{
   warehouse.stats.metalStorage=metalStorage.stats;
   atmosphere=createArchiveAtmosphere({scene,renderer,bounds:warehouse.bounds,lights:warehouse.atmosphereLights});
   warehouse.stats.atmosphere=atmosphere.stats;
-  lab=await createWarehouseGameplay({scene,materials,bounds:warehouse.bounds,obstacles:warehouse.obstacles,additionalCrates:warehouse.storageCrates,onEvent:handleEvent});
+  const excludeRegions=openingEnabled?[
+    new THREE.Box3(new THREE.Vector3(-9.5,0,-1),new THREE.Vector3(-4.5,6,6.6)),
+    new THREE.Box3(new THREE.Vector3(4.6,0,2.8),new THREE.Vector3(7.4,6,6.8)),
+  ]:[];
+  lab=await createWarehouseGameplay({scene,materials,bounds:warehouse.bounds,obstacles:warehouse.obstacles,additionalCrates:warehouse.storageCrates,excludeRegions,onEvent:handleEvent});
+  if(openingEnabled){
+    const world=lab.physicsWorld;
+    opening=createOpeningPuzzles({scene,world,storage:saveStorage,onEvent:handleEvent});
+    await opening.loadPhotos?.();
+    assembly=createOpeningAssembly({scene,world,materials,storage:saveStorage,onEvent:handleEvent,containerOpen:()=>opening.doorOpen});
+  }
   lab=createSceneInteractions(lab,warehouse.hangingLights);
+  if(opening)lab=createOpeningInteractions(lab,opening,assembly);
   locomotion=createLocomotion({scene,rig,camera,renderer,bounds:warehouse.bounds,getObstacles:()=>lab.getObstacles?.()||warehouse.obstacles,onBeforeMove:cancelInteractions});
   ready=true;document.body.classList.add('ready');ui.loader.hidden=true;ui.reset.disabled=false;updateVRButton();
+  if(import.meta.env.DEV)window.__restoreOpening={scene,opening,assembly,lab,camera,rig,locomotion,view(position,target){cancelInteractions();if(!locomotion.teleportTo(new THREE.Vector3(...position)))return false;camera.lookAt(new THREE.Vector3(...target));return true;}};
 }catch(error){console.error(error);sessionError=error.message;ui.loader.classList.add('error');ui.loader.setAttribute('aria-label',`Loading failed: ${error.message}`);}

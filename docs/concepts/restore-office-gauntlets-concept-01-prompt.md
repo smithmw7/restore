@@ -1,0 +1,16 @@
+# Restore office and gauntlets: generation record
+
+Generated with the built-in image generation tool. This is an environment and wearable-tool concept reference, not implemented scene geometry or a final equipment model.
+
+Image: [restore-office-gauntlets-concept-01.png](restore-office-gauntlets-concept-01.png)
+
+## Exact prompt
+
+Use case: stylized-concept
+Asset type: opening environment and wearable-tool concept board for Restore, a relaxed WebXR discovery game.
+Primary request: A small enclosed office just inside the front entrance of an immense mysterious archive warehouse, with stacks of workbooks and logbooks, several metal lockers, and a pair of advanced gauntlet wrist gloves discovered inside one open locker. The viewer and player must have NO clue that a spacecraft will eventually be assembled here.
+Composition: Wide landscape concept image. Main image occupies about three quarters: an inviting, believable human-scale office at natural eye height, showing the entrance, a desk with stacks of worn bound workbooks and logbooks, shelves, a warm task lamp, and a row of aged metal lockers. One locker is open, with a matching pair of distinctive technological wrist gloves on a low accessible shelf, clearly visible and subtly lit. Through interior glazing and an open office doorway, a vast much taller warehouse recedes into mist, trusses, warm shafts of light and countless wooden and metal crates. No giant machine, craft, skeleton or assembly silhouette is visible. The small office feels nested inside the enormous building.
+Secondary study: a small separate close view of the SAME matching pair of wrist gauntlets on a neutral workshop surface. The gauntlets are compact wearable restoration tools, with open fingers, articulated dark palm straps, comfortable fabric/leather lining, bronze and aged ivory hardware over the back of the hand and wrist, a small luminous teal inlay, and a subtle circular field emitter. Clearly left and right tools with plausible wearable openings and straps. Not weapons, no gun barrels, no giant armor mitts. The emitter suggests precision manipulation and sensing, not a projected interface.
+Materials and mood: warm lived-in office, faded olive-gray metal cabinets, aged paper and leather book covers, rough concrete floor, aged copper and ivory tool hardware, quiet teal glints. Excellent tactile material detail, dust in soft light, a sense of patient discovery and abandoned work without horror. Maintain readability rather than crushing everything into black.
+Style: polished realistic science-fiction game environment concept art; grounded industrial design, careful composition, coherent architecture and clear object silhouettes.
+Constraints: NO spacecraft, no complete machine blueprint, no cockpit, no ship imagery, no engine exhaust, no galaxy maps. No instructional text, captions, labels, numbers, logos, watermark or HUD. Books may show abstract rubbings or isolated ambiguous object sketches, but no readable writing and no diagrams revealing a larger vehicle. No characters required. Keep the gloves recognizable between the office locker and the close view. This is a new opening-scene concept, not an edit to the ship illustration.

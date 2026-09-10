@@ -6,10 +6,28 @@ const OBJECT_SOUNDS = Object.freeze({
 });
 const REPAIR_FAMILIES = ['pickup', 'drop', 'drag', ...FAMILIES.map(family => `hit-${family}`)];
 const ACTION_FAMILIES = ['timber-break', 'wood-creak', 'scrape-wood-concrete', 'scrape-wood-wood', 'metal-creak'];
+const OPENING_FAMILIES = ['drawer', 'paper', 'dial', 'latch', 'locker', 'tool', 'cut', 'hinge'];
+// Quiet physical Foley. A mechanical fit differs from playComplete's reveal,
+// which the game reserves for real milestones.
+const PUZZLE_SOUNDS = Object.freeze({
+  drawer: { family: 'drawer', gain: .72 },
+  notebook: { family: 'paper', gain: .66 },
+  dial: { family: 'dial', gain: .7, cooldown: .04 },
+  'case-open': { family: 'latch', gain: .72 },
+  locker: { family: 'locker', gain: .65 },
+  equip: { folder: 'repair', family: 'pickup', gain: .58, variants: 2, priority: 3 },
+  'cutter-pickup': { family: 'tool', gain: .65 },
+  cut: { family: 'cut', gain: .8, priority: 3 },
+  'container-door': { family: 'hinge', gain: .78 },
+  photo: { family: 'paper', gain: .42 },
+  align: { folder: 'repair', family: 'hit-metal-light', gain: .16, variants: 2, cooldown: .28 },
+  install: { family: 'latch', gain: .88, priority: 3 },
+});
 const ALL_CLIPS = [
   ...FAMILIES.flatMap(family => [1, 2].map(variant => clipUrl('breaks', family, variant))),
   ...REPAIR_FAMILIES.flatMap(family => [1, 2].map(variant => clipUrl('repair', family, variant))),
   ...ACTION_FAMILIES.flatMap(family => [1, 2].map(variant => clipUrl('actions', family, variant))),
+  ...OPENING_FAMILIES.map(family => clipUrl('opening', family, 1)),
 ];
 const MAX_VOICES = 12;
 const MAX_DRAG_GAIN = 0.12;
@@ -37,6 +55,7 @@ export function createRestoreAudio() {
   const buffers = new Map(), previousVariants = new Map(), voices = new Set();
   const revealVoices = new Set();
   const eventCounts = {}, lastEvents = [], lastObjectContact = new Map(), retiringDrags = new Set();
+  const lastPuzzle = new Map();
 
   function getContext() {
     if (context) return context;
@@ -103,7 +122,8 @@ export function createRestoreAudio() {
     if (lastEvents.length > 20) lastEvents.shift();
   }
 
-  function choose(folder, family) {
+  function choose(folder, family, variants = 2) {
+    if (variants === 1) return clipUrl(folder, family, 1);
     const key = `${folder}/${family}`;
     const last = previousVariants.get(key);
     const variant = last ? 3 - last : 1 + Math.floor(Math.random() * 2);
@@ -121,9 +141,9 @@ export function createRestoreAudio() {
     return true;
   }
 
-  function playClip(type, objectId, folder, family, position, spatial, volume, priority = 1) {
+  function playClip(type, objectId, folder, family, position, spatial, volume, priority = 1, variants = 2) {
     if (muted) return false;
-    const url = choose(folder, family), buffer = buffers.get(url);
+    const url = choose(folder, family, variants), buffer = buffers.get(url);
     if (!buffer || !reserveVoice(priority)) return false;
     unlock();
     const source = context.createBufferSource(), gain = context.createGain();
@@ -144,6 +164,19 @@ export function createRestoreAudio() {
   function playBreak(objectId, position, spatial = false) {
     const family = OBJECT_SOUNDS[objectId] || 'concrete';
     return playClip('break', objectId, family === 'wood' ? 'actions' : 'breaks', family === 'wood' ? 'timber-break' : family, position, spatial, 1, 3);
+  }
+
+  /** One-shot opening interaction at the touched object rather than the UI. */
+  function playPuzzle(action, position, spatial = false) {
+    if (!Object.hasOwn(PUZZLE_SOUNDS, action) || muted || !context) return false;
+    const sound = PUZZLE_SOUNDS[action], now = context.currentTime;
+    // Alignment may be sampled by a held piece. Dial notches can be rapid,
+    // but neither should allocate a new source every render frame.
+    if (now - (lastPuzzle.get(action) ?? -Infinity) < (sound.cooldown ?? .09)) return false;
+    const played = playClip(`puzzle:${action}`, action, sound.folder ?? 'opening', sound.family,
+      position, spatial, sound.gain, sound.priority ?? 2, sound.variants ?? 1);
+    if (played) lastPuzzle.set(action, now);
+    return played;
   }
 
   function chime(frequencies, volume = 0.03, position, spatial = false) {
@@ -174,6 +207,7 @@ export function createRestoreAudio() {
   function playRestore() {
     stopDrag({ immediate: true });
     cancelReveals();
+    lastPuzzle.clear();
     if (muted) return;
     chime([392, 494, 587, 784], 0.06);
     quietContactsUntil = context.currentTime + 0.3;
@@ -450,7 +484,7 @@ export function createRestoreAudio() {
   }
 
   return {
-    load, unlock, playBreak, playRestore, setMuted, updateListener, getState,
+    load, unlock, playBreak, playPuzzle, playRestore, setMuted, updateListener, getState,
     playPickup, startDrag, updateDrag, stopDrag, playDrop, playCollision, playNudge, playSnap, playComplete, playDock,
   };
 }
