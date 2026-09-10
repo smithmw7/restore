@@ -1,6 +1,6 @@
 {
   "name": "restore",
-  "version": "0.4.9",
+  "version": "0.4.10",
   "private": true,
   "type": "module",
   "scripts": {
@@ -43,7 +43,9 @@
     "test:completion": "node scripts/completion-check.mjs",
     "test:completion-browser": "node scripts/completion-browser.mjs",
     "test:completion-audio": "node scripts/completion-audio-check.mjs",
-    "test:ambient-occlusion": "node scripts/ambient-occlusion-browser.mjs"
+    "test:ambient-occlusion": "node scripts/ambient-occlusion-browser.mjs",
+    "build:pages": "vite build --base=/restore/ --outDir=dist-pages",
+    "test:asset-paths": "node scripts/asset-path-check.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

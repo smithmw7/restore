@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+const ASSET_BASE = import.meta.env?.BASE_URL || '/';
+
 // Local, audited Sanctus surface samples. The source pixels are preserved in
 // lossless WebP; see docs/warehouse-materials.json for hashes and qualifications.
 const SOURCES = ['wood', 'concrete', 'ceramic', 'bronze', 'copper', 'gold', 'marble', 'stone'];
@@ -10,7 +12,7 @@ export async function loadWarehouseMaterials() {
   const textures = [];
   await Promise.all(SOURCES.map(async (name) => {
     const [map, orm, normalMap] = await Promise.all(['basecolor', 'orm', 'normal'].map(async (channel) => {
-      const texture = await loader.loadAsync(`/materials/${name}/${channel}.webp`);
+      const texture = await loader.loadAsync(`${ASSET_BASE}materials/${name}/${channel}.webp`);
       texture.colorSpace = channel === 'basecolor' ? THREE.SRGBColorSpace : THREE.NoColorSpace;
       // Mirrored repetition avoids a sharp discontinuity at the edge of these
       // surface samples. It does not turn them into certified seamless assets.

@@ -1,3 +1,4 @@
+const ASSET_BASE = import.meta.env?.BASE_URL || '/';
 const FAMILIES = ['glass', 'concrete', 'rock', 'wood', 'metal-light', 'metal-heavy'];
 const OBJECT_SOUNDS = Object.freeze({
   vase: 'concrete', cube: 'wood', orb: 'metal-light', gem: 'rock',
@@ -26,7 +27,7 @@ const DRAG_FAMILIES = Object.freeze({
 const isWoodProp = kind => kind === 'crate' || kind === 'crate-piece';
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 function clipUrl(folder, family, variant) {
-  return `/audio/${folder}/${family}-${String(variant).padStart(2, '0')}.wav`;
+  return `${ASSET_BASE}audio/${folder}/${family}-${String(variant).padStart(2, '0')}.wav`;
 }
 
 /** Predecoded, loudness-matched recordings. Playback preserves their original pitch. */

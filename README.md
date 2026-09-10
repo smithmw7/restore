@@ -1,8 +1,23 @@
 # Restore
 
-A private Three.js / WebXR playground for collecting, breaking, and restoring objects. The original bright-room demo is preserved at Git tag **restore-demo-v1** and on `main`. The **warehouse** branch extends it into an enclosed artifact storehouse.
+A Three.js / WebXR playground for collecting, breaking, and restoring objects. The original bright-room demo is preserved at Git tag **restore-demo-v1** and on `main`. The default **warehouse** branch extends it into an enclosed artifact storehouse.
 
-Repository: https://github.com/smithmw7/restore (private).
+**[Play Restore](https://smithmw7.github.io/restore/)** · [Public repository](https://github.com/smithmw7/restore)
+
+Open the play link in Quest Browser, wait for the warehouse to load, then select the headset icon and accept the system permission prompt to enter VR. No USB connection, local server, APK or store submission is needed. The same link supports the desktop controls below.
+
+## Publishing
+
+GitHub Pages deploys the `warehouse` branch through `.github/workflows/pages.yml` on each push. The workflow installs the locked dependencies, checks interaction behavior, builds the site, then deploys it over HTTPS. It can also be run manually from the repository's Actions tab.
+
+`npm run build:pages` builds for the `/restore/` site path into `dist-pages/`; ordinary `npm run build` still builds the local USB version into `dist/`. Audio, material, icon and manifest URLs support both locations. To check the Pages build locally:
+
+```sh
+npm run build:pages
+npx vite preview --host 127.0.0.1 --port 5208 --strictPort --base=/restore/ --outDir=dist-pages
+```
+
+Open `http://127.0.0.1:5208/restore/` after confirming port 5208 is free.
 
 ## Warehouse
 
@@ -98,6 +113,7 @@ Sanctus procedural node graphs are represented by locally baked base-color, pack
 
 ```sh
 npm run build
+npm run test:asset-paths  # Production builds at / and /restore/, including every sound and texture
 npm run test:repair       # Original magnetic repair API regression
 npm run test:completion   # Final-piece onset, isolation, fade and repeat repairs
 npm run test:completion-browser # Three artifact forms, actual shader and bloom rendering
@@ -132,7 +148,7 @@ npm run test:archive-browser # Real deep-hall navigation, metal exclusion and vi
 npm run test:audio        # Real WebAudio decodes, fades, routing and voice limits
 ```
 
-Browser tests require installed Google Chrome and a running Restore server. Use `RESTORE_URL=http://127.0.0.1:5208` for gameplay/navigation tests on another owned port. The postprocessing and ambient-occlusion harnesses require a Vite development server on that URL because they import source modules. The completion shader harness also requires a development server, using `RESTORE_DEV_URL` (default `http://127.0.0.1:5208`). The audio harness uses `RESTORE_TEST_URL`; set `RESTORE_TEST_AUDIO_SOURCE=server` to check built WAV copies.
+Browser tests require installed Google Chrome. The asset-path check starts isolated temporary servers itself; the other browser tests require a running Restore server. Use `RESTORE_URL=http://127.0.0.1:5208` for gameplay/navigation tests on another owned port. The postprocessing and ambient-occlusion harnesses require a Vite development server on that URL because they import source modules. The completion shader harness also requires a development server, using `RESTORE_DEV_URL` (default `http://127.0.0.1:5208`). The audio harness uses `RESTORE_TEST_URL`; set `RESTORE_TEST_AUDIO_SOURCE=server` to check built WAV copies.
 
 Desktop and synthetic XR-pose checks establish behavior but do not replace physical Quest controller/hand tests. Planar reflection uses a modest 256px target and instancing keeps storage draw calls low. The atmosphere integrates short rays inside bounded world-space volumes, with per-eye camera positions, depth testing and distance fading. The atmosphere itself adds no scene render or depth prepass; beams do not simulate volumetric shadow scattering. Three nearby spotlights and one bounded shadow map on the nearest pendant keep the lighting cost controlled.
 
