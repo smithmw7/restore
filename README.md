@@ -13,7 +13,7 @@ A 96 × 180 × 28 metre enclosed archive with towering steel trusses, long stora
 - Another 1,103 sealed metal cases form 244 fixed stacks around and beyond the collection. These are unbreakable, stationary storage, rendered in three instanced batches with one collision shape per stack. The new storage leaves a central aisle and cross aisles; metal stacks and structural columns block movement and teleport destinations.
 - Each crate contains one artifact. Its contents remain hidden and cannot be selected through a closed crate. Opening a moved crate reveals the artifact at that crate's current position.
 - 176 artifacts across 15 forms. Eight alien designs include a thruster bell, reactor spindle, crescent hull section, gyroscopic coupler, sensor fin, navigation prism, flux key, and fossil sigil. Seven relic designs include amphorae, obelisks, a chalice, a stela, a fluted urn, and meteor shards. Every artifact is uniformly scaled from its measured geometry bounds to occupy 90% of the limiting interior crate dimension, with clearance from the boards. Larger crates contain larger artifacts, and all three dimensions constrain the fit. Alien components use subtle luminous circuit inlays over the textured surfaces.
-- Whole artifacts can be moved, fractured with Three Pinata, and repaired by drawing their matching fragments together. Partial repairs survive drops. Material variation keeps the recorded impact and repair sounds appropriate to each object.
+- Whole artifacts can be moved, fractured with Three Pinata, and repaired by drawing their matching fragments together. Partial repairs survive drops. Adding the final piece triggers a 1.25-second gold surface sweep and soft jade edge glow, then returns to the original material. Only the repaired artifact glows, with no additional mesh or rendering pass. Material variation keeps the recorded impact and repair sounds appropriate to each object.
 - Crates, loose boards and artifacts interpolate between physics updates for smooth motion at headset refresh rates. A small contact margin on sharp artifact hulls reduces floor chatter so fragments can sleep naturally. Resting objects wake on impact or when their support is removed; elapsed time never freezes a normally moving fragment.
 - Closed wooden crates use one instanced render batch; loose boards use three more. Each sealed wooden box has one solid collision shape with its original wood mass, plus its selection proxy, and navigation follows the remaining boxes instead of permanent stack barriers. All 176 artifact sizes reuse 15 cuts of the original forms; fragment vertices, offsets and mass scale together while repair state stays independent. Large repairs held near the floor ease upward enough to leave room for their remaining pieces, with their collision shapes still active.
 - Eight 512px Sanctus texture sets: wood, concrete, ceramic, bronze, copper, gold, marble and stone. Lossless WebP conversion preserves the baked source pixels. Material provenance and limitations are in `docs/warehouse-materials.json`.
@@ -88,6 +88,8 @@ The 40 predecoded sounds include timber breaks, quiet wood strain, wood scraping
 
 Textures are normalized to -35 LUFS and fade with motion; wood/stone loops stay at or below .12 gain, and distant hanging lights use a .22 cap. Surface changes crossfade after 120 ms of stable contact. At most two loop sources and twelve one-shot voices can coexist. Release fades loops out; reset, mute and complete reconstruction stop them within 15 ms. New timber breaks are matched to -22.39 LUFS and load creaks to -28 LUFS.
 
+A completed artifact plays a separate 1.16-second ascending major bell reveal at its position. The synthesized phrase is peak-normalized, cached and counted as one voice, with room for the final fragment snap. It plays only on complete reconstruction; pickup and docking keep their own sounds. Mute and reset cancel the whole phrase.
+
 All source recordings remain unchanged. `scripts/prepare-audio.py`, `scripts/prepare-repair-audio.py` and `scripts/prepare-action-audio.py` reproduce the normalized WAVs. Measurements and hashes are in `docs/audio-normalization.json`, `docs/repair-audio-normalization.json` and `docs/action-audio-normalization.json`. The new contact textures are designed Foley blends; their game-action names do not claim the original recording surfaces. In particular, lamp strain blends a generic door creak with a faint metal texture. Physical headset listening remains a separate check.
 
 Sanctus procedural node graphs are represented by locally baked base-color, packed ORM, and tangent normal maps. Normal maps change shading, not geometry. These are reusable surface samples; exact seamless tiling and Blender beauty-render parity are not claimed. Mirrored repetition reduces obvious border discontinuities.
@@ -97,6 +99,9 @@ Sanctus procedural node graphs are represented by locally baked base-color, pack
 ```sh
 npm run build
 npm run test:repair       # Original magnetic repair API regression
+npm run test:completion   # Final-piece onset, isolation, fade and repeat repairs
+npm run test:completion-browser # Three artifact forms, actual shader and bloom rendering
+npm run test:completion-audio # Reveal waveform, spatial placement, cancellation and voice limits
 npm run test:warehouse    # Crate / artifact / physics integration
 npm run test:artifact-fit # All 176 crate fits, scaled fracture volume and floor-level repair
 npm run test:contact-audio # Physical surfaces, relative rubbing and airborne silence
@@ -126,7 +131,7 @@ npm run test:archive-browser # Real deep-hall navigation, metal exclusion and vi
 npm run test:audio        # Real WebAudio decodes, fades, routing and voice limits
 ```
 
-Browser tests require installed Google Chrome and a running Restore server. Use `RESTORE_URL=http://127.0.0.1:5208` for gameplay/navigation tests on another owned port. The postprocessing harness requires a Vite development server on that URL because it imports the source module. The audio harness uses `RESTORE_TEST_URL`; set `RESTORE_TEST_AUDIO_SOURCE=server` to check built WAV copies.
+Browser tests require installed Google Chrome and a running Restore server. Use `RESTORE_URL=http://127.0.0.1:5208` for gameplay/navigation tests on another owned port. The postprocessing harness requires a Vite development server on that URL because it imports the source module. The completion shader harness also requires a development server, using `RESTORE_DEV_URL` (default `http://127.0.0.1:5208`). The audio harness uses `RESTORE_TEST_URL`; set `RESTORE_TEST_AUDIO_SOURCE=server` to check built WAV copies.
 
 Desktop and synthetic XR-pose checks establish behavior but do not replace physical Quest controller/hand tests. Planar reflection uses a modest 256px target and instancing keeps storage draw calls low. The atmosphere integrates short rays inside bounded world-space volumes, with per-eye camera positions, depth testing and distance fading. The atmosphere itself adds no scene render or depth prepass; beams do not simulate volumetric shadow scattering. Three nearby spotlights and one bounded shadow map keep the lighting cost controlled.
 

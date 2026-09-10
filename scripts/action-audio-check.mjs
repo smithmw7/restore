@@ -130,6 +130,8 @@ try {
   assert.equal(c.lampReleaseCleanup.eventCounts.drop, c.drop.eventCounts.drop);
   assert.equal(c.artifactStone.loopFamily, 'stone-drag'); assert.match(c.artifactStone.lastClip, /repair\/drag-/);
   assert.ok(c.artifactStone.loopGain > .09 && c.artifactStone.loopGain <= .12);
+  assert.equal(c.complete.lastClip, 'synth:artifact-reveal');
+  assert.equal(c.complete.eventCounts.complete, 1);
   for (const name of ['complete', 'muted', 'mutedAttempt', 'reset']) {
     assert.equal(c[name].loopActive, false, `${name} left an active drag session`);
     assert.equal(c[name].loopVoices, 0, `${name} leaked a loop source`);

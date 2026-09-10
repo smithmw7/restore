@@ -50,7 +50,7 @@ function handleEvent(event){
   if(type==='collision')audio.playCollision(id,position,strength,spatial);
   if(type==='nudge')audio.playNudge(id,position,strength,spatial);
   if(type==='snap')audio.playSnap(id,position,strength,spatial);
-  if(type==='complete')audio.playComplete(id,position,spatial);
+  if(type==='complete')audio.playComplete(event.objectId||id,position,spatial);
   if(type==='dock'){audio.playDock(id,position,spatial);for(const input of inputs)input.clearContact=true;}
   if(type==='snap'||type==='complete'||type==='break')for(const input of inputs)if(input.grabbing)input.source?.gamepad?.hapticActuators?.[0]?.pulse(type==='snap'?.12:.35,type==='snap'?16:45)?.catch(()=>{});
 }

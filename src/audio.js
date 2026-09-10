@@ -13,6 +13,8 @@ const ALL_CLIPS = [
 const MAX_VOICES = 12;
 const MAX_DRAG_GAIN = 0.12;
 const MAX_LOOP_VOICES = 2;
+const REVEAL_DURATION = 1.16;
+const REVEAL_GAIN = .66;
 const DRAG_FAMILIES = Object.freeze({
   'stone-drag': { folder: 'repair', family: 'drag', gain: MAX_DRAG_GAIN },
   'scrape-wood-concrete': { folder: 'actions', family: 'scrape-wood-concrete', gain: MAX_DRAG_GAIN },
@@ -30,8 +32,9 @@ function clipUrl(folder, family, variant) {
 /** Predecoded, loudness-matched recordings. Playback preserves their original pitch. */
 export function createRestoreAudio() {
   let context, master, limiter, muted = false, loaded = 0, playCount = 0, lastClip = null;
-  let loadPromise, drag = null, quietContactsUntil = 0, lastContact = -Infinity;
+  let loadPromise, drag = null, revealBuffer = null, quietContactsUntil = 0, lastContact = -Infinity;
   const buffers = new Map(), previousVariants = new Map(), voices = new Set();
+  const revealVoices = new Set();
   const eventCounts = {}, lastEvents = [], lastObjectContact = new Map(), retiringDrags = new Set();
 
   function getContext() {
@@ -57,6 +60,9 @@ export function createRestoreAudio() {
   function load() {
     loadPromise ??= (async () => {
       const ctx = getContext();
+      // Build this once during loading, keeping synthesis off the first
+      // completed-repair frame in VR. playComplete still supports lazy use.
+      getRevealBuffer();
       await Promise.all(ALL_CLIPS.map(async url => {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Could not load ${url}: ${response.status}`);
@@ -110,6 +116,7 @@ export function createRestoreAudio() {
     if (candidate.priority > priority) return false;
     candidate.source.stop();
     voices.delete(candidate);
+    revealVoices.delete(candidate);
     return true;
   }
 
@@ -165,6 +172,7 @@ export function createRestoreAudio() {
 
   function playRestore() {
     stopDrag({ immediate: true });
+    cancelReveals();
     if (muted) return;
     chime([392, 494, 587, 784], 0.06);
     quietContactsUntil = context.currentTime + 0.3;
@@ -328,9 +336,75 @@ export function createRestoreAudio() {
 
   function playComplete(objectId, position, spatial = false) {
     stopDrag({ immediate: true });
-    const played = playClip('complete', objectId, 'repair', 'pickup', position, spatial, 0.42, 3);
-    if (played) { chime([523.25, 659.25, 783.99], 0.025, position, spatial); quietContactsUntil = context.currentTime + 0.28; }
-    return played;
+    if (muted) return false;
+    unlock();
+    if (!reserveVoice(3)) return false;
+    // One cached mono source contains the complete ascending phrase. Future
+    // notes share its voice budget and are canceled together on mute/reset.
+    const source = context.createBufferSource(), gain = context.createGain();
+    source.buffer = getRevealBuffer();
+    gain.gain.value = REVEAL_GAIN;
+    const panner = createPanner(position, spatial);
+    source.connect(gain);
+    if (panner) gain.connect(panner).connect(limiter);
+    else gain.connect(limiter);
+    const voice = { source, gain, priority: 3, cancelled: false };
+    voices.add(voice); revealVoices.add(voice);
+    source.onended = () => {
+      voices.delete(voice); revealVoices.delete(voice);
+      source.disconnect(); gain.disconnect(); panner?.disconnect();
+    };
+    source.start();
+    quietContactsUntil = context.currentTime + .28;
+    record('complete', objectId, 'synth:artifact-reveal', REVEAL_GAIN);
+    return true;
+  }
+
+  function getRevealBuffer() {
+    if (revealBuffer) return revealBuffer;
+    revealBuffer = context.createBuffer(1, Math.ceil(REVEAL_DURATION * context.sampleRate), context.sampleRate);
+    const data = revealBuffer.getChannelData(0);
+    // A major arpeggio resolves into a round upper tonic with a quieter chord
+    // underneath. The short bell partials stay below 2.1kHz.
+    const notes = [
+      [523.25, 0, .58, .58], [659.25, .12, .58, .62],
+      [783.99, .24, .59, .65], [1046.5, .38, .78, .88],
+      [261.625, .38, .76, .18], [523.25, .38, .78, .18],
+      [659.25, .38, .75, .14], [783.99, .38, .74, .14],
+    ];
+    for (const [frequency, start, duration, amplitude] of notes) {
+      const first = Math.ceil(start * context.sampleRate);
+      const last = Math.min(data.length, Math.ceil((start + duration) * context.sampleRate));
+      for (let index = first; index < last; index++) {
+        const time = index / context.sampleRate - start;
+        const attack = Math.sin(Math.PI * .5 * clamp(time / .009, 0, 1)) ** 2;
+        const tail = Math.sin(Math.PI * .5 * clamp((duration - time) / .055, 0, 1)) ** 2;
+        const envelope = amplitude * attack * tail * Math.exp(-4.6 * time / duration);
+        const fundamental = Math.sin(2 * Math.PI * frequency * time);
+        const bell = .12 * Math.exp(-14 * time) * Math.sin(2 * Math.PI * frequency * 2.002 * time);
+        data[index] += envelope * (fundamental + bell);
+      }
+    }
+    let peak = 0, energy = 0;
+    for (const value of data) { peak = Math.max(peak, Math.abs(value)); energy += value * value; }
+    // Fixed synthesis normalization leaves ample space for the last fragment
+    // click and the shared limiter. This is independent of the device rate.
+    const scale = Math.min(.52 / Math.max(peak, .0001), .135 / Math.max(Math.sqrt(energy / data.length), .0001));
+    for (let index = 0; index < data.length; index++) data[index] *= scale;
+    return revealBuffer;
+  }
+
+  function cancelReveals() {
+    if (!context) return;
+    const now = context.currentTime;
+    for (const voice of revealVoices) {
+      if (voice.cancelled) continue;
+      voice.cancelled = true;
+      voice.gain.gain.cancelScheduledValues(now);
+      voice.gain.gain.setValueAtTime(voice.gain.gain.value, now);
+      voice.gain.gain.linearRampToValueAtTime(0, now + .012);
+      voice.source.stop(now + .013);
+    }
   }
 
   function playDock(objectId, position, spatial = false) {
@@ -342,7 +416,7 @@ export function createRestoreAudio() {
 
   function setMuted(value) {
     muted = Boolean(value);
-    if (muted) stopDrag({ immediate: true });
+    if (muted) { stopDrag({ immediate: true }); cancelReveals(); }
     if (master) master.gain.setTargetAtTime(muted ? 0 : 0.75, context.currentTime, 0.008);
     if (!muted) unlock();
   }
@@ -363,6 +437,7 @@ export function createRestoreAudio() {
   function getState() {
     return {
       loaded, expected: ALL_CLIPS.length, muted, playCount, lastClip, activeVoices: voices.size,
+      activeReveals: revealVoices.size,
       contextState: context?.state ?? 'uninitialized', loopActive: Boolean(drag),
       loopGain: Number((drag?.loop?.gain.gain.value ?? 0).toFixed(5)),
       loopTargetGain: Number((drag?.loop?.targetGain ?? 0).toFixed(5)), loopMaxGain: drag?.loop?.maxGain ?? MAX_DRAG_GAIN,

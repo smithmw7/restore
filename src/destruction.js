@@ -4,6 +4,7 @@ import { DestructibleMesh, FractureOptions } from '@dgreenheck/three-pinata';
 import { nudgeBody } from './tap-influence.js';
 import { driveGrabbedBody, releaseGrabbedBody } from './physical-drag.js';
 import { setContactSurface } from './contact-audio.js';
+import { createCompletionEffect } from './completion-effect.js';
 
 // Dimensions are metres. The stage uses these same specs for its pedestal visuals.
 export const OBJECT_SPECS = Object.freeze([
@@ -101,6 +102,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   const targets = [];
   const grabTargets = [];
   const objects = [];
+  const activeCompletions = new Set();
   const objectById = new Map();
   const colliderUnits = new Map();
   const collisionTimes = new Map();
@@ -255,6 +257,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
         total: object.fragments.length,
         position: object.mesh.position.toArray(),
         home: object.homePosition.toArray(),
+        completion: object.completion.getState(),
       })),
       grab: grabState,
       physics: { bodies: disposed ? 0 : world.bodies.len(), colliders: disposed ? 0 : world.colliders.len() },
@@ -379,7 +382,11 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     }
   }
 
-  function resetObjectHome(object) {
+  function resetObjectHome(object, resetCompletion = true) {
+    if (resetCompletion) {
+      object.completion.clear(true);
+      activeCompletions.delete(object);
+    }
     for (const unit of object.units) removeBody(unit);
     object.units.length = 0;
     object.docking = null;
@@ -445,6 +452,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
         spec, mesh, fragments, units: [], broken: false, fractured: false, enabled: !spec.initialHidden, docking: null, age: 0,
         homePosition: mesh.position.clone(), homeQuaternion: mesh.quaternion.clone(),
         intactHull: makeHull(mesh.geometry), intactCollider: null, localBounds: mesh.geometry.boundingBox.clone(),
+        completion: createCompletionEffect(outside, mesh.geometry.boundingBox),
       };
       objects.push(object);
       pendingObject = null;
@@ -485,6 +493,8 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     const object = objectById.get(mesh?.userData?.labObject);
     if (!object || !object.enabled || mesh !== object.mesh || (object.broken && (!wholeObjects || !isComplete(object))) || grab?.object === object) return false;
     const origin = point?.isVector3 ? point : object.mesh.position;
+    object.completion.clear();
+    activeCompletions.delete(object);
     const forceDirection = direction?.isVector3 ? direction.clone() : new THREE.Vector3(0, 0, -1);
     if (forceDirection.lengthSq() < 0.0001) forceDirection.set(0, 0, -1);
     forceDirection.normalize();
@@ -639,6 +649,8 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     emit('snap', object, unit.position, { strength: 0.45 + Math.min(count, 4) * 0.1, count, assembled: held.members.length, total: object.fragments.length });
     if (held.members.length === object.fragments.length) {
       stopDragSound(grab, 'complete');
+      object.completion.trigger();
+      activeCompletions.add(object);
       emit('complete', object, assemblyCenter(held), { total: object.fragments.length });
       refreshTargets();
     }
@@ -720,6 +732,8 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     restoreTime = 0;
     accumulator = 0;
     for (const object of objects) {
+      object.completion.clear(true);
+      activeCompletions.delete(object);
       if (!object.broken) continue;
       object.docking = null;
       object.mesh.visible = false;
@@ -765,7 +779,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       const aligned = dock.unit.position.distanceTo(dock.unit.anchor.homePosition) <= .012
         && dock.unit.quaternion.angleTo(identity) <= .025;
       if (aligned && isDockHomeClear(object)) {
-        resetObjectHome(object);
+        resetObjectHome(object, false);
         emit('dock', object, object.homePosition, { strength: 0.85 });
         changed = true;
       } else if (dock.elapsed > DOCK_SECONDS * 4 || !isDockHomeClear(object)) {
@@ -808,6 +822,10 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   function step(dt) {
     if (!ready || disposed) return 1;
     const delta = Number.isFinite(dt) ? THREE.MathUtils.clamp(dt, 0, 0.05) : 0;
+    for (const object of activeCompletions) {
+      object.completion.update(delta);
+      if (!object.completion.getState().active) activeCompletions.delete(object);
+    }
     if (restoring) { stepRestore(delta); return 1; }
     accumulator += delta;
     while (accumulator >= FIXED_STEP) {
@@ -909,6 +927,8 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     grabTargets.length = 0;
     colliderUnits.clear();
     collisionTimes.clear();
+    for (const object of activeCompletions) object.completion.clear(true);
+    activeCompletions.clear();
     events.free();
     world.free();
     for (const object of objects) {

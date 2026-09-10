@@ -69,6 +69,9 @@ try {
   assert.ok(c.moving.loopGain>.09 && c.moving.loopGain<=.12);
   assert.ok(c.idleFade.loopGain<.001);
   assert.equal(c.complete.loopActive,false); assert.equal(c.completedStop.fadingLoops,0);
+  assert.equal(c.complete.lastClip,'synth:artifact-reveal');
+  assert.equal(c.complete.eventCounts.complete,1);
+  assert.equal(c.complete.eventCounts.pickup,c.pickup.eventCounts.pickup);
   assert.equal(c.contacts.eventCounts.collision,6); assert.equal(c.contacts.eventCounts.snap,6);
   for (const family of ['concrete','wood','metal-light','rock','glass','metal-heavy']) {
     assert.ok(c.contacts.lastEvents.some(event => event.type==='collision' && event.clip.includes(`hit-${family}-`)));
