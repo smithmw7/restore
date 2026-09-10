@@ -13,6 +13,7 @@ A 96 × 180 × 28 metre enclosed archive with towering steel trusses, long stora
 - Each crate contains one artifact. Its contents remain hidden and cannot be selected through a closed crate. Opening a moved crate reveals the artifact at that crate's current position.
 - 176 artifacts across 15 forms. Eight alien designs include a thruster bell, reactor spindle, crescent hull section, gyroscopic coupler, sensor fin, navigation prism, flux key, and fossil sigil. Seven relic designs include amphorae, obelisks, a chalice, a stela, a fluted urn, and meteor shards. Larger shipping crates contain larger variants. Alien components use subtle luminous circuit inlays over the textured surfaces.
 - Whole artifacts can be moved, fractured with Three Pinata, and repaired by drawing their matching fragments together. Partial repairs survive drops. Material variation keeps the recorded impact and repair sounds appropriate to each object.
+- Crates, loose boards and artifacts interpolate between physics updates for smooth motion at headset refresh rates. A small contact margin on sharp artifact hulls reduces floor chatter so fragments can sleep naturally. Resting objects wake on impact or when their support is removed; elapsed time never freezes a normally moving fragment.
 - Closed wooden crates use one instanced render batch; loose boards use three more. Every wooden box has its own physics and selection proxy, and navigation follows the remaining boxes instead of permanent stack barriers. Repeated artifact forms reuse fracture templates at startup while keeping their repair state independent.
 - Eight 512px Sanctus texture sets: wood, concrete, ceramic, bronze, copper, gold, marble and stone. Lossless WebP conversion preserves the baked source pixels. Material provenance and limitations are in `docs/warehouse-materials.json`.
 
@@ -89,6 +90,7 @@ npm run build
 npm run test:repair       # Original magnetic repair API regression
 npm run test:warehouse    # Crate / artifact / physics integration
 npm run test:storage      # All 176 crates, stack collapse, live obstacles and reset
+npm run test:settling     # Disturbed piles, natural rest and smooth display updates
 npm run test:artifacts    # Artifact manifold geometry and scaled fracture volume
 npm run test:fracture-cache # Shared cut templates, independent state and finish
 npm run test:locomotion   # Head pivot, teleport, collision, input latches

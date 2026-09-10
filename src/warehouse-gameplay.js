@@ -171,6 +171,8 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     onProgress,
     onChange: () => { refreshTargets(); notify(); },
     onEvent,
+    beforePhysicsStep,
+    afterPhysicsStep,
   });
   const world = lab.physicsWorld;
 
@@ -181,6 +183,10 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     const body = world.createRigidBody(desc.setTranslation(position.x, position.y, position.z).setRotation(quaternion)
       .setLinearDamping(0.7).setAngularDamping(1.4).setCcdEnabled(true));
     part.body = body;
+    part.position = position.clone();
+    part.quaternion = quaternion.clone();
+    part.previousPosition = position.clone();
+    part.previousQuaternion = quaternion.clone();
     part.handles = [];
     part.velocity.set(0, 0, 0);
     for (const description of colliderDescriptions) {
@@ -306,6 +312,11 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     if (!part.body || !part.mesh.visible) return false;
     // Kinematic dragging preserves contact with surrounding piles and artifacts.
     part.body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
+    // Pick up from the interpolated pose the player actually touched.
+    part.body.setTranslation(part.mesh.position, true);
+    part.body.setRotation(part.mesh.quaternion, true);
+    part.position.copy(part.mesh.position); part.previousPosition.copy(part.position);
+    part.quaternion.copy(part.mesh.quaternion); part.previousQuaternion.copy(part.quaternion);
     held = { crate, part, panel, handId, offset: part.mesh.position.clone().sub(worldPoint),
       goal: part.mesh.position.clone(), speed: 0, velocity: new THREE.Vector3() };
     emit('pickup', crate, part.mesh.position, { complete: true, whole: true, assembled: 1, total: 1 });
@@ -364,37 +375,57 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     return true;
   }
 
+  function beforePhysicsStep(dt) {
+    for (const crate of crates) {
+      crate.age += dt;
+      for (const part of crate.open ? crate.panels : [crate]) if (part.body) {
+        part.previousPosition.copy(part.position);
+        part.previousQuaternion.copy(part.quaternion);
+        part.velocity.copy(part.body.linvel());
+      }
+    }
+    if (held) {
+      // Advance the held target once per physics step, independent of the
+      // headset's display rate. Rendered interpolation never feeds the solver.
+      const next = scratch.copy(held.part.position).lerp(held.goal, 1 - Math.exp(-10 * dt));
+      held.velocity.copy(next).sub(held.part.position).divideScalar(dt);
+      held.speed = held.velocity.length();
+      held.part.body.setNextKinematicTranslation(next);
+      held.part.body.setNextKinematicRotation(held.part.quaternion.clone().slerp(held.panel ? IDENTITY : held.crate.homeQuaternion, 1 - Math.exp(-6 * dt)));
+    }
+  }
+
+  function afterPhysicsStep() {
+    for (const crate of crates) {
+      for (const part of crate.open ? crate.panels : [crate]) {
+        if (!part.body) continue;
+        part.position.copy(part.body.translation());
+        part.quaternion.copy(part.body.rotation());
+        const p = part.position;
+        if (p.y < -2 || p.x < bounds.minX - 1 || p.x > bounds.maxX + 1 || p.z < bounds.minZ - 1 || p.z > bounds.maxZ + 1) {
+          p.set(THREE.MathUtils.clamp(p.x, bounds.minX + 0.8, bounds.maxX - 0.8), crate.spec.height / 2 + 0.15, THREE.MathUtils.clamp(p.z, bounds.minZ + 0.8, bounds.maxZ - 0.8));
+          part.body.setTranslation(p, true);
+          part.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+          part.previousPosition.copy(p);
+        }
+      }
+    }
+  }
+
   function step(dt) {
     if (!ready || disposed) return;
     const delta = Number.isFinite(dt) ? THREE.MathUtils.clamp(dt, 0, 0.05) : 0;
     if (!delta) return;
     elapsed += delta;
-    for (const crate of crates) {
-      crate.age += delta;
-      for (const part of crate.open ? crate.panels : [crate]) if (part.body) part.velocity.copy(part.body.linvel());
-    }
-    if (held) {
-      const next = scratch.copy(held.part.mesh.position).lerp(held.goal, 1 - Math.exp(-10 * delta));
-      held.velocity.copy(next).sub(held.part.mesh.position).divideScalar(delta);
-      held.speed = held.velocity.length();
-      held.part.body.setNextKinematicTranslation(next);
-      held.part.body.setNextKinematicRotation(held.part.mesh.quaternion.clone().slerp(held.panel ? IDENTITY : held.crate.homeQuaternion, 1 - Math.exp(-6 * delta)));
-    }
-    lab.step(delta);
+    const alpha = lab.step(delta);
     for (const crate of crates) {
       for (const part of crate.open ? crate.panels : [crate]) {
         if (!part.body) continue;
-        part.mesh.position.copy(part.body.translation());
-        part.mesh.quaternion.copy(part.body.rotation());
-        const p = part.mesh.position;
-        if (p.y < -2 || p.x < bounds.minX - 1 || p.x > bounds.maxX + 1 || p.z < bounds.minZ - 1 || p.z > bounds.maxZ + 1) {
-          p.set(THREE.MathUtils.clamp(p.x, bounds.minX + 0.8, bounds.maxX - 0.8), crate.spec.height / 2 + 0.15, THREE.MathUtils.clamp(p.z, bounds.minZ + 0.8, bounds.maxZ - 0.8));
-          part.body.setTranslation(p, true);
-          part.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
-        }
+        part.mesh.position.lerpVectors(part.previousPosition, part.position, alpha);
+        part.mesh.quaternion.slerpQuaternions(part.previousQuaternion, part.quaternion, alpha);
         if (crate.open) syncPanelInstance(part); else syncCrateInstance(crate);
-        // Rapier sleeps settled bodies naturally. A still-handed release starts
-        // with zero velocity even in midair, so age/speed alone must not sleep it.
+        // Rapier sleeps entire settled contact islands naturally. Never freeze
+        // a body just because it is old or was released with zero velocity.
       }
     }
   }

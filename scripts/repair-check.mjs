@@ -143,6 +143,10 @@ try {
     assert.ok(vec(lab.getGrabState().goal).distanceTo(target) < 1e-6, 'grab offset changed');
     assert.ok(vec(lab.getGrabState().anchor).distanceTo(start) < 1e-6, 'moveGrab teleported the shard');
     lab.step(1 / 60);
+    // The public anchor follows the rendered pose, which interpolates between
+    // fixed steps and must advance even without another physics tick.
+    assert.ok(vec(lab.getGrabState().anchor).distanceTo(start) < 1e-6, 'the first fixed step jumped the rendered shard');
+    lab.step(1 / 120);
     const moved = vec(lab.getGrabState().anchor).distanceTo(start);
     assert.ok(moved > 0, 'held shard never moved');
     assert.ok(moved < movement.length() * 0.8, 'held shard follows too directly');

@@ -43,6 +43,10 @@ try {
     assert.equal(game.moveGrab(destination.clone().add(grabPoint.clone().sub(crateStart)), 'left'), true);
     assert.ok(crate.position.distanceTo(crateStart) < 1e-6);
     game.step(1 / 60);
+    // Rendering is one fixed step behind, and advances smoothly even on a
+    // display frame that does not run another physics step.
+    assert.ok(crate.position.distanceTo(crateStart) < 1e-6);
+    game.step(1 / 120);
     assert.ok(crate.position.distanceTo(crateStart) > 0);
     assert.ok(crate.position.distanceTo(destination) > 1);
     advance(2);

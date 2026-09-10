@@ -75,7 +75,9 @@ function makeHull(geometry, shrink = 1) {
   }
   const hull = RAPIER.ColliderDesc.convexHull(vertices);
   if (!hull) throw new Error('A fracture fragment did not produce a valid convex hull.');
-  return hull.setFriction(0.66).setRestitution(0.24);
+  // A 4mm contact margin keeps sharp cut hulls from repeatedly penetrating the
+  // floor and rocking awake. The visible fracture geometry stays unchanged.
+  return hull.setFriction(0.66).setRestitution(0.24).setContactSkin(0.004);
 }
 
 /**
@@ -86,6 +88,7 @@ function makeHull(geometry, shrink = 1) {
 export async function createDestructionLab({ scene, onProgress = () => {}, onChange = () => {}, onEvent = () => {},
   specs = OBJECT_SPECS, materialForSpec = null, geometryForSpec = null, wholeObjects = false, pedestals = true,
   bounds = { minX: -6, maxX: 6, minZ: -7, maxZ: 6 }, statics = [],
+  beforePhysicsStep = () => {}, afterPhysicsStep = () => {},
 }) {
   await RAPIER.init();
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
@@ -183,7 +186,9 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       soundId: object.spec.soundId || object.spec.form || object.spec.id,
       kind: object.spec.kind || 'artifact',
       whole: !object.fractured,
-      anchor: unit.position.toArray(),
+      // Visual/audio consumers share the interpolated pose. Magnetic decisions
+      // continue to use unit.position inside the fixed-step simulation.
+      anchor: unit.anchor.mesh.position.toArray(),
       radius: MAGNET_RADIUS,
       assembled: unit.members.length,
       total: object.fragments.length,
@@ -263,7 +268,6 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       .setTranslation(p.x, p.y, p.z).setRotation(unit.quaternion)
       .setLinearDamping(0.45).setAngularDamping(0.85).setCcdEnabled(true));
     unit.body = body;
-    unit.idleTime = 0;
     unit.previousPosition.copy(p);
     unit.previousQuaternion.copy(unit.quaternion);
     for (const fragment of unit.members) {
@@ -283,7 +287,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       object, members: [...members], anchor: members[0], body: null,
       position: position.clone(), quaternion: quaternion.clone(),
       previousPosition: position.clone(), previousQuaternion: quaternion.clone(),
-      velocity: new THREE.Vector3(), colliderHandles: [], magnetized: false, idleTime: 0,
+      velocity: new THREE.Vector3(), colliderHandles: [], magnetized: false,
     };
     for (const fragment of members) fragment.unit = unit;
     object.units.push(unit);
@@ -504,7 +508,6 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       unit.body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
       unit.velocity.clampLength(0, 3);
       unit.body.setLinvel(unit.velocity, true);
-      unit.idleTime = 0;
     }
   }
 
@@ -574,7 +577,6 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
           candidate.magnetized = false;
           candidate.body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
           candidate.body.setLinvel(candidate.velocity.clone().clampLength(0, 3), true);
-          candidate.idleTime = 0;
         }
         continue;
       }
@@ -597,7 +599,6 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       candidate.body.setNextKinematicTranslation(nextPosition);
       scratchQuaternion.copy(candidate.quaternion).slerp(held.quaternion, 1 - Math.exp(-10 * dt));
       candidate.body.setNextKinematicRotation(scratchQuaternion);
-      candidate.idleTime = 0;
     }
   }
 
@@ -690,9 +691,9 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   }
 
   function step(dt) {
-    if (!ready || disposed) return;
+    if (!ready || disposed) return 1;
     const delta = Number.isFinite(dt) ? THREE.MathUtils.clamp(dt, 0, 0.05) : 0;
-    if (restoring) { stepRestore(delta); return; }
+    if (restoring) { stepRestore(delta); return 1; }
     accumulator += delta;
     while (accumulator >= FIXED_STEP) {
       elapsed += FIXED_STEP;
@@ -706,19 +707,17 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
           unit.velocity.copy(unit.body.linvel());
         }
       }
+      beforePhysicsStep(FIXED_STEP);
       updateGrab(FIXED_STEP);
       world.step(events);
       drainCollisionSounds();
+      afterPhysicsStep(FIXED_STEP);
       for (const object of objects) {
         if (!object.broken || object.docking) continue;
         for (const unit of object.units) {
           if (!unit.body) continue;
           unit.position.copy(unit.body.translation());
           unit.quaternion.copy(unit.body.rotation());
-          if (!unit.magnetized) {
-            unit.idleTime += FIXED_STEP;
-            if (unit.idleTime > 12 && !unit.body.isSleeping()) unit.body.sleep();
-          }
           if (unit.position.y < -2 || unit.position.x < bounds.minX - 2 || unit.position.x > bounds.maxX + 2 || unit.position.z < bounds.minZ - 2 || unit.position.z > bounds.maxZ + 2) {
             unit.position.set(THREE.MathUtils.clamp(unit.position.x, bounds.minX + 0.4, bounds.maxX - 0.4), 0.12, THREE.MathUtils.clamp(unit.position.z, bounds.minZ + 0.4, bounds.maxZ - 0.4));
             unit.previousPosition.copy(unit.position);
@@ -734,8 +733,9 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     const alpha = accumulator / FIXED_STEP;
     for (const object of objects) {
       if (!object.broken || object.docking) continue;
-      for (const unit of object.units) syncUnit(unit, unit === grab?.unit ? 1 : alpha);
+      for (const unit of object.units) syncUnit(unit, alpha);
     }
+    return alpha;
   }
 
   // Warehouse contents stay physically dormant and unselectable while packed.

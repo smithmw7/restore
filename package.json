@@ -1,6 +1,6 @@
 {
   "name": "restore",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,7 +23,8 @@
     "test:fracture-cache": "node scripts/fracture-cache-check.mjs",
     "test:archive": "node scripts/archive-check.mjs",
     "test:archive-browser": "node scripts/archive-browser.mjs",
-    "test:hold-pull": "node scripts/hold-pull-check.mjs"
+    "test:hold-pull": "node scripts/hold-pull-check.mjs",
+    "test:settling": "node scripts/settling-check.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",
