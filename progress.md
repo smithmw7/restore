@@ -92,3 +92,9 @@ User requested a private Git repository for this project, preserving the liked d
 
 - Final production bundle index-Ba6-yR14.js passed the real-pointer warehouse suite with all six checks and no browser errors. The shard-pickup test now waits for settling and uses visible moving-fragment centroids, matching the smaller obelisk fragments. No runtime change was required for that test adjustment.
 - The develop-web-game client completed two iterations on the owned port5209 preview. Its early reset click timed out during software-renderer startup; the second iteration confirmed a broken crate and player movement. Final client and held-fragment screenshots were visually inspected. Production preview remains available on5209; physical Quest validation remains pending because ADB has no connected device.
+
+## Floor normal detail
+
+- User requested a slightly rougher floor normal map. Increased the existing concrete normal strength from0.1 to0.65 and restored its baked roughness map (mean0.74) in place of uniform0.42 roughness. Walls and artifacts retain their original settings.
+- Increased normal-driven reflection distortion slightly and varied the existing five-tap filter by surface roughness. Reflection sampling now aligns with the full concrete slab despite its inset plane. No additional textures or render passes.
+- Production build passed (index-CMS5pMTv.js). Matching before/after floor views and the develop-web-game client screenshot were visually inspected; no browser or shader errors. Refreshed the existing5209 in-app preview and confirmed the warehouse rendered. Evidence is in output/floor-normal/.

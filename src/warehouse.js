@@ -6,7 +6,7 @@ export const WAREHOUSE_BOUNDS = Object.freeze({ minX: -12, maxX: 12, minZ: -27, 
 // One modest target per eye. The current Three Reflector maintains an individual
 // reflection camera for each XR eye; reflection rendering does not update shadows.
 const floorShader = {
-  name: 'Restore / polished concrete reflection',
+  name: 'Restore / rough concrete reflection',
   uniforms: {
     ...THREE.UniformsLib.fog,
     color: { value: new THREE.Color('#96aaa8') }, tDiffuse: { value: null },
@@ -23,7 +23,8 @@ const floorShader = {
     void main() {
       vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
       vReflection = textureMatrix * vec4(position, 1.0);
-      vFloorUv = uv * vec2(12.0, 17.0);
+      // Match the concrete slab even though the reflection plane is inset.
+      vFloorUv = (position.xy / vec2(24.0, 34.0) + 0.5) * vec2(12.0, 17.0);
       vec3 viewNormal = normalize(normalMatrix * normal);
       vGrazing = 1.0 - abs(dot(normalize(-mvPosition.xyz), viewNormal));
       gl_Position = projectionMatrix * mvPosition;
@@ -43,13 +44,14 @@ const floorShader = {
       float grain = texture2D(roughnessMap, vFloorUv).g;
       vec2 grainNormal = texture2D(normalMap, vFloorUv).xy * 2.0 - 1.0;
       vec2 projected = vReflection.xy / vReflection.w;
-      projected += grainNormal * .0022;
+      projected += grainNormal * .004;
       // A small cross filter softens the image without a second blur pass.
+      float blur = mix(.002, .0045, grain);
       vec3 reflection = texture2D(tDiffuse, projected).rgb * .5;
-      reflection += texture2D(tDiffuse, projected + vec2(.002, 0.0)).rgb * .125;
-      reflection += texture2D(tDiffuse, projected - vec2(.002, 0.0)).rgb * .125;
-      reflection += texture2D(tDiffuse, projected + vec2(0.0, .002)).rgb * .125;
-      reflection += texture2D(tDiffuse, projected - vec2(0.0, .002)).rgb * .125;
+      reflection += texture2D(tDiffuse, projected + vec2(blur, 0.0)).rgb * .125;
+      reflection += texture2D(tDiffuse, projected - vec2(blur, 0.0)).rgb * .125;
+      reflection += texture2D(tDiffuse, projected + vec2(0.0, blur)).rgb * .125;
+      reflection += texture2D(tDiffuse, projected - vec2(0.0, blur)).rgb * .125;
       float opacity = (.18 + .3 * pow(vGrazing, 2.0)) * (1.0 - grain * .28);
       gl_FragColor = vec4(reflection * color, opacity);
       #include <tonemapping_fragment>
@@ -96,8 +98,8 @@ export function createWarehouse({ scene, renderer, materials }) {
   const wallMat = copyMat(materials.concrete, '#687978', [4, 2]);
   wallMat.normalScale.setScalar(.28);
   const floorMat = copyMat(materials.concrete, '#80908b', [12, 17]);
-  floorMat.roughnessMap = null; floorMat.roughness = .42;
-  floorMat.normalScale.setScalar(.1);
+  floorMat.roughness = 1;
+  floorMat.normalScale.setScalar(.65);
   const beamMat = materials.metal;
   const woodDark = copyMat(materials.wood, '#b9a17e');
   const woodTrim = copyMat(materials.wood, '#e1c08d');
