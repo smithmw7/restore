@@ -220,6 +220,40 @@ try {
     assert.ok(board.position.y < releaseY - 0.4, 'released board stayed suspended');
     game.restore();
   });
+
+  check('alien thruster, reactor, hull and coupler shards independently reconstruct', () => {
+    for (const id of ['artifact-01', 'artifact-03', 'artifact-04', 'artifact-05']) {
+      game.restore();
+      const container = game.targets.find((mesh) => mesh.userData.labObject === id.replace('artifact', 'crate'));
+      assert.equal(game.hit(container, container.position.clone(), new THREE.Vector3(0, 0, -1)), true);
+      const artifact = findObject(id), fragments = piecesOf(id);
+      const homes = new Map(fragments.map((piece) => [piece, piece.position.clone()]));
+      const rotations = new Map(fragments.map((piece) => [piece, piece.quaternion.clone()]));
+      assert.equal(game.beginGrab(artifact, artifact.position.clone(), 'left'), true);
+      game.moveGrab(new THREE.Vector3(0, 1.8, -18), 'left');
+      advance(2); game.endGrab('left');
+      assert.equal(game.hit(artifact, artifact.position.clone(), new THREE.Vector3(0, 0, -1)), true);
+      advance(4);
+      const anchorPiece = fragments.at(-1);
+      assert.equal(game.beginGrab(anchorPiece, anchorPiece.position.clone(), 'left'), true);
+      for (let frame = 0; frame < 60 * 45 && !game.getGrabState().complete; frame++) {
+        const grab = game.getGrabState(), anchor = vector(grab.anchor);
+        const rotation = anchorPiece.quaternion.clone().multiply(rotations.get(anchorPiece).clone().invert());
+        const candidates = fragments.map((piece) => ({ piece, offset: homes.get(piece).clone().sub(homes.get(anchorPiece)).applyQuaternion(rotation) }))
+          .filter(({ piece, offset }) => piece.position.distanceTo(anchor.clone().add(offset)) > 0.045)
+          .sort((a, b) => a.piece.position.distanceTo(anchor) - b.piece.position.distanceTo(anchor));
+        // Thin mechanical fragments can already be within the positional
+        // threshold while their rotation is still easing into its snap.
+        if (candidates.length) game.moveGrab(candidates[0].piece.position.clone().sub(candidates[0].offset), 'left');
+        game.step(1 / 60);
+      }
+      assert.equal(game.getGrabState().complete, true, `${id} did not reconstruct`);
+      assert.equal(game.getGrabState().heldMesh, artifact);
+      assert.ok(events.some((event) => event.type === 'complete' && event.objectId === id));
+      game.endGrab('left');
+    }
+    game.restore();
+  });
   console.log(JSON.stringify({ passed: true, checks, meshCount: initialMeshCount, physics: game.getState().physics, events: events.length }, null, 2));
 } finally {
   game.dispose();

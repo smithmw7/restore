@@ -8,10 +8,11 @@ Repository: https://github.com/smithmw7/restore (private).
 
 A 24 × 34 × 9 metre room with clear central aisles, steel roof trusses, cool clerestory lighting, warm practicals, and a textured concrete floor with real planar reflection. There is no visible text, tutorial copy, score, or magnetic-range sphere. The small headset, reset, and sound icons retain accessible names.
 
-- 24 seeded crates of several sizes, including two stacked pairs. They can be lifted, moved, dropped, and broken into six physical wooden panels.
+- All 176 seeded crates can be lifted, moved, dropped, and broken into six physical wooden panels, including every side, back, and upper storage tier. Removing a supporting box lets its stack fall.
 - Each crate contains one artifact. Its contents remain hidden and cannot be selected through a closed crate. Opening a moved crate reveals the artifact at that crate's current position.
-- 24 artifacts across eight forms, including obelisks, ceremonial chalices, vases, and arched stelae, with material variations across the collection. Whole artifacts can be moved, fractured with Three Pinata, and repaired by drawing their matching fragments together. Partial repairs survive drops.
-- 152 additional instanced crates build the distant storage stacks. These are static scenery, with collision bounds; the 24 central crates are the interactive collection in this version.
+- 176 artifacts across 15 forms. Eight alien designs include a thruster bell, reactor spindle, crescent hull section, gyroscopic coupler, sensor fin, navigation prism, flux key, and fossil sigil. Seven relic designs include amphorae, obelisks, a chalice, a stela, a fluted urn, and meteor shards. Larger shipping crates contain larger variants. Alien components use subtle luminous circuit inlays over the textured surfaces.
+- Whole artifacts can be moved, fractured with Three Pinata, and repaired by drawing their matching fragments together. Partial repairs survive drops. Material variation keeps the recorded impact and repair sounds appropriate to each object.
+- Closed crates use one instanced render batch; loose boards use three more. Every box has its own physics and selection proxy, and navigation follows the remaining boxes instead of permanent stack barriers. Repeated artifact forms reuse fracture templates at startup while keeping their repair state independent.
 - Eight 512px Sanctus texture sets: wood, concrete, ceramic, bronze, copper, gold, marble and stone. Lossless WebP conversion preserves the baked source pixels. Material provenance and limitations are in `docs/warehouse-materials.json`.
 
 ## Controls
@@ -84,15 +85,19 @@ Sanctus procedural node graphs are represented by locally baked base-color, pack
 npm run build
 npm run test:repair       # Original magnetic repair API regression
 npm run test:warehouse    # Crate / artifact / physics integration
+npm run test:storage      # All 176 crates, stack collapse, live obstacles and reset
+npm run test:artifacts    # Artifact manifold geometry and scaled fracture volume
+npm run test:fracture-cache # Shared cut templates, independent state and finish
 npm run test:locomotion   # Head pivot, teleport, collision, input latches
 npm run test:smoke        # Real desktop pointer crate and artifact loop
+npm run test:storage-browser # Side/upper storage selection and alien contents
 npm run test:navigation   # Real keyboard, mouse look and floor teleport
 npm run test:audio        # Real WebAudio decodes, fades, routing and voice limits
 ```
 
 Browser tests require installed Google Chrome and a running Restore server. Use `RESTORE_URL=http://127.0.0.1:5208` for gameplay/navigation tests on another owned port. The audio harness uses `RESTORE_TEST_URL`; set `RESTORE_TEST_AUDIO_SOURCE=server` to check built WAV copies.
 
-Desktop and synthetic XR-pose checks establish behavior but do not replace physical Quest controller/hand tests. Planar reflection uses a modest256px target and instancing keeps background draw calls low; physical stereo performance and hand gesture feel must be assessed on the headset.
+Desktop and synthetic XR-pose checks establish behavior but do not replace physical Quest controller/hand tests. Planar reflection uses a modest256px target and instancing keeps crate/board draw calls low. Opening and fracturing many artifacts still increases physics and rendering work; physical stereo performance and hand gesture feel must be assessed on the headset.
 
 ## References
 

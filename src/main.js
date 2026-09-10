@@ -62,7 +62,7 @@ function intersect(){
   if(!ready)return null;
   const hit=raycaster.intersectObjects(targets(),false)[0];
   if(!hit)return null;
-  // Static storage and walls also stop selection rays.
+  // Structural walls and beams also stop selection rays.
   for(const box of warehouse.obstacles){const blocked=raycaster.ray.intersectBox(box,point);if(blocked&&blocked.distanceTo(raycaster.ray.origin)<hit.distance-.025)return null;}
   return hit;
 }
@@ -261,7 +261,7 @@ try{
   await refreshXR();
   const [materials]=await Promise.all([loadWarehouseMaterials(),audio.load()]);
   warehouse=createWarehouse({scene,renderer,materials});
-  lab=await createWarehouseGameplay({scene,materials,bounds:warehouse.bounds,obstacles:warehouse.obstacles,onEvent:handleEvent});
+  lab=await createWarehouseGameplay({scene,materials,bounds:warehouse.bounds,obstacles:warehouse.obstacles,additionalCrates:warehouse.storageCrates,onEvent:handleEvent});
   locomotion=createLocomotion({scene,rig,camera,renderer,bounds:warehouse.bounds,getObstacles:()=>lab.getObstacles?.()||warehouse.obstacles,onBeforeMove:cancelInteractions});
   ready=true;document.body.classList.add('ready');ui.loader.hidden=true;ui.reset.disabled=false;updateVRButton();
 }catch(error){console.error(error);sessionError=error.message;ui.loader.classList.add('error');ui.loader.setAttribute('aria-label',`Loading failed: ${error.message}`);}

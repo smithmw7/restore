@@ -1,6 +1,6 @@
 {
   "name": "restore",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,7 +16,11 @@
     "audio:prepare-repair": "python3 scripts/prepare-repair-audio.py",
     "test:warehouse": "node scripts/warehouse-check.mjs",
     "test:locomotion": "node scripts/locomotion-check.mjs",
-    "test:navigation": "node scripts/navigation-browser.mjs"
+    "test:navigation": "node scripts/navigation-browser.mjs",
+    "test:storage": "node scripts/storage-check.mjs",
+    "test:artifacts": "node scripts/artifact-check.mjs",
+    "test:storage-browser": "node scripts/storage-browser.mjs",
+    "test:fracture-cache": "node scripts/fracture-cache-check.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

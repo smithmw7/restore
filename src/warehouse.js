@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
+import { createStorageCrateSpecs } from './storage-crates.js';
 
 export const WAREHOUSE_BOUNDS = Object.freeze({ minX: -12, maxX: 12, minZ: -27, maxZ: 7 });
 
@@ -75,7 +76,6 @@ export function createWarehouse({ scene, renderer, materials }) {
   geometries.add(box);
   const dummy = new THREE.Object3D();
   const batches = new Map();
-  let crateCount = 0;
   const localMat = (parameters) => {
     const result = new THREE.MeshStandardMaterial(parameters); ownedMaterials.add(result); return result;
   };
@@ -101,9 +101,6 @@ export function createWarehouse({ scene, renderer, materials }) {
   floorMat.roughness = 1;
   floorMat.normalScale.setScalar(.65);
   const beamMat = materials.metal;
-  const woodDark = copyMat(materials.wood, '#b9a17e');
-  const woodTrim = copyMat(materials.wood, '#e1c08d');
-  const bandMat = localMat({ color: '#4c4c3e', metalness: .66, roughness: .66 });
   const ceilingMat = localMat({ color: '#313b40', roughness: .88, metalness: .3 });
   const seamMat = localMat({ color: '#343f3f', roughness: .98 });
   const lampMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffd7a2').multiplyScalar(3), toneMapped: false });
@@ -164,54 +161,9 @@ export function createWarehouse({ scene, renderer, materials }) {
   for (let x = -3.3; x <= 3.4; x += .3) addBox(ceilingMat, [x, 3.55, -26.72], [.2, 7.1, .09]);
   addBox(beamMat, [0, 7.25, -26.55], [7.7, .32, .48]);
 
-  let seed = 157921;
-  function random() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
-  function crate(x, y, z, width, height, depth) {
-    crateCount++;
-    const color = new THREE.Color().setHSL(.09 + random() * .025, .14 + random() * .08, .68 + random() * .25);
-    addBox(woodDark, [x, y + height / 2, z], [width, height, depth], [0, 0, 0], color);
-    // External rails and diagonal braces turn simple boxes into shipping crates.
-    for (const side of [-1, 1]) {
-      const faceZ = z + side * (depth / 2 + .025);
-      for (const bandY of [.11, height - .11]) addBox(woodTrim, [x, y + bandY, faceZ], [width + .05, .15, .07], [0, 0, 0], color);
-      for (const bandX of [-width / 2 + .1, width / 2 - .1]) addBox(woodTrim, [x + bandX, y + height / 2, faceZ], [.15, height - .06, .075], [0, 0, 0], color);
-      const diagonal = Math.atan2(height - .3, width - .3);
-      addBox(woodTrim, [x, y + height / 2, faceZ + side * .045], [Math.hypot(width - .3, height - .3), .105, .055], [0, 0, diagonal * side], color);
-      const faceX = x + side * (width / 2 + .025);
-      for (const bandY of [.11, height - .11]) addBox(woodTrim, [faceX, y + bandY, z], [.07, .15, depth + .05], [0, 0, 0], color);
-      addBox(bandMat, [x + side * width * .3, y + height + .016, z], [.028, .035, depth + .065]);
-      for (const bandY of [.1, height - .1]) addBox(bandMat, [x + side * (width / 2 - .09), y + bandY, z + depth / 2 + .077], [.05, .045, .016]);
-    }
-  }
-  // Dense side bays preserve clear sight lines and walking space in the center.
-  // Each stack has one conservative collision box for teleport clearance.
-  for (const sign of [-1, 1]) {
-    for (let column = 0; column < 3; column++) {
-      for (let row = 0; row < 8; row++) {
-        const x = sign * (5.65 + column * 2.45);
-        const z = 3.8 - row * 3.85;
-        const width = 1.6 + random() * .42, depth = 2.3 + random() * .4;
-        let y = 0;
-        const count = 2 + Math.floor(random() * 3);
-        for (let tier = 0; tier < count; tier++) {
-          const height = .85 + random() * .52;
-          const jitter = tier ? (random() - .5) * .13 : 0;
-          crate(x + jitter, y, z + jitter, width * (1 - tier * .025), height, depth * (1 - tier * .02));
-          y += height + .025;
-        }
-        obstacle([x, y / 2, z], [width + .25, y, depth + .25]);
-      }
-    }
-  }
-  for (const x of [-3.55, -1.15, 1.3, 3.7]) {
-    let y = 0;
-    const z = -22.8 - random() * 1.6;
-    for (let tier = 0; tier < 3; tier++) {
-      const height = 1 + random() * .6;
-      crate(x, y, z, 1.7, height, 1.9); y += height + .03;
-    }
-    obstacle([x, y / 2, z], [1.95, y, 2.2]);
-  }
+  // Gameplay owns every storage crate and its collider. Keeping only structural
+  // obstacles here means removing a crate also clears its former standing space.
+  const storageCrates = createStorageCrateSpecs();
 
   const lampPositions = [[0, 7.38, -2], [0, 7.38, -11], [0, 7.38, -20]];
   for (const [x, y, z] of lampPositions) {
@@ -293,9 +245,9 @@ export function createWarehouse({ scene, renderer, materials }) {
   scene.environmentIntensity = .55;
   generator.dispose(); environmentGeometry.dispose(); environmentMaterials.forEach((material) => material.dispose());
 
-  const stats = { staticCrates: crateCount, instancedBatches: batches.size, staticInstances: [...batches.values()].reduce((sum, values) => sum + values.length, 0), reflectionResolution: 256, obstacleCount: obstacles.length };
+  const stats = { staticCrates: 0, storageCrates: storageCrates.length, instancedBatches: batches.size, staticInstances: [...batches.values()].reduce((sum, values) => sum + values.length, 0), reflectionResolution: 256, obstacleCount: obstacles.length };
   return {
-    root, bounds, obstacles, stats,
+    root, bounds, obstacles, storageCrates, stats,
     update() {},
     dispose() {
       root.removeFromParent();

@@ -84,7 +84,7 @@ function makeHull(geometry, shrink = 1) {
  * Unit rotations are relative to the immutable, world-oriented home geometry.
  */
 export async function createDestructionLab({ scene, onProgress = () => {}, onChange = () => {}, onEvent = () => {},
-  specs = OBJECT_SPECS, materialForSpec = null, wholeObjects = false, pedestals = true,
+  specs = OBJECT_SPECS, materialForSpec = null, geometryForSpec = null, wholeObjects = false, pedestals = true,
   bounds = { minX: -6, maxX: 6, minZ: -7, maxZ: 6 }, statics = [],
 }) {
   await RAPIER.init();
@@ -109,6 +109,43 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   let lastCollisionTime = -Infinity;
   let disposed = false;
   let grab = null;
+  // Opt-in keys describe identical local geometry, including any baked scale.
+  // Templates exist only during setup; objects always own their geometry.
+  const fractureTemplates = new Map();
+  let pendingObject = null;
+
+  function fracturePieces(mesh, spec, inside) {
+    const options = { fractureMethod: 'voronoi', fragmentCount: spec.fragmentCount || 16, seed: spec.seed,
+      voronoiOptions: { mode: '3D', useApproximation: false } };
+    const key = typeof spec.fractureKey === 'string' && spec.fractureKey ? spec.fractureKey : null;
+    const variants = key ? fractureTemplates.get(key) || [] : [];
+    const form = spec.form || spec.id;
+    const scale = JSON.stringify(spec.scale ?? null);
+    const cached = variants.find((template) => template.form === form && template.scale === scale
+      && template.seed === spec.seed && template.count === options.fragmentCount);
+    if (cached) {
+      return cached.fragments.map((fragment) => {
+        // Templates contain geometry only. Every instance keeps its own finish,
+        // including emissive palettes and the material on newly exposed faces.
+        const piece = new DestructibleMesh(fragment.geometry.clone(), mesh.material, inside);
+        piece.material = [mesh.material, inside];
+        piece.position.copy(fragment.center).applyMatrix4(mesh.matrixWorld);
+        piece.quaternion.copy(mesh.quaternion);
+        piece.scale.copy(mesh.scale);
+        return piece;
+      });
+    }
+    const pieces = mesh.fracture(new FractureOptions(options));
+    pendingObject.pieces = pieces;
+    if (key) {
+      const inverse = mesh.matrixWorld.clone().invert();
+      variants.push({ form, scale, seed: spec.seed, count: options.fragmentCount,
+        fragments: pieces.map((piece) => ({ geometry: piece.geometry.clone(), center: piece.position.clone().applyMatrix4(inverse) })),
+      });
+      fractureTemplates.set(key, variants);
+    }
+    return pieces;
+  }
 
   world.createCollider(RAPIER.ColliderDesc.cuboid(Math.max(8, (bounds.maxX - bounds.minX) / 2 + 1), 0.05, Math.max(8, (bounds.maxZ - bounds.minZ) / 2 + 1))
     .setTranslation((bounds.minX + bounds.maxX) / 2, -0.05, (bounds.minZ + bounds.maxZ) / 2).setFriction(0.8));
@@ -170,6 +207,9 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       total: specs.length,
       objects: objects.map((object) => ({
         id: object.spec.id,
+        form: object.spec.form || object.spec.id,
+        label: object.spec.label,
+        category: object.spec.category || 'relic',
         state: !object.enabled ? 'hidden' : object.docking ? 'docking' : grab?.object === object ? 'held' : !object.broken ? 'intact' : isComplete(object) ? 'assembled' : 'broken',
         visible: object.enabled,
         fractured: object.fractured,
@@ -294,7 +334,9 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       const outside = supplied?.outside?.clone() || new THREE.MeshStandardMaterial({ color: spec.color, roughness: 0.38, metalness: 0.06 });
       const inside = supplied?.inside?.clone() || new THREE.MeshStandardMaterial({ color: new THREE.Color(spec.color).lerp(new THREE.Color('#fff8eb'), 0.58), roughness: 0.92, metalness: 0 });
       const form = spec.form || spec.id;
-      const mesh = new DestructibleMesh(makeGeometry(form), outside, inside);
+      // The callback transfers ownership of its geometry to this lab.
+      const mesh = new DestructibleMesh(geometryForSpec ? geometryForSpec(spec) : makeGeometry(form), outside, inside);
+      pendingObject = { mesh, outside, inside, pieces: [] };
       mesh.name = spec.label;
       mesh.position.set(spec.x, spec.y ?? spec.pedestalHeight + spec.halfHeight + 0.004, spec.z);
       if (form === 'cube') mesh.rotation.y = 0.22;
@@ -307,7 +349,8 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       mesh.userData.wholeGrabbable = wholeObjects;
       scene.add(mesh);
       mesh.updateMatrixWorld(true);
-      const pieces = mesh.fracture(new FractureOptions({ fractureMethod: 'voronoi', fragmentCount: spec.fragmentCount || 16, seed: spec.seed, voronoiOptions: { mode: '3D', useApproximation: false } }));
+      const pieces = fracturePieces(mesh, spec, inside);
+      pendingObject.pieces = pieces;
       if (pieces.length < 2) throw new Error(`Could not fracture ${spec.label}.`);
       const fragments = pieces.map((piece, index) => {
         piece.visible = false;
@@ -332,6 +375,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
         intactHull: makeHull(mesh.geometry), intactCollider: null,
       };
       objects.push(object);
+      pendingObject = null;
       objectById.set(spec.id, object);
       mesh.visible = object.enabled;
       addIntactCollider(object);
@@ -347,7 +391,21 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       object.mesh.material.dispose();
       object.fragments[0]?.mesh.material[1]?.dispose();
     }
+    if (pendingObject) {
+      scene.remove(pendingObject.mesh);
+      pendingObject.mesh.geometry.dispose();
+      for (const piece of pendingObject.pieces) { scene.remove(piece); piece.geometry.dispose(); }
+      pendingObject.outside.dispose();
+      pendingObject.inside.dispose();
+    }
     throw error;
+  } finally {
+    for (const variants of fractureTemplates.values()) {
+      for (const template of variants) {
+        for (const fragment of template.fragments) fragment.geometry.dispose();
+      }
+    }
+    fractureTemplates.clear();
   }
 
   function hit(mesh, point, direction) {

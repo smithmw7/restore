@@ -17,9 +17,9 @@ try {
   const read=()=>page.evaluate(()=>window.__restoreDiagnostics());
   console.log('warehouse ready');
   const start=await read();
-  assert.equal(start.state.closedCrates,24);
+  assert.equal(start.state.closedCrates,176);
   assert.equal(await page.locator('body').innerText(),'');
-  checks.push('warehouse contains 24 closed crates and no visible text');
+  checks.push('warehouse contains 176 breakable crates and no visible text');
   await page.screenshot({path:`${out}/browser-start.png`});
 
   const crate=start.state.objects.find(object=>object.id==='crate-02');
@@ -131,7 +131,7 @@ try {
   checks.push('a real pointer selects and moves a broken artifact shard immediately');
   await page.locator('#restore').click();
   current=await read();
-  assert.equal(current.state.closedCrates,24);
+  assert.equal(current.state.closedCrates,176);
   assert.equal(current.state.broken,0);
   assert.equal(current.state.grab.active,false);
   assert.equal(await page.locator('body').innerText(),'');

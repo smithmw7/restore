@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { createDestructionLab, OBJECT_SPECS } from './destruction.js';
+import { createDestructionLab } from './destruction.js';
+import { ARTIFACT_CATALOG, createArtifactGeometry } from './artifact-forms.js';
+import { createAlienMaterials } from './artifact-materials.js';
 
 export const WAREHOUSE_BOUNDS = Object.freeze({ minX: -11.4, maxX: 11.4, minZ: -26.4, maxZ: 6.4 });
 const IDENTITY = new THREE.Quaternion();
@@ -71,9 +73,9 @@ function createPanelDefinitions(spec) {
 
 /** One physical world for packed crates, revealed artifacts, and loose pieces. */
 export async function createWarehouseGameplay({ scene, materials = {}, onEvent = () => {}, onProgress = () => {}, onChange = () => {},
-  obstacles = [], bounds = WAREHOUSE_BOUNDS, crateCount = 24, seed = 1701,
+  obstacles = [], bounds = WAREHOUSE_BOUNDS, crateCount = 24, seed = 1701, additionalCrates = [],
 } = {}) {
-  const crateSpecs = createCrateSpecs(crateCount, seed);
+  const crateSpecs = [...createCrateSpecs(crateCount, seed), ...additionalCrates].map((spec, index) => ({ ...spec, index }));
   const targets = [];
   const grabTargets = [];
   const occluders = [];
@@ -90,21 +92,59 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
   const ownMaterials = [];
   const defaultWood = materials.wood || new THREE.MeshStandardMaterial({ color: '#72553c', roughness: 0.85 });
   if (!materials.wood) ownMaterials.push(defaultWood);
-  const collectionMaterials = [
-    ['ceramic', 'marble', 'bronze', 'stone', 'ceramic', 'concrete', 'gold', 'metal'],
-    ['copper', 'stone', 'gold', 'marble', 'bronze', 'marble', 'copper', 'concrete'],
-    ['marble', 'bronze', 'copper', 'gold', 'ceramic', 'stone', 'bronze', 'ceramic'],
-  ];
+  // All closed crates share one draw, including the remote stacks. Lightweight
+  // mesh proxies keep ray/hand interaction identical to the individual panels.
+  const closedDefinitions = createPanelDefinitions({ width: 1, height: 1, depth: 1 });
+  const panelGeometries = [closedDefinitions[0].geometry.clone(), closedDefinitions[1].geometry.clone(), new THREE.BoxGeometry(1, 1, 1)];
+  const closedGeometry = mergeAndDispose(closedDefinitions.map((panel) => panel.geometry.translate(panel.center.x, panel.center.y, panel.center.z)));
+  const closedBatch = new THREE.InstancedMesh(closedGeometry, defaultWood, crateSpecs.length);
+  closedBatch.name = 'All breakable warehouse crates';
+  closedBatch.castShadow = true; closedBatch.receiveShadow = true;
+  closedBatch.frustumCulled = false;
+  closedBatch.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  const proxyMaterial = new THREE.MeshBasicMaterial({ visible: false });
+  ownMaterials.push(proxyMaterial);
+  scene.add(closedBatch);
+  const panelBatches = panelGeometries.map((geometry, index) => {
+    const batch = new THREE.InstancedMesh(geometry, defaultWood, crateSpecs.length * (index === 2 ? 4 : 1));
+    batch.name = `Breakable crate boards / ${['front', 'back', 'plain'][index]}`;
+    batch.castShadow = true; batch.receiveShadow = true; batch.frustumCulled = false; batch.visible = false;
+    batch.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(batch); return batch;
+  });
+  const instanceTransform = new THREE.Object3D();
+
+  function syncCrateInstance(crate) {
+    instanceTransform.position.copy(crate.mesh.position);
+    instanceTransform.quaternion.copy(crate.mesh.quaternion);
+    instanceTransform.scale.copy(crate.mesh.scale).multiplyScalar(crate.open ? 0 : 1);
+    instanceTransform.updateMatrix();
+    closedBatch.setMatrixAt(crate.instanceIndex, instanceTransform.matrix);
+    closedBatch.instanceMatrix.needsUpdate = true;
+  }
+
+  function syncPanelInstance(panel) {
+    instanceTransform.position.copy(panel.mesh.position);
+    instanceTransform.quaternion.copy(panel.mesh.quaternion);
+    instanceTransform.scale.copy(panel.renderScale).multiplyScalar(panel.mesh.visible ? 1 : 0);
+    instanceTransform.updateMatrix();
+    panel.renderBatch.setMatrixAt(panel.instanceIndex, instanceTransform.matrix);
+    panel.renderBatch.instanceMatrix.needsUpdate = true;
+  }
+  const alienMaterials = createAlienMaterials(materials);
+  const collection = ARTIFACT_CATALOG.filter((entry) => entry.form !== 'obelisk');
   const materialSounds = { ceramic: 'vase', marble: 'gem', bronze: 'orb', copper: 'orb', stone: 'gem', concrete: 'column', gold: 'ring', metal: 'tablet' };
-  const warehouseForms = { cube: { form: 'obelisk', halfHeight: 0.27 }, orb: { form: 'chalice', halfHeight: 0.27 }, tablet: { form: 'stela', halfHeight: 0.292 } };
   const artifactSpecs = crateSpecs.map((crate, index) => {
-    const base = OBJECT_SPECS[index % OBJECT_SPECS.length];
-    const materialKey = collectionMaterials[Math.floor(index / 8) % collectionMaterials.length][index % 8];
-    const silhouette = warehouseForms[base.id] || { form: base.id, halfHeight: base.halfHeight };
-    return { ...base, ...silhouette, id: crate.artifactId, kind: 'artifact',
-      soundId: materialSounds[materialKey], x: crate.x, y: crate.y - crate.height / 2 + 0.08 + silhouette.halfHeight, z: crate.z,
-      label: base.label, materialKey,
-      fragmentCount: 12, seed: base.seed, initialHidden: true, pedestalHeight: 0 };
+    const entry = index === 1 ? ARTIFACT_CATALOG.find((item) => item.form === 'obelisk') : collection[(Math.max(0, index - 1)) % collection.length];
+    const scale = index < crateCount ? 1 : crate.height >= 1.12 ? 1.55 : 1.15;
+    const halfHeight = entry.halfHeight * scale;
+    const variation = Math.floor(index / collection.length);
+    const materialKey = variation % 3 === 2 && ['copper', 'bronze', 'gold'].includes(entry.materialKey)
+      ? ['bronze', 'gold', 'copper'][variation % 3] : entry.materialKey;
+    return { ...entry, id: crate.artifactId, kind: 'artifact', scale, halfHeight, materialKey,
+      color: entry.category === 'alien' ? '#8ca5ae' : '#cfb88e', accent: ['#68e8d5', '#ffad59', '#8ea6ff'][(index + variation) % 3],
+      soundId: materialSounds[materialKey], x: crate.x, y: crate.y - crate.height / 2 + 0.08 + halfHeight, z: crate.z,
+      fractureKey: `${entry.form}:${scale}`, initialHidden: true, pedestalHeight: 0 };
   });
 
   function emit(type, crate, position, extra = {}) {
@@ -126,7 +166,8 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
   function notify() { if (ready) onChange(getState()); }
 
   lab = await createDestructionLab({ scene, specs: artifactSpecs, wholeObjects: true, pedestals: false, bounds, statics: obstacles,
-    materialForSpec: (spec) => ({ outside: materials[spec.materialKey], inside: ['gold', 'bronze', 'copper', 'metal'].includes(spec.materialKey) ? materials[spec.materialKey] : materials.stone }),
+    geometryForSpec: (spec) => createArtifactGeometry(spec.form).scale(spec.scale, spec.scale, spec.scale),
+    materialForSpec: (spec) => ({ outside: alienMaterials.get(spec), inside: ['gold', 'bronze', 'copper', 'metal'].includes(spec.materialKey) ? materials[spec.materialKey] : materials.stone }),
     onProgress,
     onChange: () => { refreshTargets(); notify(); },
     onEvent,
@@ -159,32 +200,43 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
 
   for (const spec of crateSpecs) {
     const definitions = createPanelDefinitions(spec);
-    const closedGeometry = mergeAndDispose(definitions.map((panel) => panel.geometry.clone().translate(panel.center.x, panel.center.y, panel.center.z)));
-    const mesh = new THREE.Mesh(closedGeometry, defaultWood);
+    const mesh = new THREE.Mesh(closedGeometry, proxyMaterial);
     mesh.position.set(spec.x, spec.y, spec.z);
     mesh.rotation.y = spec.yaw;
-    mesh.castShadow = true; mesh.receiveShadow = true;
+    mesh.scale.set(spec.width, spec.height, spec.depth);
     Object.assign(mesh.userData, { labObject: spec.id, soundId: 'cube', kind: 'crate', wholeGrabbable: true });
     mesh.name = spec.id;
     scene.add(mesh);
-    const crate = { spec, mesh, open: false, age: 1, body: null, handles: [], velocity: new THREE.Vector3(),
+    const crate = { spec, mesh, instanceIndex: crates.length, open: false, age: 1, body: null, handles: [], velocity: new THREE.Vector3(),
       homePosition: mesh.position.clone(), homeQuaternion: mesh.quaternion.clone(), panels: [], box: new THREE.Box3(), object: null };
     crate.object = crate;
     crate.descriptions = definitions.map((definition) => RAPIER.ColliderDesc.cuboid(definition.size.x / 2, definition.size.y / 2, definition.size.z / 2)
       .setTranslation(definition.center.x, definition.center.y, definition.center.z).setFriction(0.78).setRestitution(0.06).setDensity(90));
     crate.panels = definitions.map((definition, index) => {
-      const panelMesh = new THREE.Mesh(definition.geometry, defaultWood);
-      panelMesh.visible = false; panelMesh.castShadow = true; panelMesh.receiveShadow = true;
+      const panelMesh = new THREE.Mesh(definition.geometry, proxyMaterial);
+      panelMesh.visible = false;
       Object.assign(panelMesh.userData, { labObject: spec.id, soundId: 'cube', kind: 'crate-piece', panelIndex: index });
       panelMesh.name = `${spec.id}-panel-${index}`;
       scene.add(panelMesh);
       return { mesh: panelMesh, offset: definition.center, size: definition.size, body: null, handles: [], object: crate,
+        renderBatch: panelBatches[Math.min(index, 2)], instanceIndex: index < 2 ? crate.instanceIndex : crate.instanceIndex * 4 + index - 2,
+        renderScale: index < 2 ? new THREE.Vector3(spec.width, spec.height, 1) : definition.size.clone(),
         velocity: new THREE.Vector3(), description: RAPIER.ColliderDesc.cuboid(definition.size.x / 2, definition.size.y / 2, definition.size.z / 2)
           .setFriction(0.72).setRestitution(0.12).setDensity(90) };
     });
     crates.push(crate); crateById.set(spec.id, crate);
-    registerBody(crate, crate.descriptions).sleep();
+    closedBatch.setColorAt(crate.instanceIndex, new THREE.Color(spec.tint || '#ffffff'));
+    syncCrateInstance(crate);
+    for (const panel of crate.panels) {
+      panel.renderBatch.setColorAt(panel.instanceIndex, new THREE.Color(spec.tint || '#ffffff'));
+      syncPanelInstance(panel);
+    }
+    // Let the initially separated tiers settle into contact, so removing their
+    // support wakes the rest of the stack and it can collapse naturally.
+    registerBody(crate, crate.descriptions);
   }
+  closedBatch.instanceColor.needsUpdate = true;
+  for (const batch of panelBatches) batch.instanceColor.needsUpdate = true;
 
   function artifactPose(crate) {
     const artifact = artifactSpecs[crate.spec.index];
@@ -204,7 +256,8 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     const base = lab?.getState() || { ready: false, intact: 0, broken: 0, debris: 0, restoring: false, total: 0, objects: [] };
     const { heldMesh, ...grab } = getGrabState();
     const opened = crates.filter((crate) => crate.open).length;
-    return { ...base, ready, mode: 'warehouse', crateCount: crates.length, openedCrates: opened,
+    return { ...base, ready, mode: 'warehouse', crateCount: crates.length, storageCrates: additionalCrates.length,
+      artifactForms: [...new Set(artifactSpecs.map((spec) => spec.form))], alienArtifacts: artifactSpecs.filter((spec) => spec.category === 'alien').length, openedCrates: opened,
       closedCrates: crates.length - opened, revealedArtifacts: opened,
       debris: base.debris + opened * 6, grab, resetCount,
       crates: crates.map((crate) => ({ id: crate.spec.id, artifactId: crate.spec.artifactId, state: crate.open ? 'open' : held?.crate === crate ? 'held' : 'closed',
@@ -221,12 +274,15 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     removeBody(crate);
     crate.open = true; crate.age = 0;
     crate.mesh.visible = false;
+    syncCrateInstance(crate);
     const push = direction?.isVector3 ? direction.clone().normalize() : new THREE.Vector3(0, 0, -1);
     for (let index = 0; index < crate.panels.length; index++) {
       const panel = crate.panels[index];
       panel.mesh.position.copy(panel.offset).applyQuaternion(crate.mesh.quaternion).add(crate.mesh.position);
       panel.mesh.quaternion.copy(crate.mesh.quaternion);
       panel.mesh.visible = true;
+      panel.renderBatch.visible = true;
+      syncPanelInstance(panel);
       const body = registerBody(panel, [panel.description]);
       const outward = panel.offset.clone().normalize().applyQuaternion(crate.mesh.quaternion).multiplyScalar(index === 4 ? 0.45 : 1.25);
       outward.addScaledVector(push, 0.3).addScaledVector(velocity, 0.25);
@@ -292,15 +348,17 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     lab.resetImmediately();
     for (const crate of crates) {
       removeBody(crate);
-      for (const panel of crate.panels) { removeBody(panel); panel.mesh.visible = false; }
+      for (const panel of crate.panels) { removeBody(panel); panel.mesh.visible = false; syncPanelInstance(panel); }
       crate.open = false; crate.age = 1;
       crate.mesh.visible = true;
       crate.mesh.position.copy(crate.homePosition);
       crate.mesh.quaternion.copy(crate.homeQuaternion);
-      registerBody(crate, crate.descriptions).sleep();
+      registerBody(crate, crate.descriptions);
+      syncCrateInstance(crate);
       const pose = artifactPose(crate);
       lab.placeObject(crate.spec.artifactId, pose.position, pose.quaternion, { visible: false, rebaseHome: true });
     }
+    for (const batch of panelBatches) batch.visible = false;
     resetCount++;
     refreshTargets(); notify();
     return true;
@@ -334,6 +392,7 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
           part.body.setTranslation(p, true);
           part.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
         }
+        if (crate.open) syncPanelInstance(part); else syncCrateInstance(crate);
         // Rapier sleeps settled bodies naturally. A still-handed release starts
         // with zero velocity even in midair, so age/speed alone must not sleep it.
       }
@@ -357,11 +416,14 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     cancelGrabs();
     for (const crate of crates) {
       removeBody(crate);
-      scene.remove(crate.mesh); crate.mesh.geometry.dispose();
+      scene.remove(crate.mesh);
       for (const panel of crate.panels) { removeBody(panel); scene.remove(panel.mesh); panel.mesh.geometry.dispose(); }
     }
+    scene.remove(closedBatch); closedBatch.dispose(); closedGeometry.dispose();
+    for (const batch of panelBatches) { scene.remove(batch); batch.dispose(); batch.geometry.dispose(); }
     disposed = true; ready = false;
     lab.dispose();
+    alienMaterials.dispose();
     targets.length = 0; grabTargets.length = 0; occluders.length = 0;
     for (const material of ownMaterials) material.dispose();
   }

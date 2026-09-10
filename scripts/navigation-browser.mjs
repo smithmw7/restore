@@ -10,7 +10,7 @@ page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()
 await page.goto(process.env.RESTORE_URL||'http://127.0.0.1:5209');await page.waitForFunction(()=>window.__restoreDiagnostics?.().state.ready);
 const diag=()=>page.evaluate(()=>window.__restoreDiagnostics());
 assert.equal((await page.locator('body').innerText()).trim(),'','Scene and interface have no visible text');
-let d=await diag();assert.equal(d.state.crateCount,24);assert.equal(d.state.warehouse.staticCrates,152);const initial=d.state.locomotion.head;
+let d=await diag();assert.equal(d.state.crateCount,176);assert.equal(d.state.warehouse.staticCrates,0);const initial=d.state.locomotion.head;
 await page.keyboard.down('KeyW');await page.evaluate(()=>window.advanceTime(500));await page.keyboard.up('KeyW');d=await diag();assert(d.state.locomotion.head[2]<initial[2]-.25,'W moves down open aisle');
 const beforeTurn=d.state.locomotion.head;await page.keyboard.press('KeyE');d=await diag();assert.equal(d.state.locomotion.turnCount,1);assert(Math.hypot(d.state.locomotion.head[0]-beforeTurn[0],d.state.locomotion.head[2]-beforeTurn[2])<.001,'Snap turn preserves actual head position');
 await page.keyboard.press('KeyQ');d=await diag();assert.equal(d.state.locomotion.turnCount,2);
@@ -23,7 +23,7 @@ await page.keyboard.down('Shift');await page.mouse.click((screen.x*.5+.5)*1440,(
 d=await diag();assert.equal(d.state.locomotion.teleportCount,1);assert(Math.hypot(d.state.locomotion.head[0],d.state.locomotion.head[2]+4)<.02,'Teleport places head at destination');
 assert.equal(d.state.openedCrates,0,'Navigation did not accidentally break a crate');
 await page.screenshot({path:'output/warehouse/navigation.png'});
-await page.keyboard.press('KeyR');assert.equal((await diag()).state.closedCrates,24);
-assert.deepEqual(errors,[]);const result={passed:true,checks:['No visible text','24 interactive crates and152 background crates','WASD aisle movement','snap turns around head','mouse look','floor teleport','no accidental crate breaks','reset'],state:d.state.locomotion,errors};
+await page.keyboard.press('KeyR');assert.equal((await diag()).state.closedCrates,176);
+assert.deepEqual(errors,[]);const result={passed:true,checks:['No visible text','176 interactive crates and no scenery crates','WASD aisle movement','snap turns around head','mouse look','floor teleport','no accidental crate breaks','reset'],state:d.state.locomotion,errors};
 await writeFile('output/warehouse/navigation-results.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));
 }finally{await browser.close();}
