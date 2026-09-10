@@ -178,6 +178,48 @@ try {
       if ('strength' in event) assert.ok(event.strength > 0 && event.strength <= 1);
     }
   });
+
+  check('aged crates fall after a stationary release, a long hold, or cancelled tracking', () => {
+    for (const { holdSeconds, cancelled } of [
+      { holdSeconds: 2, cancelled: false },
+      { holdSeconds: 20, cancelled: false },
+      { holdSeconds: 2, cancelled: true },
+    ]) {
+      game.restore();
+      advance(20);
+      assert.equal(game.beginGrab(crate, crate.position.clone(), 'left'), true);
+      game.moveGrab(new THREE.Vector3(0, 3, -10), 'left');
+      advance(holdSeconds);
+      const releaseY = crate.position.y;
+      assert.ok(releaseY > 2.95);
+      assert.ok(game.getGrabState().speed < 0.01, 'release from a still hand');
+      const dropCount = events.filter((event) => event.type === 'drop').length;
+      assert.equal(game.endGrab('left', { cancelled }), true);
+      assert.equal(game.getGrabState().active, false);
+      assert.equal(events.filter((event) => event.type === 'drop').length, dropCount + (cancelled ? 0 : 1));
+      advance(0.4);
+      assert.ok(crate.position.y < releaseY - 0.4, `released crate stayed suspended at ${crate.position.y}`);
+      advance(3);
+      const halfHeight = game.getState().crates.find((item) => item.id === 'crate-02').dimensions[1] / 2;
+      assert.ok(Math.abs(crate.position.y - halfHeight) < 0.08, 'crate lands on the floor');
+    }
+  });
+
+  check('aged loose boards fall again after being picked up and released', () => {
+    game.restore();
+    game.hit(crate, crate.position.clone(), new THREE.Vector3(0, 0, -1));
+    advance(20);
+    const board = scene.children.find((mesh) => mesh.userData.labObject === 'crate-02' && mesh.userData.panelIndex === 0);
+    assert.equal(game.beginGrab(board, board.position.clone(), 'right'), true);
+    game.moveGrab(new THREE.Vector3(0, 3, -10), 'right');
+    advance(2);
+    const releaseY = board.position.y;
+    assert.ok(releaseY > 2.95);
+    assert.equal(game.endGrab('right'), true);
+    advance(0.4);
+    assert.ok(board.position.y < releaseY - 0.4, 'released board stayed suspended');
+    game.restore();
+  });
   console.log(JSON.stringify({ passed: true, checks, meshCount: initialMeshCount, physics: game.getState().physics, events: events.length }, null, 2));
 } finally {
   game.dispose();

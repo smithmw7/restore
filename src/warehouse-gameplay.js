@@ -334,8 +334,8 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
           part.body.setTranslation(p, true);
           part.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
         }
-        // Resting boards are kept interactive but stop consuming simulation work.
-        if (crate.age > 18 && held?.part !== part && !part.body.isSleeping() && part.velocity.lengthSq() < 0.02) part.body.sleep();
+        // Rapier sleeps settled bodies naturally. A still-handed release starts
+        // with zero velocity even in midair, so age/speed alone must not sleep it.
       }
     }
   }

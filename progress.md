@@ -98,3 +98,10 @@ User requested a private Git repository for this project, preserving the liked d
 - User requested a slightly rougher floor normal map. Increased the existing concrete normal strength from0.1 to0.65 and restored its baked roughness map (mean0.74) in place of uniform0.42 roughness. Walls and artifacts retain their original settings.
 - Increased normal-driven reflection distortion slightly and varied the existing five-tap filter by surface roughness. Reflection sampling now aligns with the full concrete slab despite its inset plane. No additional textures or render passes.
 - Production build passed (index-CMS5pMTv.js). Matching before/after floor views and the develop-web-game client screenshot were visually inspected; no browser or shader errors. Refreshed the existing5209 in-app preview and confirmed the warehouse rendered. Evidence is in output/floor-normal/.
+
+## Crates suspended after release
+
+- User reported lifted boxes sometimes remain in the air after release. Reproduced deterministically: after20seconds of scene age, lift a crate to3m, hold still, then release. The old cleanup rule slept it at2.998296m after one gravity step because it tested the cached zero velocity and crate age rather than whether it was resting.
+- Removed that forced-sleep rule for crates and panels. Rapier now handles natural resting sleep; the existing release path still restores a dynamic body and transfer velocity. No input or audio behavior changed.
+- Added regression coverage for stationary release, a20second hold, tracking cancellation, and aged loose boards. The new test failed before the fix and all11 warehouse integration checks passed afterward. The production browser suite passed all7 checks including actual pointer lift/release, falling, one drop sound, drag-loop cleanup and the existing destruction/repair interactions. Held/landed screenshots were inspected.
+- Build passed (index-CBH5k7kh.js); develop-web-game client completed with a ready scene and no error report, screenshot inspected. Refreshed the existing5209 preview. Physical Quest input validation remains separate from these browser/physics checks.

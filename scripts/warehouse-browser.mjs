@@ -23,6 +23,31 @@ try {
   await page.screenshot({path:`${out}/browser-start.png`});
 
   const crate=start.state.objects.find(object=>object.id==='crate-02');
+  // Reproduce a still-handed release after the old 18-second cleanup timeout.
+  await page.evaluate(()=>window.advanceTime(20000));
+  await page.mouse.move(crate.screen.x,crate.screen.y);
+  await page.mouse.down();
+  await page.waitForFunction(()=>window.__restoreDiagnostics().state.grab.objectId==='crate-02');
+  await page.mouse.move(720,180,{steps:18});
+  await page.evaluate(()=>window.advanceTime(2000));
+  const heldCrate=await read();
+  const releaseY=heldCrate.state.objects.find(object=>object.id==='crate-02').position[1];
+  assert.ok(releaseY>1.7,'crate was lifted above the floor');
+  assert.ok(heldCrate.state.grab.speed<0.01,'hand is still before release');
+  const crateDropCount=heldCrate.audio.eventCounts.drop||0;
+  await page.screenshot({path:`${out}/browser-crate-held.png`});
+  await page.mouse.up();
+  await page.evaluate(()=>window.advanceTime(400));
+  const droppedCrate=await read();
+  assert.equal(droppedCrate.state.grab.active,false);
+  assert.ok(droppedCrate.state.objects.find(object=>object.id==='crate-02').position[1]<releaseY-.4,'released crate falls under gravity');
+  assert.equal(droppedCrate.audio.eventCounts.drop,crateDropCount+1);
+  assert.equal(droppedCrate.audio.loopActive,false);
+  await page.evaluate(()=>window.advanceTime(3000));
+  await page.screenshot({path:`${out}/browser-crate-landed.png`});
+  checks.push('an aged crate falls after a stationary pointer release, plays one drop, and stops dragging audio');
+  await page.locator('#restore').click();
+
   await page.mouse.click(crate.screen.x,crate.screen.y);
   await page.waitForFunction(()=>window.__restoreDiagnostics().state.openedCrates===1);
   let current=await read();
