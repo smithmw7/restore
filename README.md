@@ -14,7 +14,7 @@ A 96 × 180 × 28 metre enclosed archive with towering steel trusses, long stora
 - 176 artifacts across 15 forms. Eight alien designs include a thruster bell, reactor spindle, crescent hull section, gyroscopic coupler, sensor fin, navigation prism, flux key, and fossil sigil. Seven relic designs include amphorae, obelisks, a chalice, a stela, a fluted urn, and meteor shards. Larger shipping crates contain larger variants. Alien components use subtle luminous circuit inlays over the textured surfaces.
 - Whole artifacts can be moved, fractured with Three Pinata, and repaired by drawing their matching fragments together. Partial repairs survive drops. Material variation keeps the recorded impact and repair sounds appropriate to each object.
 - Crates, loose boards and artifacts interpolate between physics updates for smooth motion at headset refresh rates. A small contact margin on sharp artifact hulls reduces floor chatter so fragments can sleep naturally. Resting objects wake on impact or when their support is removed; elapsed time never freezes a normally moving fragment.
-- Closed wooden crates use one instanced render batch; loose boards use three more. Every wooden box has its own physics and selection proxy, and navigation follows the remaining boxes instead of permanent stack barriers. Repeated artifact forms reuse fracture templates at startup while keeping their repair state independent.
+- Closed wooden crates use one instanced render batch; loose boards use three more. Each sealed wooden box has one solid collision shape with its original wood mass, plus its selection proxy, and navigation follows the remaining boxes instead of permanent stack barriers. Repeated artifact forms reuse fracture templates at startup while keeping their repair state independent.
 - Eight 512px Sanctus texture sets: wood, concrete, ceramic, bronze, copper, gold, marble and stone. Lossless WebP conversion preserves the baked source pixels. Material provenance and limitations are in `docs/warehouse-materials.json`.
 
 ## Controls
@@ -24,6 +24,8 @@ The experience itself displays no instructions. These controls are documented he
 Taps break exposed crates and whole artifacts within **8 feet (2.44m)** of your head, measured to the surface you touch. Farther taps give a physical nudge instead, with inverse-square force falloff: twice the distance means one quarter of the influence. Small upward rocking makes floor contact readable, and material contact sounds and controller feedback become quieter/weaker with range. Far taps never accumulate fracture damage; sealed metal scenery remains fixed.
 
 Distant held objects gradually reel toward you after a short pause, speeding up gently and easing to a stop with room for the object's size. Manual depth adjustments restart the gentle ramp. Objects picked up by direct hand contact continue to follow your hand.
+
+Dragged crates, boards, artifacts and repair pieces remain solid physical objects. They stop against floors and obstacles, slide along surfaces, and gently push movable props according to their mass. A blocked hand target cannot build an artificial throw on release. Raised wooden braces have collision coverage too. A returning artifact only docks when its path and home are clear; an obstructed return drops naturally.
 
 **Quest controllers**
 
@@ -92,6 +94,10 @@ npm run build
 npm run test:repair       # Original magnetic repair API regression
 npm run test:warehouse    # Crate / artifact / physics integration
 npm run test:storage      # All 176 crates, stack collapse, live obstacles and reset
+npm run test:drag-collision # Solid grabs, sliding, mass-sensitive pushes and safe release
+npm run test:artifact-collision # Solid whole and joined artifacts, magnetic barriers
+npm run test:docking      # Physical return, occupied home and blocked path
+npm run test:drag-collision-browser # Real pointer floor and crate contact
 npm run test:settling     # Disturbed piles, natural rest and smooth display updates
 npm run test:tap          # Reach boundary, distance falloff, native nudges and retained grabs
 npm run test:tap-browser  # Real pointer distant nudges, approach/break and remote grabbing

@@ -17,22 +17,31 @@ try {
   check('large live crate stacks still fall after a stationary held release', () => {
     advance(3);
     assert.equal(game.getState().crateCount, 176);
-    const mesh = game.targets.find((item) => item.userData.labObject === 'storage-crate-001');
+    const mesh = game.targets.find((item) => item.userData.labObject === 'storage-crate-003');
     assert.equal(game.beginGrab(mesh, mesh.position.clone(), 'settling-check'), true);
-    game.moveGrab(new THREE.Vector3(0, 3.5, -8), 'settling-check'); advance(3);
+    // Take the exposed top tier; a solid grab cannot lift through its stack.
+    game.moveGrab(new THREE.Vector3(0, mesh.position.y, mesh.position.z), 'settling-check'); advance(4);
+    game.moveGrab(new THREE.Vector3(0, 3.5, mesh.position.z), 'settling-check'); advance(2);
+    game.moveGrab(new THREE.Vector3(0, 3.5, -8), 'settling-check'); advance(6);
     const before = mesh.position.y;
     assert.equal(game.endGrab('settling-check'), true); advance(.4);
     assert.ok(mesh.position.y < before - .35, 'a stationary release was frozen above its support');
     game.restore();
   });
 
-  check('a settled upper crate wakes and falls when its support is removed', () => {
+  check('a settled upper crate wakes and falls when its remaining support board is pulled clear', () => {
     advance(3);
     const lower = game.targets.find((item) => item.userData.labObject === 'storage-crate-001');
     const upper = game.targets.find((item) => item.userData.labObject === 'storage-crate-002');
     const before = upper.position.y;
     assert.equal(game.hit(lower, lower.position.clone(), new THREE.Vector3(0, .15, -1)), true);
-    advance(2);
+    advance(3);
+    const support = scene.children.find(mesh => mesh.userData.labObject === 'storage-crate-001' && mesh.userData.panelIndex === 0);
+    const supportStart = support.position.clone();
+    assert.equal(game.beginGrab(support, supportStart, 'settling-check'), true);
+    game.moveGrab(supportStart.clone().add(new THREE.Vector3(0, 0, 2.5)), 'settling-check'); advance(5);
+    assert.ok(support.position.z > supportStart.z + 1.5, 'the load-bearing board was not pulled clear');
+    game.endGrab('settling-check'); advance(1);
     assert.ok(upper.position.y < before - .25, 'the settled upper tier remained suspended without support');
     game.restore();
   });
@@ -49,19 +58,33 @@ try {
     game.endGrab('settling-check');
   });
 
-  // Match the original dense-pile probe in a fresh world. Earlier release and
-  // reset checks must not alter this seeded stack arrangement or contact order.
+  // Earlier release/reset checks must not alter the dense pile's seeded world.
   game.dispose();
   assert.equal(scene.children.length, 0);
   game = await createWarehouseGameplay({ scene, bounds: WAREHOUSE_BOUNDS, additionalCrates: createStorageCrateSpecs() });
 
   check('a dense pile of dropped crates, broken boards, and artifact shards becomes quiet', () => {
     advance(3);
-    const ids = ['storage-crate-001', 'storage-crate-005', 'storage-crate-008', 'storage-crate-010', 'storage-crate-014', 'storage-crate-018', 'storage-crate-022', 'storage-crate-025'];
-    for (const id of ids) {
+    // These are the exposed top tiers of the eight inner left bays. A dynamic
+    // grab must lift above surrounding stacks before entering the clear aisle.
+    const ids = ['storage-crate-003', 'storage-crate-007', 'storage-crate-009', 'storage-crate-012', 'storage-crate-014', 'storage-crate-017', 'storage-crate-019', 'storage-crate-023'];
+    for (const [index, id] of ids.entries()) {
       const mesh = game.targets.find((item) => item.userData.labObject === id);
       assert.equal(game.beginGrab(mesh, mesh.position.clone(), 'settling-check'), true);
-      game.moveGrab(new THREE.Vector3(0, 2.8, -8), 'settling-check'); advance(2);
+      const pickupOffset = new THREE.Vector3().fromArray(game.getGrabState().goal).sub(mesh.position);
+      const carryTo = point => {
+        const allowance = mesh.position.distanceTo(point) / 2 + 3;
+        game.moveGrab(point.clone().sub(pickupOffset), 'settling-check');
+        let elapsed = 0;
+        while (mesh.position.distanceTo(point) > .025 && elapsed < allowance) { advance(.1); elapsed += .1; }
+        assert.ok(mesh.position.distanceTo(point) < .025, `${id} was blocked before reaching its carry waypoint: ${mesh.position.toArray()} -> ${point.toArray()}`);
+      };
+      const sourceZ = mesh.position.z;
+      carryTo(new THREE.Vector3(mesh.position.x, 5.6, sourceZ));
+      carryTo(new THREE.Vector3(0, 5.6, sourceZ));
+      // Three overlapping drop columns keep the eight-crate pile below the
+      // reachable ceiling, rather than forcing a new box inside an occupied slot.
+      carryTo(new THREE.Vector3(index % 2 ? .14 : -.12, 5.6, [-9.7, -7.2, -8.4][index % 3]));
       game.endGrab('settling-check'); advance(.4);
     }
     for (const id of ids.slice(-3)) {

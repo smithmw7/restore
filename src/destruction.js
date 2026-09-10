@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { DestructibleMesh, FractureOptions } from '@dgreenheck/three-pinata';
 import { nudgeBody } from './tap-influence.js';
+import { driveGrabbedBody, releaseGrabbedBody } from './physical-drag.js';
 
 // Dimensions are metres. The stage uses these same specs for its pedestal visuals.
 export const OBJECT_SPECS = Object.freeze([
@@ -89,11 +90,12 @@ function makeHull(geometry, shrink = 1) {
 export async function createDestructionLab({ scene, onProgress = () => {}, onChange = () => {}, onEvent = () => {},
   specs = OBJECT_SPECS, materialForSpec = null, geometryForSpec = null, wholeObjects = false, pedestals = true,
   bounds = { minX: -6, maxX: 6, minZ: -7, maxZ: 6 }, statics = [],
-  beforePhysicsStep = () => {}, afterPhysicsStep = () => {},
+  beforePhysicsStep = () => {}, afterPhysicsStep = () => {}, solverIterations = 4,
 }) {
   await RAPIER.init();
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const events = new RAPIER.EventQueue(true);
+  world.numSolverIterations = solverIterations;
   world.timestep = FIXED_STEP;
   const targets = [];
   const grabTargets = [];
@@ -196,7 +198,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       complete,
       speed: grab.speed,
       goal: grab.goal.toArray(),
-      canDock: complete && assemblyCenter(unit, scratch).distanceTo(object.homePosition) <= DOCK_RADIUS,
+      canDock: complete && assemblyCenter(unit, scratch).distanceTo(object.homePosition) <= DOCK_RADIUS && isDockHomeClear(object),
       heldMesh: complete ? object.mesh : unit.anchor.mesh,
     };
   }
@@ -258,9 +260,23 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   function removeBody(unit) {
     for (const handle of unit.colliderHandles) colliderUnits.delete(handle);
     unit.colliderHandles.length = 0;
-    if (unit.body) world.removeRigidBody(unit.body);
+    if (unit.body) {
+      releaseGrabbedBody(unit.body);
+      world.removeRigidBody(unit.body);
+    }
     unit.body = null;
     unit.magnetized = false;
+  }
+
+  function addUnitCollider(unit, fragment) {
+    scratch.copy(fragment.homePosition).sub(unit.anchor.homePosition);
+    const collider = world.createCollider(fragment.hull
+      .setTranslation(scratch.x, scratch.y, scratch.z)
+      .setRotation(fragment.homeQuaternion)
+      .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
+      .setActiveHooks(RAPIER.ActiveHooks.FILTER_CONTACT_PAIRS), unit.body);
+    unit.colliderHandles.push(collider.handle);
+    colliderUnits.set(collider.handle, { unit, fragment });
   }
 
   function addBody(unit, initialVelocity = null) {
@@ -271,17 +287,39 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     unit.body = body;
     unit.previousPosition.copy(p);
     unit.previousQuaternion.copy(unit.quaternion);
-    for (const fragment of unit.members) {
-      scratch.copy(fragment.homePosition).sub(unit.anchor.homePosition);
-      const collider = world.createCollider(fragment.hull
-        .setTranslation(scratch.x, scratch.y, scratch.z)
-        .setRotation(fragment.homeQuaternion)
-        .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS), body);
-      unit.colliderHandles.push(collider.handle);
-      colliderUnits.set(collider.handle, { unit, fragment });
-    }
+    for (const fragment of unit.members) addUnitCollider(unit, fragment);
     if (initialVelocity) body.setLinvel(initialVelocity, true);
   }
+
+  function reanchorUnit(unit, fragment) {
+    if (unit.anchor === fragment) return;
+    const offset = fragment.homePosition.clone().sub(unit.anchor.homePosition);
+    // Change the body's coordinate origin without moving its world-space hulls,
+    // including either end of the current render interpolation interval.
+    unit.position.add(offset.clone().applyQuaternion(unit.quaternion));
+    unit.previousPosition.add(offset.clone().applyQuaternion(unit.previousQuaternion));
+    unit.anchor = fragment;
+    for (const handle of unit.colliderHandles) {
+      const collider = world.getCollider(handle);
+      const member = colliderUnits.get(handle).fragment;
+      collider.setTranslationWrtParent(scratch.copy(member.homePosition).sub(fragment.homePosition));
+    }
+    unit.body.setTranslation(unit.position, true);
+    unit.body.recomputeMassPropertiesFromColliders();
+  }
+
+  const physicsHooks = {
+    filterContactPair(handleA, handleB) {
+      const a = colliderUnits.get(handleA)?.unit;
+      const b = colliderUnits.get(handleB)?.unit;
+      // Only active pieces of this repair may pass one another while lining up.
+      // Floors, walls, foreign props, and loose inactive pieces stay solid.
+      if (grab && a?.object === grab.object && b?.object === grab.object &&
+        (a === grab.unit || a.magnetized) && (b === grab.unit || b.magnetized)) return null;
+      return RAPIER.SolverFlags.COMPUTE_IMPULSE;
+    },
+    filterIntersectionPair: () => true,
+  };
 
   function makeUnit(object, members, position, quaternion = identity) {
     const unit = {
@@ -484,24 +522,15 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     const fragment = Number.isInteger(mesh.userData.fragmentIndex) ? object.fragments[mesh.userData.fragmentIndex] : null;
     const unit = fragment?.unit || (mesh === object.mesh && isComplete(object) ? object.units[0] : null);
     if (!unit) return false;
-    // Start from the rendered pose, including interpolation, so grabbing a
-    // moving shard never introduces a one-physics-frame jump at the touch point.
-    if (fragment) {
-      unit.position.copy(fragment.mesh.position);
-      unit.quaternion.copy(fragment.mesh.quaternion).multiply(fragment.homeQuaternion.clone().invert());
-      unit.anchor = fragment;
-    } else {
-      unit.quaternion.copy(object.mesh.quaternion).multiply(object.homeQuaternion.clone().invert());
-      unit.position.copy(unit.anchor.homePosition).sub(object.homePosition)
-        .applyQuaternion(unit.quaternion).add(object.mesh.position);
-    }
-    removeBody(unit);
-    unit.previousPosition.copy(unit.position);
-    unit.previousQuaternion.copy(unit.quaternion);
+    if (!unit.body) addBody(unit);
+    if (fragment) reanchorUnit(unit, fragment);
+    unit.body.wakeUp();
+    // The hand offset refers to the actual physics anchor. Keeping the render
+    // history avoids rewinding a moving body's colliders to its displayed pose.
     const offset = unit.position.clone().sub(worldPoint);
     grab = { object, unit, handId, offset, goal: worldPoint.clone().add(offset), speed: 0, velocity: new THREE.Vector3(), soundEnded: false };
     emit('pickup', object, unit.position, { complete: isComplete(object), whole: !object.fractured, assembled: unit.members.length, total: object.fragments.length });
-    syncUnit(unit);
+    syncUnit(unit, accumulator / FIXED_STEP);
     notify();
     return true;
   }
@@ -526,10 +555,19 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     for (const unit of object.units) {
       if (!unit.magnetized || !unit.body) continue;
       unit.magnetized = false;
-      unit.body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
-      unit.velocity.clampLength(0, 3);
-      unit.body.setLinvel(unit.velocity, true);
+      releaseGrabbedBody(unit.body);
     }
+  }
+
+  function isDockHomeClear(object) {
+    let blocked = false;
+    world.intersectionsWithShape(object.homePosition, object.homeQuaternion, object.intactHull.shape, (collider) => {
+      if (collider.isSensor() || colliderUnits.get(collider.handle)?.unit.object === object) return true;
+      const contact = collider.contactShape(object.intactHull.shape, object.homePosition, object.homeQuaternion, 0);
+      if (contact && contact.distance < -0.001) { blocked = true; return false; }
+      return true;
+    });
+    return !blocked;
   }
 
   function endGrab(handId = 'primary', { cancelled = false } = {}) {
@@ -537,16 +575,16 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     const activeGrab = grab;
     const { object, unit } = activeGrab;
     grab = null;
+    releaseGrabbedBody(unit.body);
     stopDragSound(activeGrab, cancelled ? 'cancelled' : 'release');
     releaseMagnetized(object);
     const complete = unit.members.length === object.fragments.length;
-    const canDock = complete && assemblyCenter(unit, scratch).distanceTo(object.homePosition) <= DOCK_RADIUS;
+    const canDock = complete && assemblyCenter(unit, scratch).distanceTo(object.homePosition) <= DOCK_RADIUS && isDockHomeClear(object);
     if (!cancelled) emit('drop', object, unit.position, { strength: THREE.MathUtils.clamp(0.4 + activeGrab.speed * 0.2, 0.4, 1), complete });
     if (!cancelled && canDock) {
-      object.docking = { elapsed: 0, unit, fromPosition: unit.position.clone(), fromQuaternion: unit.quaternion.clone() };
-    } else {
-      const velocity = cancelled ? new THREE.Vector3() : activeGrab.velocity.clone().clampLength(0, 2.2);
-      addBody(unit, velocity);
+      // Keep the dynamic hulls throughout the return so another prop can block
+      // or deflect docking just as it can block a hand-driven object.
+      object.docking = { elapsed: 0, unit };
     }
     refreshTargets();
     notify();
@@ -562,7 +600,12 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     const count = unit.members.length;
     removeBody(unit);
     object.units.splice(object.units.indexOf(unit), 1);
-    for (const fragment of unit.members) { fragment.unit = held; held.members.push(fragment); }
+    for (const fragment of unit.members) {
+      fragment.unit = held;
+      held.members.push(fragment);
+      addUnitCollider(held, fragment);
+    }
+    held.body.recomputeMassPropertiesFromColliders();
     syncUnit(held);
     emit('snap', object, unit.position, { strength: 0.45 + Math.min(count, 4) * 0.1, count, assembled: held.members.length, total: object.fragments.length });
     if (held.members.length === object.fragments.length) {
@@ -573,15 +616,30 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     notify();
   }
 
+  function canJoinUnit(unit, held) {
+    // A final magnetic snap must not create a hull inside an unrelated prop or
+    // below the floor, even if its requested slot is only a few centimetres away.
+    const position = new THREE.Vector3(), quaternion = new THREE.Quaternion();
+    for (const fragment of unit.members) {
+      position.copy(fragment.homePosition).sub(held.anchor.homePosition)
+        .applyQuaternion(held.quaternion).add(held.position);
+      quaternion.copy(held.quaternion).multiply(fragment.homeQuaternion);
+      let blocked = false;
+      world.intersectionsWithShape(position, quaternion, fragment.hull.shape, collider => {
+        if (collider.isSensor() || colliderUnits.get(collider.handle)?.unit.object === held.object) return true;
+        const contact = collider.contactShape(fragment.hull.shape, position, quaternion, 0);
+        if (contact && contact.distance < -0.001) { blocked = true; return false; }
+        return true;
+      });
+      if (blocked) return false;
+    }
+    return true;
+  }
+
   function updateGrab(dt) {
     if (!grab) return;
     const { unit: held, object } = grab;
-    held.previousPosition.copy(held.position);
-    held.previousQuaternion.copy(held.quaternion);
-    held.position.lerp(grab.goal, 1 - Math.exp(-11 * dt));
-    held.quaternion.slerp(identity, 1 - Math.exp(-8 * dt));
-    grab.velocity.copy(held.position).sub(held.previousPosition).multiplyScalar(1 / dt);
-    grab.speed = grab.velocity.length();
+    driveGrabbedBody(world, held.body, grab.goal, identity, dt);
     if (held.members.length === object.fragments.length) return;
     // Candidates belong to this original object only. A collected cluster moves
     // as one rigid unit, so previous assembly progress survives every release.
@@ -596,30 +654,21 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       if (nearest > MAGNET_RADIUS * (candidate.magnetized ? 1.12 : 1)) {
         if (candidate.magnetized) {
           candidate.magnetized = false;
-          candidate.body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
-          candidate.body.setLinvel(candidate.velocity.clone().clampLength(0, 3), true);
+          releaseGrabbedBody(candidate.body);
         }
         continue;
       }
       const target = scratch.copy(candidate.anchor.homePosition).sub(held.anchor.homePosition)
         .applyQuaternion(held.quaternion).add(held.position);
       const distance = candidate.position.distanceTo(target);
-      if (distance <= 0.026 && candidate.quaternion.angleTo(held.quaternion) < 0.20) {
+      if (distance <= 0.026 && candidate.quaternion.angleTo(held.quaternion) < 0.20 && canJoinUnit(candidate, held)) {
         joinUnit(candidate);
         continue;
       }
-      if (!candidate.magnetized) {
-        candidate.magnetized = true;
-        candidate.body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
-      }
+      candidate.magnetized = true;
       // Gentle at the edge, steeply accelerating over the final few centimetres.
       const speed = 0.10 + 5.4 * Math.exp(-5 * distance / MAGNET_RADIUS);
-      const amount = Math.min(1, speed * dt / Math.max(distance, 0.0001));
-      const nextPosition = scratch2.copy(candidate.position).lerp(target, amount);
-      candidate.velocity.copy(nextPosition).sub(candidate.position).multiplyScalar(1 / dt);
-      candidate.body.setNextKinematicTranslation(nextPosition);
-      scratchQuaternion.copy(candidate.quaternion).slerp(held.quaternion, 1 - Math.exp(-10 * dt));
-      candidate.body.setNextKinematicRotation(scratchQuaternion);
+      driveGrabbedBody(world, candidate.body, target, held.quaternion, dt, { maxSpeed: speed });
     }
   }
 
@@ -672,17 +721,21 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       const dock = object.docking;
       if (!dock) continue;
       dock.elapsed += dt;
-      const t = Math.min(dock.elapsed / DOCK_SECONDS, 1);
-      const ease = 1 - (1 - t) ** 3;
-      dock.unit.position.lerpVectors(dock.fromPosition, dock.unit.anchor.homePosition, ease);
-      dock.unit.quaternion.slerpQuaternions(dock.fromQuaternion, identity, ease);
-      dock.unit.previousPosition.copy(dock.unit.position);
-      dock.unit.previousQuaternion.copy(dock.unit.quaternion);
-      syncUnit(dock.unit);
-      if (t >= 1) {
+      const aligned = dock.unit.position.distanceTo(dock.unit.anchor.homePosition) <= .012
+        && dock.unit.quaternion.angleTo(identity) <= .025;
+      if (aligned && isDockHomeClear(object)) {
         resetObjectHome(object);
         emit('dock', object, object.homePosition, { strength: 0.85 });
         changed = true;
+      } else if (dock.elapsed > DOCK_SECONDS * 4 || !isDockHomeClear(object)) {
+        // A newly occupied slot or a blocked path cancels the return. Restore
+        // weight and leave the object at its real physical pose so it falls.
+        releaseGrabbedBody(dock.unit.body);
+        object.docking = null;
+        changed = true;
+      } else {
+        driveGrabbedBody(world, dock.unit.body, dock.unit.anchor.homePosition, identity, dt,
+          { positionGain: 16, maxSpeed: 2.8, acceleration: 24 });
       }
     }
     if (changed) { refreshTargets(); notify(); }
@@ -719,7 +772,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     while (accumulator >= FIXED_STEP) {
       elapsed += FIXED_STEP;
       for (const object of objects) {
-        if (!object.broken || object.docking) continue;
+        if (!object.broken) continue;
         object.age += FIXED_STEP;
         for (const unit of object.units) {
           if (!unit.body) continue;
@@ -730,11 +783,12 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       }
       beforePhysicsStep(FIXED_STEP);
       updateGrab(FIXED_STEP);
-      world.step(events);
+      stepDocking(FIXED_STEP);
+      world.step(events, physicsHooks);
       drainCollisionSounds();
       afterPhysicsStep(FIXED_STEP);
       for (const object of objects) {
-        if (!object.broken || object.docking) continue;
+        if (!object.broken) continue;
         for (const unit of object.units) {
           if (!unit.body) continue;
           unit.position.copy(unit.body.translation());
@@ -748,12 +802,15 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
           }
         }
       }
-      stepDocking(FIXED_STEP);
+      if (grab) {
+        grab.velocity.copy(grab.unit.position).sub(grab.unit.previousPosition).multiplyScalar(1 / FIXED_STEP);
+        grab.speed = grab.velocity.length();
+      }
       accumulator -= FIXED_STEP;
     }
     const alpha = accumulator / FIXED_STEP;
     for (const object of objects) {
-      if (!object.broken || object.docking) continue;
+      if (!object.broken) continue;
       for (const unit of object.units) syncUnit(unit, alpha);
     }
     return alpha;

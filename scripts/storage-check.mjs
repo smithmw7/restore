@@ -54,33 +54,54 @@ try {
   });
 
   const sideCrate = initialCrates.get('storage-crate-001');
-  const originalSideCenter = sideCrate.position.clone();
+  const movableCrate = initialCrates.get('storage-crate-003');
+  const originalSideCenter = movableCrate.position.clone();
   const destination = new THREE.Vector3(0, 2, -18);
   check('moving a side crate clears its old obstacle and its instance follows the eased position', () => {
     assert.ok(game.getObstacles().some((box) => box.containsPoint(originalSideCenter)));
-    assert.equal(game.beginGrab(sideCrate, sideCrate.position.clone(), 'left'), true);
+    assert.equal(game.beginGrab(movableCrate, movableCrate.position.clone(), 'left'), true);
     assert.equal(game.getObstacles().length, total);
     assert.ok(!game.getObstacles().some((box) => box.containsPoint(originalSideCenter)), 'held crate left a permanent stack obstacle');
-    assert.equal(game.moveGrab(destination, 'left'), true);
+    // Take the exposed top crate sideways into the aisle before carrying it back.
+    game.moveGrab(new THREE.Vector3(0, movableCrate.position.y, originalSideCenter.z), 'left');
+    advance(4);
+    game.moveGrab(new THREE.Vector3(0, 3.5, originalSideCenter.z), 'left');
     advance(2);
-    assert.ok(sideCrate.position.distanceTo(destination) < 0.01);
+    assert.equal(game.moveGrab(destination, 'left'), true);
+    advance(10);
+    assert.ok(movableCrate.position.distanceTo(destination) < 0.01);
     const matrix = new THREE.Matrix4();
-    scene.children.find((mesh) => mesh.isInstancedMesh).getMatrixAt(24, matrix);
-    assert.ok(new THREE.Vector3().setFromMatrixPosition(matrix).distanceTo(sideCrate.position) < 1e-5, 'batched crate did not follow the physics proxy');
+    scene.children.find((mesh) => mesh.isInstancedMesh).getMatrixAt(26, matrix);
+    assert.ok(new THREE.Vector3().setFromMatrixPosition(matrix).distanceTo(movableCrate.position) < 1e-5, 'batched crate did not follow the physics proxy');
     assert.equal(game.endGrab('left'), true);
     assert.ok(game.getObstacles().some((box) => box.containsPoint(destination)), 'released crate is missing its current obstacle');
-    assert.equal(breakCrate(sideCrate), true);
+    assert.equal(breakCrate(movableCrate), true);
     assert.ok(!game.getObstacles().some((box) => box.containsPoint(destination)), 'opened crate still blocks its cleared space');
-    assert.ok(artifactById.get('storage-artifact-001').position.distanceTo(destination) < 1, 'contents jumped back to the original storage stack');
+    assert.ok(artifactById.get('storage-artifact-003').position.distanceTo(destination) < 1, 'contents jumped back to the original storage stack');
     assertReset();
   });
 
-  check('removing a settled bottom crate causes its supported upper tier to fall', () => {
+  check('clearing a broken bottom crate\'s remaining support makes its settled upper tier fall', () => {
     const above = initialCrates.get('storage-crate-002');
     advance(3);
+    // Unload the third tier first so the board can be pulled with the same
+    // finite grab force used in play, rather than through a two-crate clamp.
+    assert.equal(game.beginGrab(movableCrate, movableCrate.position.clone(), 'left'), true);
+    game.moveGrab(new THREE.Vector3(0, movableCrate.position.y, movableCrate.position.z), 'left'); advance(4);
+    assert.ok(Math.abs(movableCrate.position.x) < .05, 'the uppermost tier was not unloaded into the aisle');
+    game.endGrab('left'); advance(3);
     const beforeY = above.position.y;
     assert.equal(breakCrate(sideCrate), true);
     advance(3);
+    // Thick front/back braces can remain upright and carry the upper tier.
+    // Remove an actual load-bearing board through the same physical grab API.
+    const support = scene.children.find(mesh => mesh.userData.labObject === sideCrate.userData.labObject && mesh.userData.panelIndex === 0);
+    const supportStart = support.position.clone();
+    assert.equal(game.beginGrab(support, supportStart, 'left'), true);
+    game.moveGrab(supportStart.clone().add(new THREE.Vector3(0, 0, 2.5)), 'left');
+    advance(5);
+    assert.ok(support.position.z > supportStart.z + 1.5, `the load-bearing board was not pulled clear: ${supportStart.toArray()} -> ${support.position.toArray()}`);
+    game.endGrab('left'); advance(1);
     assert.ok(above.position.y < beforeY - 0.25, `unsupported upper crate stayed suspended: ${beforeY} -> ${above.position.y}`);
     assertReset();
   });

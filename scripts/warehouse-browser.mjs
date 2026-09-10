@@ -68,7 +68,7 @@ try {
   // Breaking now requires proximity. Walk into reach and aim at the newly
   // projected crate instead of expecting a distant tap to open it from spawn.
   await page.keyboard.down('KeyW');
-  await page.evaluate(()=>window.advanceTime(450));
+  await page.evaluate(()=>window.advanceTime(250));
   await page.keyboard.up('KeyW');
   const closeCrate=(await read()).state.objects.find(object=>object.id==='crate-02');
   await page.mouse.click(closeCrate.screen.x,closeCrate.screen.y);
@@ -81,7 +81,7 @@ try {
   // Step back for a clear view of the newly dropped contents; distance does
   // not prevent the existing hold-to-grab interaction.
   await page.keyboard.down('KeyS');
-  await page.evaluate(()=>window.advanceTime(450));
+  await page.evaluate(()=>window.advanceTime(250));
   await page.keyboard.up('KeyS');
   await page.waitForTimeout(950);
   await page.screenshot({path:`${out}/browser-open.png`});

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { nudgeBody } from './tap-influence.js';
+import { driveGrabbedBody, releaseGrabbedBody } from './physical-drag.js';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createDestructionLab } from './destruction.js';
@@ -8,6 +9,10 @@ import { createAlienMaterials } from './artifact-materials.js';
 
 export const WAREHOUSE_BOUNDS = Object.freeze({ minX: -11.4, maxX: 11.4, minZ: -26.4, maxZ: 6.4 });
 const IDENTITY = new THREE.Quaternion();
+// Raised braces project beyond the 55 mm board. Include their outer surface
+// in contact bounds so a face-down board or a pressed crate cannot sink in.
+const BRACED_DEPTH = 0.081125;
+const BRACE_OFFSET = 0.0130625;
 const emptyGrab = () => ({ active: false, objectId: null, anchor: null, radius: 0, assembled: 0, total: 0, complete: false, speed: 0, goal: null, canDock: false, heldMesh: null });
 const finitePoint = (point) => point?.isVector3 && Number.isFinite(point.x + point.y + point.z);
 
@@ -88,7 +93,6 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
   let elapsed = 0;
   let ready = false;
   let resetCount = 0;
-  const scratch = new THREE.Vector3();
   const obstacleBoxes = [];
   const ownMaterials = [];
   const defaultWood = materials.wood || new THREE.MeshStandardMaterial({ color: '#72553c', roughness: 0.85 });
@@ -167,6 +171,8 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
   function notify() { if (ready) onChange(getState()); }
 
   lab = await createDestructionLab({ scene, specs: artifactSpecs, wholeObjects: true, pedestals: false, bounds, statics: obstacles,
+    // Resolve heavy crate / tiny shard contacts enough for entire piles to rest.
+    solverIterations: 8,
     geometryForSpec: (spec) => createArtifactGeometry(spec.form).scale(spec.scale, spec.scale, spec.scale),
     materialForSpec: (spec) => ({ outside: alienMaterials.get(spec), inside: ['gold', 'bronze', 'copper', 'metal'].includes(spec.materialKey) ? materials[spec.materialKey] : materials.stone }),
     onProgress,
@@ -200,7 +206,7 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
 
   function removeBody(part) {
     for (const handle of part.handles || []) lab.unregisterExternalCollider(handle);
-    if (part.body) world.removeRigidBody(part.body);
+    if (part.body) { releaseGrabbedBody(part.body); world.removeRigidBody(part.body); }
     part.body = null;
     part.handles = [];
   }
@@ -217,8 +223,12 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     const crate = { spec, mesh, instanceIndex: crates.length, open: false, age: 1, body: null, handles: [], velocity: new THREE.Vector3(),
       homePosition: mesh.position.clone(), homeQuaternion: mesh.quaternion.clone(), panels: [], box: new THREE.Box3(), object: null };
     crate.object = crate;
-    crate.descriptions = definitions.map((definition) => RAPIER.ColliderDesc.cuboid(definition.size.x / 2, definition.size.y / 2, definition.size.z / 2)
-      .setTranslation(definition.center.x, definition.center.y, definition.center.z).setFriction(0.78).setRestitution(0.06).setDensity(90));
+    // A sealed crate has no accessible interior. One solid contact shape avoids
+    // interlocking panel seams when extracting boxes from settled stacks, and
+    // costs less than six overlapping hulls. Keep the original wood mass.
+    const woodMass = definitions.reduce((sum, definition) => sum + definition.size.x * definition.size.y * definition.size.z * 90, 0);
+    crate.descriptions = [RAPIER.ColliderDesc.cuboid(spec.width / 2, spec.height / 2, (0.5 + BRACE_OFFSET * 2) * spec.depth)
+      .setFriction(0.78).setRestitution(0.06).setMass(woodMass)];
     crate.panels = definitions.map((definition, index) => {
       const panelMesh = new THREE.Mesh(definition.geometry, proxyMaterial);
       panelMesh.visible = false;
@@ -228,8 +238,9 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
       return { mesh: panelMesh, offset: definition.center, size: definition.size, body: null, handles: [], object: crate,
         renderBatch: panelBatches[Math.min(index, 2)], instanceIndex: index < 2 ? crate.instanceIndex : crate.instanceIndex * 4 + index - 2,
         renderScale: index < 2 ? new THREE.Vector3(spec.width, spec.height, 1) : definition.size.clone(),
-        velocity: new THREE.Vector3(), description: RAPIER.ColliderDesc.cuboid(definition.size.x / 2, definition.size.y / 2, definition.size.z / 2)
-          .setFriction(0.72).setRestitution(0.12).setDensity(90) };
+        velocity: new THREE.Vector3(), description: RAPIER.ColliderDesc.cuboid(definition.size.x / 2, definition.size.y / 2, (index < 2 ? BRACED_DEPTH : definition.size.z) / 2)
+          .setTranslation(0, 0, index < 2 ? (index === 0 ? 1 : -1) * BRACE_OFFSET : 0)
+          .setFriction(0.72).setRestitution(0.12).setMass(definition.size.x * definition.size.y * definition.size.z * 90) };
     });
     crates.push(crate); crateById.set(spec.id, crate);
     closedBatch.setColorAt(crate.instanceIndex, new THREE.Color(spec.tint || '#ffffff'));
@@ -268,7 +279,7 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
       closedCrates: crates.length - opened, revealedArtifacts: opened,
       debris: base.debris + opened * 6, grab, resetCount,
       crates: crates.map((crate) => ({ id: crate.spec.id, artifactId: crate.spec.artifactId, state: crate.open ? 'open' : held?.crate === crate ? 'held' : 'closed',
-        position: crate.mesh.position.toArray(), dimensions: [crate.spec.width, crate.spec.height, crate.spec.depth] })),
+        position: crate.mesh.position.toArray(), quaternion: crate.mesh.quaternion.toArray(), dimensions: [crate.spec.width, crate.spec.height, crate.spec.depth] })),
     };
   }
 
@@ -321,15 +332,10 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     const panel = Number.isInteger(mesh.userData.panelIndex) ? crate.panels[mesh.userData.panelIndex] : null;
     const part = panel || crate;
     if (!part.body || !part.mesh.visible) return false;
-    // Kinematic dragging preserves contact with surrounding piles and artifacts.
-    part.body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased, true);
-    // Pick up from the interpolated pose the player actually touched.
-    part.body.setTranslation(part.mesh.position, true);
-    part.body.setRotation(part.mesh.quaternion, true);
-    part.position.copy(part.mesh.position); part.previousPosition.copy(part.position);
-    part.quaternion.copy(part.mesh.quaternion); part.previousQuaternion.copy(part.quaternion);
-    held = { crate, part, panel, handId, offset: part.mesh.position.clone().sub(worldPoint),
-      goal: part.mesh.position.clone(), speed: 0, velocity: new THREE.Vector3() };
+    // Preserve the last physical pose and momentum. Rewinding to a rendered
+    // interpolation sample could place the collider inside its neighbour.
+    held = { crate, part, panel, handId, offset: part.position.clone().sub(worldPoint),
+      goal: part.position.clone(), speed: 0, velocity: new THREE.Vector3() };
     emit('pickup', crate, part.mesh.position, { complete: true, whole: true, assembled: 1, total: 1 });
     notify();
     return true;
@@ -351,8 +357,8 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     if (held.handId !== handId) return false;
     const previous = held;
     held = null;
-    previous.part.body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
-    previous.part.body.setLinvel(cancelled ? { x: 0, y: 0, z: 0 } : previous.velocity.clone().clampLength(0, 3), true);
+    releaseGrabbedBody(previous.part.body);
+    if (cancelled) previous.part.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     emit('enddrag', previous.crate, previous.part.mesh.position, { reason: cancelled ? 'cancelled' : 'release' });
     if (!cancelled) emit('drop', previous.crate, previous.part.mesh.position, { strength: THREE.MathUtils.clamp(0.45 + previous.speed * 0.12, 0.45, 1), complete: true });
     notify();
@@ -396,17 +402,11 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
       }
     }
     if (held) {
-      // Advance the held target once per physics step, independent of the
-      // headset's display rate. Rendered interpolation never feeds the solver.
-      const next = scratch.copy(held.part.position).lerp(held.goal, 1 - Math.exp(-10 * dt));
-      held.velocity.copy(next).sub(held.part.position).divideScalar(dt);
-      held.speed = held.velocity.length();
-      held.part.body.setNextKinematicTranslation(next);
-      held.part.body.setNextKinematicRotation(held.part.quaternion.clone().slerp(held.panel ? IDENTITY : held.crate.homeQuaternion, 1 - Math.exp(-6 * dt)));
+      driveGrabbedBody(world, held.part.body, held.goal, held.panel ? IDENTITY : held.crate.homeQuaternion, dt);
     }
   }
 
-  function afterPhysicsStep() {
+  function afterPhysicsStep(dt) {
     for (const crate of crates) {
       for (const part of crate.open ? crate.panels : [crate]) {
         if (!part.body) continue;
@@ -420,6 +420,10 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
           part.previousPosition.copy(p);
         }
       }
+    }
+    if (held) {
+      held.velocity.copy(held.part.position).sub(held.part.previousPosition).divideScalar(dt);
+      held.speed = held.velocity.length();
     }
   }
 

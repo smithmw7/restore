@@ -1,6 +1,6 @@
 {
   "name": "restore",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "private": true,
   "type": "module",
   "scripts": {
@@ -26,7 +26,11 @@
     "test:hold-pull": "node scripts/hold-pull-check.mjs",
     "test:settling": "node scripts/settling-check.mjs",
     "test:tap": "node scripts/tap-check.mjs",
-    "test:tap-browser": "node scripts/tap-browser.mjs"
+    "test:tap-browser": "node scripts/tap-browser.mjs",
+    "test:drag-collision": "node scripts/drag-collision-check.mjs",
+    "test:docking": "node scripts/docking-check.mjs",
+    "test:drag-collision-browser": "node scripts/drag-collision-browser.mjs",
+    "test:artifact-collision": "node scripts/artifact-collision-check.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

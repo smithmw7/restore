@@ -200,19 +200,28 @@ try {
 
   check('magnetism only collects shards from the object being held', () => {
     const own = breakObject('cube');
+    const priorBodies = new Set();
+    lab.physicsWorld.forEachRigidBody(body => priorBodies.add(body.handle));
     const foreign = breakObject('orb');
+    const foreignBodies = [];
+    lab.physicsWorld.forEachRigidBody(body => { if (!priorBodies.has(body.handle)) foreignBodies.push(body); });
+    assert.equal(foreignBodies.length, foreign.length);
+    const assertForeignFree = () => foreignBodies.forEach(body => {
+      assert.ok(body.isValid() && body.isDynamic(), 'a foreign shard was removed or made nonphysical by repair');
+      assert.equal(body.gravityScale(), 1, 'magnetism started supporting a foreign shard');
+    });
     advance(11);
     const foreignPiece = [...foreign].sort((a, b) => b.position.x - a.position.x)[0];
     const foreignProgress = objectState('orb').snapped;
     const source = own.at(-1);
     assert.equal(begin(source, source.position.clone(), hand), true);
-    // This stays inside the magnet sphere but above collision contact.
+    // Foreign pieces stay inside the sphere. Solid held/attracted pieces can
+    // bump this mixed pile, but must never take over a foreign body's gravity.
     lab.moveGrab(foreignPiece.position.clone().add(new THREE.Vector3(0, MAGNET_RADIUS * 0.72, 0)), hand);
-    advance(2);
+    advance(2, assertForeignFree);
     assert.ok(foreignPiece.position.distanceTo(vec(lab.getGrabState().anchor)) < MAGNET_RADIUS);
-    const before = foreign.map((piece) => piece.position.clone());
-    advance(0.5);
-    foreign.forEach((piece, index) => assert.ok(piece.position.distanceTo(before[index]) < 0.002, 'a foreign shard was attracted'));
+    advance(0.5, assertForeignFree);
+    assertForeignFree();
     assert.equal(objectState('orb').snapped, foreignProgress);
     restoreAll();
   });
