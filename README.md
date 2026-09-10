@@ -6,9 +6,10 @@ Repository: https://github.com/smithmw7/restore (private).
 
 ## Warehouse
 
-A 96 × 180 × 28 metre enclosed archive with towering steel trusses, long storage aisles, cool clerestory light and warm pendants over the working collection. Fifteen volumetric light shafts, eight shallow mist banks and 900 drifting dust motes add depth. The rough concrete floor retains its normal map and real planar reflection. There is no visible text, tutorial copy, score, or magnetic-range sphere. The small headset, reset, and sound icons retain accessible names.
+A 96 × 180 × 28 metre enclosed archive with towering steel trusses, long storage aisles, muted clerestory light and warm pendants over the working collection. Lower overall lighting, subtle bloom and warm grading give the room a subdued finish. Fifteen volumetric light shafts, twelve shallow mist banks concentrated in darker storage bays, and 900 drifting dust motes add depth. The rough concrete floor retains its normal map and real planar reflection. There is no visible text, tutorial copy, score, or magnetic-range sphere. The small headset, reset, and sound icons retain accessible names.
 
 - All 176 wooden crates can be lifted, moved, dropped, and broken into six physical panels, including every side, back, and upper tier of the original collection. Removing a supporting box lets its stack fall.
+- All 36 pendant fixtures are attached to fixed ceiling anchors. They remain still until tapped or pulled, swing within their wire length, and gradually return to complete rest after release. Nearby real lights and their volumetric beams follow the moving fixtures; all fixtures share four render batches.
 - Another 1,103 sealed metal cases form 244 fixed stacks around and beyond the collection. These are unbreakable, stationary storage, rendered in three instanced batches with one collision shape per stack. The new storage leaves a central aisle and cross aisles; metal stacks and structural columns block movement and teleport destinations.
 - Each crate contains one artifact. Its contents remain hidden and cannot be selected through a closed crate. Opening a moved crate reveals the artifact at that crate's current position.
 - 176 artifacts across 15 forms. Eight alien designs include a thruster bell, reactor spindle, crescent hull section, gyroscopic coupler, sensor fin, navigation prism, flux key, and fossil sigil. Seven relic designs include amphorae, obelisks, a chalice, a stela, a fluted urn, and meteor shards. Larger shipping crates contain larger variants. Alien components use subtle luminous circuit inlays over the textured surfaces.
@@ -26,6 +27,8 @@ Taps break exposed crates and whole artifacts within **8 feet (2.44m)** of your 
 Distant held objects gradually reel toward you after a short pause, speeding up gently and easing to a stop with room for the object's size. Manual depth adjustments restart the gentle ramp. Objects picked up by direct hand contact continue to follow your hand.
 
 Dragged crates, boards, artifacts and repair pieces remain solid physical objects. They stop against floors and obstacles, slide along surfaces, and gently push movable props according to their mass. A blocked hand target cannot build an artificial throw on release. Raised wooden braces have collision coverage too. A returning artifact only docks when its path and home are clear; an obstructed return drops naturally.
+
+Hanging lights use the same grab controls. Holding pulls a fixture toward you as far as its fixed wire allows; release lets it swing and settle. Tapping always gives a distance-sensitive push, even nearby. A lamp cannot break or detach, and releasing one does not play a heavy drop sound.
 
 **Quest controllers**
 
@@ -93,6 +96,10 @@ Sanctus procedural node graphs are represented by locally baked base-color, pack
 npm run build
 npm run test:repair       # Original magnetic repair API regression
 npm run test:warehouse    # Crate / artifact / physics integration
+npm run test:lights       # Fixed wires, pulling, settling and frame-rate consistency
+npm run test:scene-interactions # Shared prop/lamp ownership, tap routing and reset
+npm run test:lights-browser # Real pointer taps, pulls, release, audio and rest
+npm run test:postprocessing # Synthetic stereo bloom, depth, reflection and fallback
 npm run test:storage      # All 176 crates, stack collapse, live obstacles and reset
 npm run test:drag-collision # Solid grabs, sliding, mass-sensitive pushes and safe release
 npm run test:artifact-collision # Solid whole and joined artifacts, magnetic barriers
@@ -113,9 +120,11 @@ npm run test:archive-browser # Real deep-hall navigation, metal exclusion and vi
 npm run test:audio        # Real WebAudio decodes, fades, routing and voice limits
 ```
 
-Browser tests require installed Google Chrome and a running Restore server. Use `RESTORE_URL=http://127.0.0.1:5208` for gameplay/navigation tests on another owned port. The audio harness uses `RESTORE_TEST_URL`; set `RESTORE_TEST_AUDIO_SOURCE=server` to check built WAV copies.
+Browser tests require installed Google Chrome and a running Restore server. Use `RESTORE_URL=http://127.0.0.1:5208` for gameplay/navigation tests on another owned port. The postprocessing harness requires a Vite development server on that URL because it imports the source module. The audio harness uses `RESTORE_TEST_URL`; set `RESTORE_TEST_AUDIO_SOURCE=server` to check built WAV copies.
 
-Desktop and synthetic XR-pose checks establish behavior but do not replace physical Quest controller/hand tests. Planar reflection uses a modest 256px target and instancing keeps storage draw calls low. The atmosphere integrates short rays inside bounded world-space volumes, with per-eye camera positions, depth testing and distance fading. It adds no scene render or depth prepass; beams do not simulate volumetric shadow scattering. Three nearby spotlights and one bounded shadow map keep the lighting cost controlled. Opening and fracturing many artifacts still increases physics and rendering work; physical stereo performance and hand gesture feel must be assessed on the headset.
+Desktop and synthetic XR-pose checks establish behavior but do not replace physical Quest controller/hand tests. Planar reflection uses a modest 256px target and instancing keeps storage draw calls low. The atmosphere integrates short rays inside bounded world-space volumes, with per-eye camera positions, depth testing and distance fading. The atmosphere itself adds no scene render or depth prepass; beams do not simulate volumetric shadow scattering. Three nearby spotlights and one bounded shadow map keep the lighting cost controlled.
+
+Postprocessing renders each XR eye separately into a reusable HDR target, extracts and blurs highlights at quarter resolution, then composites restrained bloom and warm grading while preserving scene depth. It uses four fullscreen passes per eye, with a byte-buffer fallback when floating-point color targets are unavailable. This prevents bloom crossing between eyes but adds GPU work; offscreen scene targets do not inherit the XR layer's fixed foveation. Opening and fracturing many artifacts also increases physics and rendering work; physical stereo performance and hand gesture feel must be assessed on the headset.
 
 ## References
 

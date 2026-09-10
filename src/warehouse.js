@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { createStorageCrateSpecs } from './storage-crates.js';
+import { createHangingLights } from './hanging-lights.js';
 
 export const ARCHIVE_DIMENSIONS = Object.freeze({ width: 96, depth: 180, height: 28, centerZ: -76 });
 export const WAREHOUSE_BOUNDS = Object.freeze({ minX: -48, maxX: 48, minZ: -166, maxZ: 14 });
@@ -72,12 +73,12 @@ const floorShader = {
     }`,
 };
 
-export function createWarehouse({ scene, renderer, materials }) {
+export function createWarehouse({ scene, renderer, materials, onEvent }) {
   const root = new THREE.Group();
   root.name = 'The grand archive';
   scene.add(root);
-  scene.background = new THREE.Color('#293539');
-  scene.fog = new THREE.FogExp2('#293539', .0105);
+  scene.background = new THREE.Color('#2b2c29');
+  scene.fog = new THREE.FogExp2('#2b2c29', .0118);
   const bounds = { ...WAREHOUSE_BOUNDS };
   const obstacles = [];
   const ownedMaterials = new Set();
@@ -106,19 +107,19 @@ export function createWarehouse({ scene, renderer, materials }) {
     }
     return result;
   };
-  const wallMat = copyMat(materials.concrete, '#485957', [16, 7]);
+  const wallMat = copyMat(materials.concrete, '#514f45', [16, 7]);
   wallMat.normalScale.setScalar(.28);
   const floorMat = copyMat(materials.concrete, '#7b8476', [48, 90]);
   floorMat.roughness = 1;
   floorMat.normalScale.setScalar(.65);
-  const beamMat = copyMat(materials.metal, '#4b554e');
+  const beamMat = copyMat(materials.metal, '#514f45');
   beamMat.roughness = .72;
   const ceilingMat = localMat({ color: '#25312f', roughness: .94, metalness: .22 });
   const seamMat = localMat({ color: '#323e39', roughness: .98 });
   const vaultMat = localMat({ color: '#253c3d', roughness: .62, metalness: .52 });
-  const lampMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffce87').multiplyScalar(2.6), toneMapped: false });
-  const windowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#81b0bf').multiplyScalar(1.25), toneMapped: false });
-  const farLampMat = new THREE.MeshBasicMaterial({ color: '#c9a976', toneMapped: false });
+  const lampMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffc17c').multiplyScalar(2.2), toneMapped: false });
+  const windowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#babba8').multiplyScalar(1.05), toneMapped: false });
+  const farLampMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#dcb181').multiplyScalar(1.15), toneMapped: false });
   ownedMaterials.add(lampMat); ownedMaterials.add(windowMat); ownedMaterials.add(farLampMat);
 
   function addBox(material, position, scale, rotation = [0, 0, 0], tint) {
@@ -171,7 +172,7 @@ export function createWarehouse({ scene, renderer, materials }) {
       beam([x, 24.9, z], [x + 2, 27.15, z], .105);
       beam([x + 2, 27.15, z], [Math.min(x + 4, 47), 24.9, z], .105);
     }
-    // Cool clerestory glass makes both distant side walls feel enclosed.
+    // Muted clerestory glass makes both distant side walls feel enclosed.
     for (const sign of [-1, 1]) {
       const wx = sign * 47.96;
       addBox(windowMat, [wx, 22.5, z - 4.4], [.025, 2.35, 7.5]);
@@ -202,41 +203,38 @@ export function createWarehouse({ scene, renderer, materials }) {
   const addAtmosphereLight = (source, target, startRadius, endRadius, color, density) => {
     atmosphereLights.push({ source: new THREE.Vector3(...source), target: new THREE.Vector3(...target), startRadius, endRadius, color, density });
   };
-  function pendant(x, z, lit = false) {
-    const y = 10.4;
-    addBox(beamMat, [x, 19, z], [.035, 17.2, .035]);
-    addBox(beamMat, [x, y + .15, z], [1.6, .3, .78]);
-    addBox(lit ? lampMat : farLampMat, [x, y, z], [1.32, .055, .58]);
-    // Only the nearby working collection pays for physical spotlights.
-    if (!lit) return;
-    const spot = new THREE.SpotLight('#ffd09a', 1050, 29, .68, .84, 2);
-    spot.position.set(x, y - .13, z);
-    spot.target.position.set(x, .2, z - 1.4);
-    root.add(spot, spot.target);
-    addAtmosphereLight([x, y - .13, z], [x, .2, z - 1.4], .3, 2.8, '#f2bd83', .036);
-  }
+  const fixtures = [];
+  const pendant = (x, z, lit = false) => fixtures.push({
+    id: `hanging-light-${String(fixtures.length + 1).padStart(2, '0')}`,
+    x, z, y: 10.4, anchorY: 27.6, lit,
+  });
   for (const z of [-2, -13, -26]) pendant(0, z, true);
   for (let z = -38; z >= -158; z -= 12) {
     for (const x of [-24, 0, 24]) pendant(x, z);
   }
+  const hangingLights = createHangingLights({
+    parent: root, fixtures, housingMaterial: beamMat,
+    diffuserMaterial: lampMat, farDiffuserMaterial: farLampMat, onEvent,
+  });
+  atmosphereLights.push(...hangingLights.atmosphereLights);
   for (const x of [-24, 24]) {
     for (const z of [-14, -50, -86, -122]) {
       addBox(windowMat, [x, 27.78, z], [2.4, .045, 8]);
       for (const offset of [-4, -2, 0, 2, 4]) addBox(beamMat, [x, 27.71, z + offset], [2.6, .12, .12]);
-      addAtmosphereLight([x, 27.72, z], [x * .64, .2, z + 7], 1.15, 4, '#8fbdcc', .028);
+      addAtmosphereLight([x, 27.72, z], [x * .64, .2, z + 7], 1.15, 4, '#b6baa5', .025);
     }
   }
   for (const z of [-43, -79, -115, -151]) {
     addBox(windowMat, [0, 27.78, z], [3, .045, 10]);
     for (const offset of [-5, -2.5, 0, 2.5, 5]) addBox(beamMat, [0, 27.71, z + offset], [3.2, .12, .12]);
-    addAtmosphereLight([0, 27.72, z], [4, .2, z + 8], 1.3, 3.8, '#abc4c9', .024);
+    addAtmosphereLight([0, 27.72, z], [4, .2, z + 8], 1.3, 3.8, '#bdb9a3', .022);
   }
 
-  const ambient = new THREE.HemisphereLight('#a6c5cb', '#5a4630', .52);
-  const cold = new THREE.DirectionalLight('#a1cad8', 1.05);
+  const ambient = new THREE.HemisphereLight('#c2bba7', '#594331', .4);
+  const cold = new THREE.DirectionalLight('#b9c2b5', .68);
   cold.position.set(28, 27, -35);
   cold.target.position.set(-5, 0, -15);
-  const warm = new THREE.DirectionalLight('#ffcc88', 1.85);
+  const warm = new THREE.DirectionalLight('#ffc184', 1.5);
   warm.position.set(-9, 18, 9);
   warm.target.position.set(0, 0, -10);
   warm.castShadow = true;
@@ -285,13 +283,13 @@ export function createWarehouse({ scene, renderer, materials }) {
   // A tiny local environment map gives metal artifacts readable light bands.
   // It is generated from warehouse-colored practicals, not an external HDRI.
   const environmentScene = new THREE.Scene();
-  environmentScene.background = new THREE.Color('#617371');
+  environmentScene.background = new THREE.Color('#69675b');
   const environmentGeometry = new THREE.BoxGeometry(1, 1, 1);
   const environmentMaterials = [];
   for (const [position, scale, color, intensity] of [
-    [[0, 5, -4], [2, .1, 6], '#ffd8ab', 5],
-    [[-6, 3, 0], [.1, 3, 6], '#9dcce6', 2.8],
-    [[6, 3, -3], [.1, 3, 6], '#9dcce6', 2.8],
+    [[0, 5, -4], [2, .1, 6], '#ffcc93', 4.3],
+    [[-6, 3, 0], [.1, 3, 6], '#b8c2b4', 2.3],
+    [[6, 3, -3], [.1, 3, 6], '#b8c2b4', 2.3],
     [[0, -4, 0], [20, .1, 20], '#3c342c', 1],
   ]) {
     const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(intensity) });
@@ -301,14 +299,15 @@ export function createWarehouse({ scene, renderer, materials }) {
   const generator = new THREE.PMREMGenerator(renderer);
   const environment = generator.fromScene(environmentScene, .07, .1, 40);
   scene.environment = environment.texture;
-  scene.environmentIntensity = .30;
+  scene.environmentIntensity = .26;
   generator.dispose(); environmentGeometry.dispose(); environmentMaterials.forEach((material) => material.dispose());
 
-  const stats = { dimensions: { ...ARCHIVE_DIMENSIONS }, volumeCubicMeters: width * depth * height, atmosphereLights: atmosphereLights.length, realSpotlights: 3, shadowMaps: 1, staticCrates: 0, storageCrates: storageCrates.length, instancedBatches: batches.size, staticInstances: [...batches.values()].reduce((sum, values) => sum + values.length, 0), reflectionResolution: 256, obstacleCount: obstacles.length };
+  const stats = { dimensions: { ...ARCHIVE_DIMENSIONS }, volumeCubicMeters: width * depth * height, atmosphereLights: atmosphereLights.length, hangingLights: fixtures.length, realSpotlights: 3, shadowMaps: 1, staticCrates: 0, storageCrates: storageCrates.length, instancedBatches: batches.size, staticInstances: [...batches.values()].reduce((sum, values) => sum + values.length, 0), reflectionResolution: 256, obstacleCount: obstacles.length };
   return {
-    root, bounds, obstacles, storageCrates, atmosphereLights, stats,
-    update() {},
+    root, bounds, obstacles, storageCrates, atmosphereLights, hangingLights, stats,
+    update(dt) { hangingLights.step(dt); },
     dispose() {
+      hangingLights.dispose();
       root.removeFromParent();
       root.traverse((object) => {
         if (object.isInstancedMesh) object.dispose();

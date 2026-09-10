@@ -106,10 +106,10 @@ const mistFragment = `
         * sin(worldPoint.z * .33 - uTime * .021);
       opticalDepth += edge * eddies * stepLength;
     }
-    float alpha = (1.0 - exp(-opticalDepth * .024))
+    float alpha = (1.0 - exp(-opticalDepth * .03))
       * (1.0 - smoothstep(34.0, 66.0, nearT));
     if (alpha < .001) discard;
-    gl_FragColor = vec4(uColor, min(alpha, .075));
+    gl_FragColor = vec4(uColor, min(alpha, .105));
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
@@ -152,7 +152,7 @@ const dustFragment = `
     float radius = length(gl_PointCoord - .5);
     float alpha = (1.0 - smoothstep(.06, .5, radius)) * vOpacity;
     if (alpha < .004) discard;
-    vec3 color = mix(vec3(.48, .61, .65), vec3(.90, .70, .43), vWarmth);
+    vec3 color = mix(vec3(.57, .56, .48), vec3(.90, .67, .39), vWarmth);
     gl_FragColor = vec4(color, alpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -160,6 +160,7 @@ const dustFragment = `
 `;
 
 const asVector = value => value?.isVector3 ? value.clone() : new THREE.Vector3(...value);
+const _down = new THREE.Vector3(0, -1, 0);
 
 export function createArchiveAtmosphere({ scene, renderer, bounds, lights = [] }) {
   const root = new THREE.Group();
@@ -168,6 +169,7 @@ export function createArchiveAtmosphere({ scene, renderer, bounds, lights = [] }
   const materials = new Set();
   const geometries = new Set();
   const shafts = [];
+  const movingShafts = [];
   const banks = [];
   const timeUniform = { value: 0 };
   const viewerUniform = { value: new THREE.Vector3(0, 1.65, 3.5) };
@@ -191,19 +193,25 @@ export function createArchiveAtmosphere({ scene, renderer, bounds, lights = [] }
     axis.divideScalar(length);
     const startRadius = light.startRadius ?? light.topRadius ?? .7;
     const endRadius = light.endRadius ?? light.radius ?? 3;
-    const geometry = new THREE.CylinderGeometry(startRadius, endRadius, length, 20, 1, false);
+    // A moving pendant scales a unit-height frustum. This updates its bounds
+    // and light ray together without rebuilding geometry as the wire swings.
+    const geometry = new THREE.CylinderGeometry(startRadius, endRadius, light.moving ? 1 : length, 20, 1, false);
     geometries.add(geometry);
     const material = volumeMaterial(shaftFragment);
     material.uniforms = {
       uSource: { value: source }, uAxis: { value: axis }, uLength: { value: length },
       uStartRadius: { value: startRadius }, uEndRadius: { value: endRadius },
-      uColor: { value: new THREE.Color(light.color ?? '#a5bec5').multiplyScalar(1.2) },
+      uColor: { value: new THREE.Color(light.color ?? '#bcb8a3').multiplyScalar(1.2) },
       uDensity: { value: light.density ?? .018 }, uTime: timeUniform,
     };
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = `Archive light volume ${index + 1}`;
     mesh.position.copy(source).add(target).multiplyScalar(.5);
     mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), axis);
+    if (light.moving) {
+      mesh.scale.y = length;
+      movingShafts.push({ light, mesh, source, target, axis });
+    }
     mesh.renderOrder = 3;
     mesh.userData.atmosphere = 'shaft';
     root.add(mesh);
@@ -215,19 +223,26 @@ export function createArchiveAtmosphere({ scene, renderer, bounds, lights = [] }
   const depth = bounds.maxZ - bounds.minZ;
   const width = bounds.maxX - bounds.minX;
   const centerX = (bounds.minX + bounds.maxX) * .5;
-  // Eight separated, shallow banks preserve clear silhouettes and the floor's
-  // surface texture. Their bottoms remain above the opaque floor.
-  for (let i = 0; i < 8; i++) {
+  // Deeper haze sits in the unlit storage bays, leaving the bright central
+  // aisle and nearby object silhouettes clear. All banks stop above the floor.
+  const bankCount = 12;
+  for (let i = 0; i < bankCount; i++) {
+    const row = Math.floor(i / 2);
+    const nearCollection = row === 0;
     const center = new THREE.Vector3(
-      centerX + (i % 2 ? 1 : -1) * Math.min(8, width * .09),
-      .36,
-      bounds.maxZ - 18 - i * (depth - 29) / 8,
+      centerX + (i % 2 ? 1 : -1) * Math.min(nearCollection ? 11 : 28, width * (nearCollection ? .115 : .3)),
+      nearCollection ? .48 : .64,
+      bounds.maxZ - 22 - row * (depth - 40) / 5,
     );
-    const radii = new THREE.Vector3(Math.min(12, width * .14), .30, 9 + i % 3 * 2);
+    const radii = new THREE.Vector3(
+      Math.min(nearCollection ? 7 : 14, width * (nearCollection ? .075 : .15)),
+      nearCollection ? .42 : .58,
+      nearCollection ? 11 : 14,
+    );
     const material = volumeMaterial(mistFragment);
     material.uniforms = {
       uCenter: { value: center }, uRadii: { value: radii },
-      uColor: { value: new THREE.Color('#8caaa9') }, uTime: timeUniform,
+      uColor: { value: new THREE.Color('#827f71') }, uTime: timeUniform,
     };
     const mesh = new THREE.Mesh(sphere, material);
     mesh.name = `Low archive mist ${i + 1}`;
@@ -276,6 +291,7 @@ export function createArchiveAtmosphere({ scene, renderer, bounds, lights = [] }
 
   const stats = {
     lightVolumes: shafts.length, shaftSamples: 10,
+    movingLightVolumes: movingShafts.length,
     mistBanks: banks.length, mistSamples: 6, dustParticles: particleCount,
     extraScenePasses: 0,
   };
@@ -284,6 +300,19 @@ export function createArchiveAtmosphere({ scene, renderer, bounds, lights = [] }
     update(dt, time, viewerPosition) {
       timeUniform.value = Number.isFinite(time) ? time : timeUniform.value + Math.min(dt, .1);
       if (viewerPosition) viewerUniform.value.copy(viewerPosition);
+      for (const { light, mesh, source, target, axis } of movingShafts) {
+        source.copy(light.source);
+        target.copy(light.target);
+        axis.subVectors(target, source);
+        const length = axis.length();
+        mesh.visible = length >= .1;
+        if (!mesh.visible) continue;
+        axis.divideScalar(length);
+        mesh.material.uniforms.uLength.value = length;
+        mesh.position.copy(source).add(target).multiplyScalar(.5);
+        mesh.quaternion.setFromUnitVectors(_down, axis);
+        mesh.scale.y = length;
+      }
     },
     dispose() {
       root.removeFromParent();

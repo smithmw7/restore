@@ -10,13 +10,15 @@ import { createWarehouseGameplay } from './warehouse-gameplay.js';
 import { createLocomotion } from './locomotion.js';
 import { createHoldPull, stepHoldPull } from './hold-pull.js';
 import { dispatchTap } from './tap-influence.js';
+import { createSceneInteractions } from './scene-interactions.js';
+import { createRestorePostprocessing } from './postprocessing.js';
 
 const canvas=document.querySelector('#scene');
 const scene=new THREE.Scene();
 scene.background=new THREE.Color('#141b20');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);
-renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
+renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.02;
 renderer.info.autoReset=false;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.xr.enabled=true;renderer.xr.setReferenceSpaceType('local-floor');renderer.xr.setFramebufferScaleFactor(.8);renderer.xr.setFoveation(.65);
@@ -24,6 +26,7 @@ const rig=new THREE.Group();rig.name='Player origin';rig.position.set(0,0,3.5);s
 const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.05,260);rig.add(camera);
 function resetDesktopCamera(){camera.position.set(0,1.65,0);camera.rotation.set(-.07,0,0,'YXZ');}
 resetDesktopCamera();
+const postprocessing=createRestorePostprocessing(renderer);
 const audio=createRestoreAudio();
 let lab,warehouse,metalStorage,atmosphere,locomotion,ready=false,xrSupported=false,muted=false,lastTime=0,frameDelta=0;
 let xrFrames=0,selectCount=0,contactCount=0,lastInput='none',sessionError=null,sessionVisibility=null;
@@ -281,7 +284,7 @@ ui.vr.addEventListener('click',async()=>{
 });
 renderer.xr.addEventListener('sessionstart',()=>{document.body.classList.add('in-vr');clearHover();});
 renderer.xr.addEventListener('sessionend',()=>{cancelInteractions();locomotion.reset();resetDesktopCamera();document.body.classList.remove('in-vr');sessionVisibility=null;updateVRButton();});
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);postprocessing.resize(innerWidth,innerHeight);});
 function update(dt,time,frame){
   if(!ready)return;
   if(renderer.xr.isPresenting){
@@ -294,15 +297,15 @@ function update(dt,time,frame){
   atmosphere.update(dt,time/1000,viewerPosition);
   const grab=lab.getGrabState();if(grab.active)audio.updateDrag({position:point.fromArray(grab.anchor),speed:grab.speed});
 }
-renderer.setAnimationLoop((time,frame)=>{frameDelta=lastTime?Math.min((time-lastTime)/1000,.05):1/72;lastTime=time;update(frameDelta,time,frame);renderer.info.reset();renderer.render(scene,camera);});
-window.advanceTime=ms=>{for(let i=0;i<Math.max(1,Math.round(ms/(1000/72)));i++)update(1/72,performance.now());renderer.info.reset();renderer.render(scene,camera);};
+renderer.setAnimationLoop((time,frame)=>{frameDelta=lastTime?Math.min((time-lastTime)/1000,.05):1/72;lastTime=time;update(frameDelta,time,frame);renderer.info.reset();postprocessing.render(scene,camera);});
+window.advanceTime=ms=>{for(let i=0;i<Math.max(1,Math.round(ms/(1000/72)));i++)update(1/72,performance.now());renderer.info.reset();postprocessing.render(scene,camera);};
 function project(mesh){const p=mesh.getWorldPosition(new THREE.Vector3()),screen=p.clone().project(camera);return {id:mesh.userData.labObject,uuid:mesh.uuid,kind:mesh.userData.kind,position:p.toArray(),screen:{x:Math.round((screen.x*.5+.5)*innerWidth),y:Math.round((-screen.y*.5+.5)*innerHeight)}};}
-window.render_game_to_text=()=>JSON.stringify({app:'Restore',version:'warehouse',ready,coordinateSystem:'Meters, +Y up, -Z forward.',mode:renderer.xr.isPresenting?'immersive-vr':'desktop',...lab?.getState(),objectStates:lab?.getState().objects,objects:(lab?.targets||[]).filter(x=>x.visible).map(project),pieces:(lab?.grabTargets||[]).filter(x=>x.visible).map(project),locomotion:locomotion?.getState(),warehouse:warehouse?.stats,mode:renderer.xr.isPresenting?'immersive-vr':'desktop',xr:{supported:xrSupported,presenting:renderer.xr.isPresenting,frames:xrFrames,selectCount,contactCount,lastInput,visibility:sessionVisibility,error:sessionError,frameMs:Math.round(frameDelta*1000),sources:inputs.filter(x=>x.source).map(x=>({kind:x.kind,handedness:x.source.handedness,tracked:x.controller.visible}))}});
+window.render_game_to_text=()=>JSON.stringify({app:'Restore',version:'warehouse',ready,coordinateSystem:'Meters, +Y up, -Z forward.',mode:renderer.xr.isPresenting?'immersive-vr':'desktop',...lab?.getState(),objectStates:lab?.getState().objects,objects:(lab?.targets||[]).filter(x=>x.visible).map(project),pieces:(lab?.grabTargets||[]).filter(x=>x.visible).map(project),locomotion:locomotion?.getState(),warehouse:warehouse?.stats,postprocessing:postprocessing.getState(),mode:renderer.xr.isPresenting?'immersive-vr':'desktop',xr:{supported:xrSupported,presenting:renderer.xr.isPresenting,frames:xrFrames,selectCount,contactCount,lastInput,visibility:sessionVisibility,error:sessionError,frameMs:Math.round(frameDelta*1000),sources:inputs.filter(x=>x.source).map(x=>({kind:x.kind,handedness:x.source.handedness,tracked:x.controller.visible}))}});
 window.__restoreDiagnostics=()=>({secureContext:isSecureContext,webxr:!!navigator.xr,state:JSON.parse(window.render_game_to_text()),audio:audio.getState(),input:{lastTap,desktopGrab:desktopGrab?{point:desktopGrab.point.toArray(),normal:dragPlane.normal.toArray(),constant:dragPlane.constant}:null,camera:{position:camera.getWorldPosition(new THREE.Vector3()).toArray(),quaternion:camera.getWorldQuaternion(new THREE.Quaternion()).toArray(),fov:camera.fov,aspect:camera.aspect}},drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries});
 try{
   await refreshXR();
   const [materials]=await Promise.all([loadWarehouseMaterials(),audio.load()]);
-  warehouse=createWarehouse({scene,renderer,materials});
+  warehouse=createWarehouse({scene,renderer,materials,onEvent:handleEvent});
   metalStorage=createMetalStorage({scene,materials,bounds:warehouse.bounds});
   warehouse.stats.structuralObstacleCount=warehouse.obstacles.length;
   warehouse.obstacles.push(...metalStorage.obstacles);
@@ -311,6 +314,7 @@ try{
   atmosphere=createArchiveAtmosphere({scene,renderer,bounds:warehouse.bounds,lights:warehouse.atmosphereLights});
   warehouse.stats.atmosphere=atmosphere.stats;
   lab=await createWarehouseGameplay({scene,materials,bounds:warehouse.bounds,obstacles:warehouse.obstacles,additionalCrates:warehouse.storageCrates,onEvent:handleEvent});
+  lab=createSceneInteractions(lab,warehouse.hangingLights);
   locomotion=createLocomotion({scene,rig,camera,renderer,bounds:warehouse.bounds,getObstacles:()=>lab.getObstacles?.()||warehouse.obstacles,onBeforeMove:cancelInteractions});
   ready=true;document.body.classList.add('ready');ui.loader.hidden=true;ui.reset.disabled=false;updateVRButton();
 }catch(error){console.error(error);sessionError=error.message;ui.loader.classList.add('error');ui.loader.setAttribute('aria-label',`Loading failed: ${error.message}`);}

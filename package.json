@@ -1,6 +1,6 @@
 {
   "name": "restore",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "private": true,
   "type": "module",
   "scripts": {
@@ -30,7 +30,11 @@
     "test:drag-collision": "node scripts/drag-collision-check.mjs",
     "test:docking": "node scripts/docking-check.mjs",
     "test:drag-collision-browser": "node scripts/drag-collision-browser.mjs",
-    "test:artifact-collision": "node scripts/artifact-collision-check.mjs"
+    "test:artifact-collision": "node scripts/artifact-collision-check.mjs",
+    "test:lights": "node scripts/hanging-lights-check.mjs",
+    "test:scene-interactions": "node scripts/scene-interactions-check.mjs",
+    "test:lights-browser": "node scripts/hanging-lights-browser.mjs",
+    "test:postprocessing": "node scripts/postprocessing-browser.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

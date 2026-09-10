@@ -30,7 +30,10 @@ try {
   await page.mouse.move(crate.screen.x,crate.screen.y);
   await page.mouse.down();
   await page.waitForFunction(()=>window.__restoreDiagnostics().state.grab.objectId==='crate-02');
-  await page.mouse.move(720,180,{steps:18});
+  // Sample the stationary hold before many rendered input frames can reel it
+  // all the way in on a busy machine. One real pointer move still lifts it;
+  // the measured decrease below must happen after that move has finished.
+  await page.mouse.move(720,180);
   const holdDistance=data=>Math.hypot(...data.input.desktopGrab.point.map((value,index)=>value-data.input.camera.position[index]));
   const pickedUp=await read(),initialDistance=holdDistance(pickedUp);
   await page.evaluate(()=>window.advanceTime(3500));

@@ -16,8 +16,9 @@ export function dispatchTap(game, hit, viewerPosition, direction) {
   const distance = point.distanceTo(viewerPosition);
   const { canBreak, strength } = tapInfluence(distance);
   if (!strength) return null;
-  const success = canBreak ? game.hit(hit.object, point, direction) : game.nudge(hit.object, point, direction, strength);
-  return success ? { kind: canBreak ? 'break' : 'nudge', distance, strength } : null;
+  const breaks = canBreak && hit.object.userData.kind !== 'hanging-light';
+  const success = breaks ? game.hit(hit.object, point, direction) : game.nudge(hit.object, point, direction, strength);
+  return success ? { kind: breaks ? 'break' : 'nudge', distance, strength } : null;
 }
 
 // Give differently sized props a comparable small kick without changing their
