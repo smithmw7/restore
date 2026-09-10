@@ -8,6 +8,7 @@ import { createMetalStorage } from './metal-storage.js';
 import { createArchiveAtmosphere } from './atmosphere.js';
 import { createWarehouseGameplay } from './warehouse-gameplay.js';
 import { createLocomotion } from './locomotion.js';
+import { createHoldPull, stepHoldPull } from './hold-pull.js';
 
 const canvas=document.querySelector('#scene');
 const scene=new THREE.Scene();
@@ -88,10 +89,21 @@ function chooseHit(input){
   if(input.contactValid){const mesh=targets().find(mesh=>surfaceTouch(mesh,input.contactPoint,.045));if(mesh)return {object:mesh,point:input.contactPoint.clone(),distance:0,near:true};}
   return intersect();
 }
+function holdPullFor(mesh,hitPoint){
+  const sphere=new THREE.Box3().setFromObject(mesh).getBoundingSphere(new THREE.Sphere());
+  let reach=sphere.radius+sphere.center.distanceTo(hitPoint);
+  if(Number.isInteger(mesh.userData.fragmentIndex)){
+    // Allow for the entire repaired shape, including pieces gathered later.
+    const whole=scene.children.find(item=>item.userData.labObject===mesh.userData.labObject&&item.userData.kind==='artifact');
+    if(whole?.geometry){whole.geometry.computeBoundingSphere();const scale=whole.getWorldScale(new THREE.Vector3());reach=Math.max(reach,whole.geometry.boundingSphere.radius*Math.max(scale.x,scale.y,scale.z)*2);}
+  }
+  return createHoldPull(Math.max(.85,reach+.38));
+}
 function startGrab(input,hit,button='select'){
   if(!hit||!lab.beginGrab(hit.object,hit.point,input.id))return false;
-  clearHover();input.grabbing=true;input.grabButton=button;input.near=!!hit.near;input.grabDistance=Math.max(.15,hit.distance);input.initialDistance=input.grabDistance;
-  input.initialHandDepth=input.contactValid?input.contactPoint.distanceTo(viewerPosition):null;input.pending=null;lastInput=`${input.kind}-grab`;return true;
+  clearHover();input.grabbing=true;input.grabButton=button;input.near=!!hit.near;input.grabDistance=Math.max(.15,hit.distance);
+  input.previousHandDepth=input.contactValid?input.contactPoint.distanceTo(viewerPosition):null;input.manualHandDepth=input.previousHandDepth;
+  input.holdPull=holdPullFor(hit.object,hit.point);input.pending=null;lastInput=`${input.kind}-grab`;return true;
 }
 function endInputGrab(input,button){if(input.grabbing&&(!button||button===input.grabButton)){lab.endGrab(input.id);input.grabbing=false;input.clearContact=true;input.lastContact=performance.now();}}
 
@@ -131,7 +143,7 @@ for(let i=0;i<2;i++){
   controller.addEventListener('squeezestart',()=>{if(!ready||input.grabbing)return;inputRay(input);input.pending=null;startGrab(input,chooseHit(input),'grip');});
   controller.addEventListener('squeezeend',()=>endInputGrab(input,'grip'));
 }
-function updateXRInputs(time,frame){
+function updateXRInputs(time,frame,dt){
   palmTurns.visible=false;
   rig.updateWorldMatrix(true,true);
   for(const input of inputs){
@@ -158,8 +170,15 @@ function updateXRInputs(time,frame){
       beam.visible=false;
       if(input.near){if(input.contactValid)lab.moveGrab(input.contactPoint,input.id);else{lab.endGrab(input.id,{cancelled:true});input.grabbing=false;}}
       else{
-        if(source.hand&&input.contactValid&&input.initialHandDepth!==null)input.grabDistance=THREE.MathUtils.clamp(input.initialDistance+(input.contactPoint.distanceTo(viewerPosition)-input.initialHandDepth)*3,.2,9);
-        const axes=source.gamepad?.axes,axis=axes?.length>=4?axes[3]:0;if(Math.abs(axis)>.18)input.grabDistance=THREE.MathUtils.clamp(input.grabDistance+axis*frameDelta*2,.2,9);
+        let manual=false;
+        if(source.hand&&input.contactValid){
+          const depth=input.contactPoint.distanceTo(viewerPosition);
+          if(input.previousHandDepth!==null)input.grabDistance=THREE.MathUtils.clamp(input.grabDistance+(depth-input.previousHandDepth)*3,.2,9);
+          if(input.manualHandDepth===null||Math.abs(depth-input.manualHandDepth)>.015){manual=true;input.manualHandDepth=depth;}
+          input.previousHandDepth=depth;
+        }
+        const axes=source.gamepad?.axes,axis=axes?.length>=4?axes[3]:0;if(Math.abs(axis)>.18){input.grabDistance=THREE.MathUtils.clamp(input.grabDistance+axis*dt*2,.2,9);manual=true;}
+        input.grabDistance=stepHoldPull(input.holdPull,dt,{origin:raycaster.ray.origin,direction:raycaster.ray.direction,distance:input.grabDistance,viewer:viewerPosition,manual});
         raycaster.ray.at(input.grabDistance,point);lab.moveGrab(point,input.id);
       }
       continue;
@@ -180,7 +199,7 @@ function updateXRInputs(time,frame){
 function pointerRay(event){const rect=canvas.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1),camera);}
 function beginDesktopGrab(hit,event){
   if(!lab.beginGrab(hit.object,hit.point,'pointer'))return false;
-  desktopGrab={point:hit.point.clone(),id:event.pointerId};camera.getWorldDirection(direction);dragPlane.setFromNormalAndCoplanarPoint(direction,hit.point);clearHover();canvas.style.cursor='grabbing';return true;
+  desktopGrab={point:hit.point.clone(),id:event.pointerId,holdPull:holdPullFor(hit.object,hit.point)};camera.getWorldDirection(direction);dragPlane.setFromNormalAndCoplanarPoint(direction,hit.point);clearHover();canvas.style.cursor='grabbing';return true;
 }
 canvas.addEventListener('contextmenu',event=>event.preventDefault());
 canvas.addEventListener('pointerdown',event=>{
@@ -208,7 +227,7 @@ canvas.addEventListener('pointerup',event=>{
   pointerState=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
 });
 canvas.addEventListener('wheel',event=>{
-  if(!desktopGrab)return;event.preventDefault();camera.getWorldDirection(direction);desktopGrab.point.addScaledVector(direction,THREE.MathUtils.clamp(event.deltaY*.002,-.2,.2));dragPlane.setFromNormalAndCoplanarPoint(direction,desktopGrab.point);lab.moveGrab(desktopGrab.point,'pointer');
+  if(!desktopGrab)return;event.preventDefault();desktopGrab.holdPull.elapsed=0;camera.getWorldDirection(direction);desktopGrab.point.addScaledVector(direction,THREE.MathUtils.clamp(event.deltaY*.002,-.2,.2));dragPlane.setFromNormalAndCoplanarPoint(direction,desktopGrab.point);lab.moveGrab(desktopGrab.point,'pointer');
 },{passive:false});
 canvas.addEventListener('pointercancel',cancelInteractions);canvas.addEventListener('lostpointercapture',()=>{if(desktopGrab)cancelInteractions();});canvas.addEventListener('pointerleave',()=>{if(!desktopGrab)clearHover();});
 addEventListener('keydown',event=>{
@@ -219,6 +238,11 @@ addEventListener('keydown',event=>{
 addEventListener('keyup',event=>keys.delete(event.code));addEventListener('blur',()=>{keys.clear();cancelInteractions();locomotion?.reset();});
 function updateDesktop(dt,time){
   if(pointerState?.button===0&&pointerState.hit&&!desktopGrab&&time-pointerState.time>190)beginDesktopGrab(pointerState.hit,pointerState);
+  if(desktopGrab){
+    camera.getWorldPosition(viewerPosition);direction.copy(desktopGrab.point).sub(viewerPosition);const distance=direction.length();direction.normalize();
+    const pulled=stepHoldPull(desktopGrab.holdPull,dt,{origin:viewerPosition,direction,distance,viewer:viewerPosition});
+    if(pulled<distance){desktopGrab.point.copy(viewerPosition).addScaledVector(direction,pulled);dragPlane.setFromNormalAndCoplanarPoint(dragPlane.normal,desktopGrab.point);lab.moveGrab(desktopGrab.point,'pointer');}
+  }
   const forward=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0);
   const right=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0);
   if(!forward&&!right)return;
@@ -249,7 +273,7 @@ function update(dt,time,frame){
     rig.updateWorldMatrix(true,true);renderer.xr.updateCamera(camera);
     const viewer=renderer.xr.getCamera();viewer.getWorldPosition(viewerPosition);viewerForward.set(0,0,-1).transformDirection(viewer.matrixWorld);viewerUp.set(0,1,0).transformDirection(viewer.matrixWorld);audio.updateListener(viewerPosition,viewerForward,viewerUp);
     xrFrames++;
-    if(sessionVisibility==='visible'){updateXRInputs(time,frame);locomotion.update(dt,inputs);}else palmTurns.visible=false;
+    if(sessionVisibility==='visible'){updateXRInputs(time,frame,dt);locomotion.update(dt,inputs);}else palmTurns.visible=false;
   }else {updateDesktop(dt,time);camera.getWorldPosition(viewerPosition);}
   lab.step(dt);warehouse.update(dt,time/1000);
   atmosphere.update(dt,time/1000,viewerPosition);

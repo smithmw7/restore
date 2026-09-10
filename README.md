@@ -20,6 +20,8 @@ A 96 × 180 × 28 metre enclosed archive with towering steel trusses, long stora
 
 The experience itself displays no instructions. These controls are documented here for development and testing.
 
+Distant held objects gradually reel toward you after a short pause, speeding up gently and easing to a stop with room for the object's size. Manual depth adjustments restart the gentle ramp. Objects picked up by direct hand contact continue to follow your hand.
+
 **Quest controllers**
 
 - Tap trigger to break a crate or artifact.
@@ -90,6 +92,7 @@ npm run test:storage      # All 176 crates, stack collapse, live obstacles and r
 npm run test:artifacts    # Artifact manifold geometry and scaled fracture volume
 npm run test:fracture-cache # Shared cut templates, independent state and finish
 npm run test:locomotion   # Head pivot, teleport, collision, input latches
+npm run test:hold-pull    # Gradual pull, frame-rate consistency, comfort and manual override
 npm run test:smoke        # Real desktop pointer crate and artifact loop
 npm run test:storage-browser # Side/upper storage selection and alien contents
 npm run test:navigation   # Real keyboard, mouse look and floor teleport
