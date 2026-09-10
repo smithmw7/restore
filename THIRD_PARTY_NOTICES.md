@@ -11,3 +11,5 @@ Restore uses these packages without modifying their source. Their license notice
 - [Rapier](https://github.com/dimforge/rapier.js), Dimforge, Apache-2.0. Rigid-body physics.
 - [Vite](https://github.com/vitejs/vite), Vite contributors, MIT. Development and production bundling.
 - [Playwright](https://github.com/microsoft/playwright), Microsoft, Apache-2.0. Local browser verification.
+
+The texture maps in `public/materials/` are copied from the user's local Sanctus Library 3.4.20 bake deliveries in MaterialsSandbox. Source and output hashes, original material names, and known surface-sample limitations are recorded in `docs/warehouse-materials.json`. These owned material assets are separate from the open-source software licenses above. They are included only in this private project repository.

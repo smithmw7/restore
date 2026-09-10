@@ -21,8 +21,8 @@ const DOCK_RADIUS = 0.48;
 const DOCK_SECONDS = 0.34;
 const yieldFrame = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-function closedLathe(profile) {
-  const geometry = new THREE.LatheGeometry(profile.map(([x, y]) => new THREE.Vector2(x, y)), 20);
+function closedLathe(profile, radialSegments = 20) {
+  const geometry = new THREE.LatheGeometry(profile.map(([x, y]) => new THREE.Vector2(x, y)), radialSegments);
   // Radius-zero cap poles generate zero-area faces. Remove those before slicing.
   const vertices = geometry.attributes.position;
   const a = new THREE.Vector3();
@@ -53,6 +53,17 @@ function makeGeometry(id) {
     case 'column': return new THREE.CylinderGeometry(0.20, 0.20, 0.58, 10).rotateY(0.13);
     case 'ring': return new THREE.TorusGeometry(0.20, 0.077, 10, 24);
     case 'tablet': return new THREE.BoxGeometry(0.40, 0.57, 0.12);
+    // Warehouse additions retain the original demo's eight fracture templates.
+    case 'obelisk': return closedLathe([[0, -0.27], [0.17, -0.27], [0.17, -0.22], [0.14, -0.20], [0.095, 0.15], [0, 0.27]], 4).rotateY(Math.PI / 4);
+    case 'chalice': return closedLathe([[0, -0.27], [0.13, -0.27], [0.15, -0.245], [0.13, -0.20],
+      [0.055, -0.16], [0.05, 0.015], [0.115, 0.04], [0.175, 0.13], [0.205, 0.22],
+      [0.20, 0.27], [0.178, 0.27], [0.178, 0.22], [0.15, 0.14], [0.09, 0.095], [0, 0.085]]);
+    case 'stela': {
+      const outline = new THREE.Shape().moveTo(-0.175, -0.28).lineTo(0.175, -0.28).lineTo(0.175, 0.13)
+        .quadraticCurveTo(0.175, 0.28, 0, 0.28).quadraticCurveTo(-0.175, 0.28, -0.175, 0.13).closePath();
+      return new THREE.ExtrudeGeometry(outline, { depth: 0.09, bevelEnabled: true, bevelThickness: 0.012,
+        bevelSize: 0.012, bevelSegments: 2, curveSegments: 8, steps: 1 }).translate(0, 0, -0.045);
+    }
     default: throw new Error(`Unknown Restore object: ${id}`);
   }
 }
@@ -72,7 +83,10 @@ function makeHull(geometry, shrink = 1) {
  * compound group of reunited shards. Releasing a partial repair preserves it.
  * Unit rotations are relative to the immutable, world-oriented home geometry.
  */
-export async function createDestructionLab({ scene, onProgress = () => {}, onChange = () => {}, onEvent = () => {} }) {
+export async function createDestructionLab({ scene, onProgress = () => {}, onChange = () => {}, onEvent = () => {},
+  specs = OBJECT_SPECS, materialForSpec = null, wholeObjects = false, pedestals = true,
+  bounds = { minX: -6, maxX: 6, minZ: -7, maxZ: 6 }, statics = [],
+}) {
   await RAPIER.init();
   const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   const events = new RAPIER.EventQueue(true);
@@ -96,14 +110,20 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   let disposed = false;
   let grab = null;
 
-  world.createCollider(RAPIER.ColliderDesc.cuboid(8, 0.05, 8).setTranslation(0, -0.05, 0).setFriction(0.8));
-  for (const spec of OBJECT_SPECS) {
+  world.createCollider(RAPIER.ColliderDesc.cuboid(Math.max(8, (bounds.maxX - bounds.minX) / 2 + 1), 0.05, Math.max(8, (bounds.maxZ - bounds.minZ) / 2 + 1))
+    .setTranslation((bounds.minX + bounds.maxX) / 2, -0.05, (bounds.minZ + bounds.maxZ) / 2).setFriction(0.8));
+  for (const box of statics) {
+    const size = box.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+    const center = box.getCenter(new THREE.Vector3());
+    world.createCollider(RAPIER.ColliderDesc.cuboid(size.x, size.y, size.z).setTranslation(center.x, center.y, center.z).setFriction(0.8));
+  }
+  for (const spec of pedestals ? specs : []) {
     world.createCollider(RAPIER.ColliderDesc.cylinder(spec.pedestalHeight / 2, 0.32)
       .setTranslation(spec.x, spec.pedestalHeight / 2, spec.z).setFriction(0.8));
   }
 
   function emit(type, object, position, extra = {}) {
-    onEvent({ type, objectId: object.spec.id, position: position.clone(), ...extra });
+    onEvent({ type, objectId: object.spec.id, soundId: object.spec.soundId || object.spec.form || object.spec.id, position: position.clone(), ...extra });
   }
 
   function assemblyCenter(unit, result = new THREE.Vector3()) {
@@ -123,6 +143,9 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       active: true,
       objectId: object.spec.id,
       handId: grab.handId,
+      soundId: object.spec.soundId || object.spec.form || object.spec.id,
+      kind: object.spec.kind || 'artifact',
+      whole: !object.fractured,
       anchor: unit.position.toArray(),
       radius: MAGNET_RADIUS,
       assembled: unit.members.length,
@@ -136,7 +159,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   }
 
   function getState() {
-    const broken = objects.filter((object) => object.broken).length;
+    const broken = objects.filter((object) => object.fractured).length;
     const { heldMesh, ...grabState } = getGrabState();
     return {
       ready,
@@ -144,10 +167,14 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       broken,
       debris: objects.reduce((total, object) => total + (object.broken && !isComplete(object) ? object.fragments.length : 0), 0),
       restoring,
-      total: OBJECT_SPECS.length,
+      total: specs.length,
       objects: objects.map((object) => ({
         id: object.spec.id,
-        state: object.docking ? 'docking' : !object.broken ? 'intact' : grab?.object === object ? 'held' : isComplete(object) ? 'assembled' : 'broken',
+        state: !object.enabled ? 'hidden' : object.docking ? 'docking' : grab?.object === object ? 'held' : !object.broken ? 'intact' : isComplete(object) ? 'assembled' : 'broken',
+        visible: object.enabled,
+        fractured: object.fractured,
+        kind: object.spec.kind || 'artifact',
+        soundId: object.spec.soundId || object.spec.form || object.spec.id,
         snapped: object.broken ? Math.max(grab?.object === object ? 1 : 0, ...object.units.map((unit) => unit.members.length > 1 ? unit.members.length : 0)) : object.fragments.length,
         total: object.fragments.length,
         position: object.mesh.position.toArray(),
@@ -165,8 +192,10 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     targets.length = 0;
     grabTargets.length = 0;
     for (const object of objects) {
-      if (!object.broken) targets.push(object.mesh);
+      if (!object.enabled || restoring || object.docking) continue;
+      if (!object.broken) { targets.push(object.mesh); if (wholeObjects) grabTargets.push(object.mesh); }
       else if (!restoring && !object.docking) {
+        if (wholeObjects && isComplete(object)) targets.push(object.mesh);
         if (isComplete(object)) grabTargets.push(object.mesh);
         else for (const fragment of object.fragments) grabTargets.push(fragment.mesh);
       }
@@ -174,9 +203,10 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   }
 
   function addIntactCollider(object) {
+    if (!object.enabled) return;
     object.intactCollider = world.createCollider(object.intactHull
-      .setTranslation(object.homePosition.x, object.homePosition.y, object.homePosition.z)
-      .setRotation(object.homeQuaternion));
+      .setTranslation(object.mesh.position.x, object.mesh.position.y, object.mesh.position.z)
+      .setRotation(object.mesh.quaternion));
   }
 
   function removeBody(unit) {
@@ -243,9 +273,10 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     object.units.length = 0;
     object.docking = null;
     object.broken = false;
+    object.fractured = false;
     object.mesh.position.copy(object.homePosition);
     object.mesh.quaternion.copy(object.homeQuaternion);
-    object.mesh.visible = true;
+    object.mesh.visible = object.enabled;
     for (const fragment of object.fragments) {
       fragment.unit = null;
       fragment.mesh.visible = false;
@@ -255,29 +286,36 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     if (!object.intactCollider) addIntactCollider(object);
   }
 
-  onProgress(0, OBJECT_SPECS.length);
+  onProgress(0, specs.length);
   try {
-    for (const spec of OBJECT_SPECS) {
+    for (const spec of specs) {
       await yieldFrame();
-      const outside = new THREE.MeshStandardMaterial({ color: spec.color, roughness: 0.38, metalness: 0.06 });
-      const inside = new THREE.MeshStandardMaterial({ color: new THREE.Color(spec.color).lerp(new THREE.Color('#fff8eb'), 0.58), roughness: 0.92, metalness: 0 });
-      const mesh = new DestructibleMesh(makeGeometry(spec.id), outside, inside);
+      const supplied = materialForSpec?.(spec);
+      const outside = supplied?.outside?.clone() || new THREE.MeshStandardMaterial({ color: spec.color, roughness: 0.38, metalness: 0.06 });
+      const inside = supplied?.inside?.clone() || new THREE.MeshStandardMaterial({ color: new THREE.Color(spec.color).lerp(new THREE.Color('#fff8eb'), 0.58), roughness: 0.92, metalness: 0 });
+      const form = spec.form || spec.id;
+      const mesh = new DestructibleMesh(makeGeometry(form), outside, inside);
       mesh.name = spec.label;
-      mesh.position.set(spec.x, spec.pedestalHeight + spec.halfHeight + 0.004, spec.z);
-      if (spec.id === 'cube') mesh.rotation.y = 0.22;
-      if (spec.id === 'tablet') mesh.rotation.y = -0.16;
+      mesh.position.set(spec.x, spec.y ?? spec.pedestalHeight + spec.halfHeight + 0.004, spec.z);
+      if (form === 'cube') mesh.rotation.y = 0.22;
+      if (form === 'tablet') mesh.rotation.y = -0.16;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.userData.labObject = spec.id;
+      mesh.userData.soundId = spec.soundId || form;
+      mesh.userData.kind = spec.kind || 'artifact';
+      mesh.userData.wholeGrabbable = wholeObjects;
       scene.add(mesh);
       mesh.updateMatrixWorld(true);
-      const pieces = mesh.fracture(new FractureOptions({ fractureMethod: 'voronoi', fragmentCount: 16, seed: spec.seed, voronoiOptions: { mode: '3D', useApproximation: false } }));
+      const pieces = mesh.fracture(new FractureOptions({ fractureMethod: 'voronoi', fragmentCount: spec.fragmentCount || 16, seed: spec.seed, voronoiOptions: { mode: '3D', useApproximation: false } }));
       if (pieces.length < 2) throw new Error(`Could not fracture ${spec.label}.`);
       const fragments = pieces.map((piece, index) => {
         piece.visible = false;
         piece.name = `${spec.label} fragment ${index + 1}`;
         piece.userData.labObject = spec.id;
         piece.userData.fragmentIndex = index;
+        piece.userData.soundId = spec.soundId || form;
+        piece.userData.kind = 'fragment';
         piece.castShadow = true;
         piece.receiveShadow = true;
         scene.add(piece);
@@ -289,14 +327,15 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
         };
       });
       const object = {
-        spec, mesh, fragments, units: [], broken: false, docking: null, age: 0,
+        spec, mesh, fragments, units: [], broken: false, fractured: false, enabled: !spec.initialHidden, docking: null, age: 0,
         homePosition: mesh.position.clone(), homeQuaternion: mesh.quaternion.clone(),
         intactHull: makeHull(mesh.geometry), intactCollider: null,
       };
       objects.push(object);
       objectById.set(spec.id, object);
+      mesh.visible = object.enabled;
       addIntactCollider(object);
-      onProgress(objects.length, OBJECT_SPECS.length);
+      onProgress(objects.length, specs.length);
     }
   } catch (error) {
     events.free();
@@ -314,19 +353,25 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   function hit(mesh, point, direction) {
     if (!ready || restoring || disposed) return false;
     const object = objectById.get(mesh?.userData?.labObject);
-    if (!object || object.broken || mesh !== object.mesh) return false;
+    if (!object || !object.enabled || mesh !== object.mesh || (object.broken && (!wholeObjects || !isComplete(object))) || grab?.object === object) return false;
     const origin = point?.isVector3 ? point : object.mesh.position;
     const forceDirection = direction?.isVector3 ? direction.clone() : new THREE.Vector3(0, 0, -1);
     if (forceDirection.lengthSq() < 0.0001) forceDirection.set(0, 0, -1);
     forceDirection.normalize();
+    for (const unit of object.units) removeBody(unit);
+    object.units.length = 0;
+    const fracturePosition = object.mesh.position.clone();
+    const fractureRotation = object.mesh.quaternion.clone().multiply(object.homeQuaternion.clone().invert());
     object.broken = true;
+    object.fractured = true;
     object.age = 0;
     object.mesh.visible = false;
-    world.removeCollider(object.intactCollider, true);
+    if (object.intactCollider) world.removeCollider(object.intactCollider, true);
     object.intactCollider = null;
     object.fragments.forEach((fragment, index) => {
-      const unit = makeUnit(object, [fragment], fragment.homePosition);
-      const velocity = fragment.homePosition.clone().sub(origin);
+      const position = fragment.homePosition.clone().sub(object.homePosition).applyQuaternion(fractureRotation).add(fracturePosition);
+      const unit = makeUnit(object, [fragment], position, fractureRotation);
+      const velocity = position.clone().sub(origin);
       if (velocity.lengthSq() < 0.0001) velocity.set(Math.sin(index * 2.4), 0.5, Math.cos(index * 2.4));
       velocity.normalize().multiplyScalar(0.8 + (index % 5) * 0.1).addScaledVector(forceDirection, 0.65);
       velocity.y += 1.5;
@@ -334,6 +379,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       unit.body.setAngvel({ x: Math.sin(index * 2.1) * 5, y: Math.cos(index * 1.7) * 4, z: Math.sin(index * 1.3) * 5 }, true);
       syncUnit(unit);
     });
+    emit('break', object, origin, { strength: 0.8 });
     refreshTargets();
     notify();
     return true;
@@ -342,7 +388,16 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   function beginGrab(mesh, worldPoint, handId = 'primary') {
     if (!ready || disposed || restoring || grab || !worldPoint?.isVector3 || !Number.isFinite(worldPoint.x + worldPoint.y + worldPoint.z)) return false;
     const object = objectById.get(mesh?.userData?.labObject);
-    if (!object?.broken || object.docking || !grabTargets.includes(mesh)) return false;
+    if (!object?.enabled || object.docking || !grabTargets.includes(mesh)) return false;
+    if (!object.broken) {
+      if (!wholeObjects || mesh !== object.mesh) return false;
+      const rotation = object.mesh.quaternion.clone().multiply(object.homeQuaternion.clone().invert());
+      const anchor = object.fragments[0].homePosition.clone().sub(object.homePosition).applyQuaternion(rotation).add(object.mesh.position);
+      if (object.intactCollider) world.removeCollider(object.intactCollider, true);
+      object.intactCollider = null;
+      object.broken = true;
+      makeUnit(object, object.fragments, anchor, rotation);
+    }
     const fragment = Number.isInteger(mesh.userData.fragmentIndex) ? object.fragments[mesh.userData.fragmentIndex] : null;
     const unit = fragment?.unit || (mesh === object.mesh && isComplete(object) ? object.units[0] : null);
     if (!unit) return false;
@@ -362,7 +417,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     unit.previousQuaternion.copy(unit.quaternion);
     const offset = unit.position.clone().sub(worldPoint);
     grab = { object, unit, handId, offset, goal: worldPoint.clone().add(offset), speed: 0, velocity: new THREE.Vector3(), soundEnded: false };
-    emit('pickup', object, unit.position, { complete: isComplete(object), assembled: unit.members.length, total: object.fragments.length });
+    emit('pickup', object, unit.position, { complete: isComplete(object), whole: !object.fractured, assembled: unit.members.length, total: object.fragments.length });
     syncUnit(unit);
     notify();
     return true;
@@ -371,9 +426,9 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   function moveGrab(worldPoint, handId = 'primary') {
     if (!grab || grab.handId !== handId || !worldPoint?.isVector3 || !Number.isFinite(worldPoint.x + worldPoint.y + worldPoint.z)) return false;
     grab.goal.copy(worldPoint).add(grab.offset);
-    grab.goal.x = THREE.MathUtils.clamp(grab.goal.x, -6, 6);
+    grab.goal.x = THREE.MathUtils.clamp(grab.goal.x, bounds.minX, bounds.maxX);
     grab.goal.y = THREE.MathUtils.clamp(grab.goal.y, 0.07, 6);
-    grab.goal.z = THREE.MathUtils.clamp(grab.goal.z, -7, 6);
+    grab.goal.z = THREE.MathUtils.clamp(grab.goal.z, bounds.minZ, bounds.maxZ);
     return true;
   }
 
@@ -606,8 +661,8 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
             unit.idleTime += FIXED_STEP;
             if (unit.idleTime > 12 && !unit.body.isSleeping()) unit.body.sleep();
           }
-          if (unit.position.y < -2 || unit.position.lengthSq() > 120) {
-            unit.position.set(THREE.MathUtils.clamp(unit.position.x, -5, 5), 0.12, THREE.MathUtils.clamp(unit.position.z, -6, 3));
+          if (unit.position.y < -2 || unit.position.x < bounds.minX - 2 || unit.position.x > bounds.maxX + 2 || unit.position.z < bounds.minZ - 2 || unit.position.z > bounds.maxZ + 2) {
+            unit.position.set(THREE.MathUtils.clamp(unit.position.x, bounds.minX + 0.4, bounds.maxX - 0.4), 0.12, THREE.MathUtils.clamp(unit.position.z, bounds.minZ + 0.4, bounds.maxZ - 0.4));
             unit.previousPosition.copy(unit.position);
             unit.body.setTranslation(unit.position, false);
             unit.body.setLinvel({ x: 0, y: 0, z: 0 }, false);
@@ -623,6 +678,49 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       if (!object.broken || object.docking) continue;
       for (const unit of object.units) syncUnit(unit, unit === grab?.unit ? 1 : alpha);
     }
+  }
+
+  // Warehouse contents stay physically dormant and unselectable while packed.
+  // Their immutable repair layout is rebased only before they are revealed.
+  function placeObject(id, position, quaternion = identity, { visible = true, rebaseHome = true, dynamic = false } = {}) {
+    const object = objectById.get(id);
+    if (!object || object.broken || !position?.isVector3 || disposed) return false;
+    if (object.intactCollider) world.removeCollider(object.intactCollider, true);
+    object.intactCollider = null;
+    const rotation = quaternion.clone().multiply(object.homeQuaternion.clone().invert());
+    if (rebaseHome) {
+      for (const fragment of object.fragments) {
+        fragment.homePosition.sub(object.homePosition).applyQuaternion(rotation).add(position);
+        fragment.homeQuaternion.premultiply(rotation);
+        fragment.mesh.position.copy(fragment.homePosition);
+        fragment.mesh.quaternion.copy(fragment.homeQuaternion);
+      }
+      object.homePosition.copy(position);
+      object.homeQuaternion.copy(quaternion);
+    }
+    object.mesh.position.copy(position);
+    object.mesh.quaternion.copy(quaternion);
+    object.enabled = visible;
+    object.mesh.visible = visible;
+    if (visible && dynamic) {
+      object.broken = true;
+      const q = quaternion.clone().multiply(object.homeQuaternion.clone().invert());
+      const anchor = object.fragments[0].homePosition.clone().sub(object.homePosition).applyQuaternion(q).add(position);
+      const unit = makeUnit(object, object.fragments, anchor, q);
+      addBody(unit);
+      syncUnit(unit);
+    } else addIntactCollider(object);
+    refreshTargets();
+    return true;
+  }
+
+  function resetImmediately() {
+    cancelGrabs();
+    restoring = false;
+    accumulator = 0;
+    for (const object of objects) resetObjectHome(object);
+    refreshTargets();
+    notify();
   }
 
   function dispose() {
@@ -645,8 +743,13 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     }
   }
 
+  function registerExternalCollider(collider, unit, mesh) {
+    colliderUnits.set(collider.handle, { unit, fragment: { mesh } });
+  }
+  function unregisterExternalCollider(handle) { colliderUnits.delete(handle); }
+
   ready = true;
   refreshTargets();
   notify();
-  return { targets, grabTargets, step, hit, beginGrab, moveGrab, endGrab, cancelGrabs, restore, getState, getGrabState, dispose };
+  return { targets, grabTargets, step, hit, beginGrab, moveGrab, endGrab, cancelGrabs, restore, getState, getGrabState, dispose, placeObject, resetImmediately, physicsWorld: world, registerExternalCollider, unregisterExternalCollider };
 }

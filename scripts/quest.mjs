@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = path.join(projectRoot, 'dist');
-const port = 5207;
+const port = 5209;
 // Horizon's system launcher rejects localhost hostnames on some OS versions.
 // Numeric loopback remains a secure context and uses the same USB reverse.
 const origin = `http://127.0.0.1:${port}/`;

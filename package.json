@@ -1,19 +1,22 @@
 {
   "name": "restore",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 5207 --strictPort",
+    "dev": "vite --host 127.0.0.1 --port 5209 --strictPort",
     "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1 --port 5207 --strictPort",
+    "preview": "vite preview --host 127.0.0.1 --port 5209 --strictPort",
     "quest": "node scripts/quest.mjs",
-    "test:smoke": "node scripts/smoke.mjs",
-    "test:audio": "node scripts/audio-smoke.mjs",
+    "test:smoke": "node scripts/warehouse-browser.mjs",
+    "test:audio": "node scripts/repair-audio-check.mjs",
     "audio:prepare": "python3 scripts/prepare-audio.py",
     "test:repair": "node scripts/repair-check.mjs",
-    "test:repair-browser": "node scripts/repair-browser.mjs",
-    "audio:prepare-repair": "python3 scripts/prepare-repair-audio.py"
+    "test:repair-browser": "node scripts/warehouse-browser.mjs",
+    "audio:prepare-repair": "python3 scripts/prepare-repair-audio.py",
+    "test:warehouse": "node scripts/warehouse-check.mjs",
+    "test:locomotion": "node scripts/locomotion-check.mjs",
+    "test:navigation": "node scripts/navigation-browser.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

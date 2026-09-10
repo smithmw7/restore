@@ -4,7 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 
 // Dedicated silent context exercises real Chromium WebAudio clocks and WAV decodes.
 // It does not click the app or play through the user's speakers or headset.
-const origin = process.env.RESTORE_TEST_URL || 'http://127.0.0.1:5207';
+const origin = process.env.RESTORE_TEST_URL || 'http://127.0.0.1:5209';
 const assetSource = process.env.RESTORE_TEST_AUDIO_SOURCE || 'public';
 const browser = await chromium.launch({ headless: true, channel:'chrome', args: ['--mute-audio', '--autoplay-policy=no-user-gesture-required'] });
 try {

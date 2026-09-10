@@ -1,89 +1,102 @@
 # Restore
 
-A first VR app built with a web stack. Restore uses Three.js, WebXR, Rapier physics, and [three-pinata](https://github.com/dgreenheck/three-pinata) to turn a room of objects into a destruction playground.
+A private Three.js / WebXR playground for collecting, breaking, and restoring objects. The original bright-room demo is preserved at Git tag **restore-demo-v1** and on `main`. The **warehouse** branch extends it into an enclosed artifact storehouse.
 
-## Play on your Quest over USB
+Repository: https://github.com/smithmw7/restore (private).
 
-You need Node.js 20.19+ or 22.12+, Android SDK Platform Tools (`adb`), and a Quest with Developer Mode enabled. Connect a USB data cable and accept **Allow USB debugging** inside the headset if prompted.
+## Warehouse
 
-From this folder:
+A 24 × 34 × 9 metre room with clear central aisles, steel roof trusses, cool clerestory lighting, warm practicals, and a textured concrete floor with real planar reflection. There is no visible text, tutorial copy, score, or magnetic-range sphere. The small headset, reset, and sound icons retain accessible names.
 
-```sh
-npm install
-npm run quest
-```
-
-The launcher builds Restore, serves the production build on port **5207**, forwards that port over USB, and opens `http://127.0.0.1:5207` in Meta Quest Browser. Put on your headset and choose **Enter VR**. Accept the browser's VR and hand tracking permission prompts if shown.
-
-Keep the terminal and USB connection open while playing. This runs locally from your computer. The project has not been packaged as an APK or submitted to a store.
-
-To reopen an existing build without rebuilding:
-
-```sh
-npm run quest -- --no-build
-```
-
-The launcher checks the page title and app identity before reusing an existing server. It never stops an unrelated process. If another app occupies port 5207, stop that server yourself before launching Restore.
+- 24 seeded crates of several sizes, including two stacked pairs. They can be lifted, moved, dropped, and broken into six physical wooden panels.
+- Each crate contains one artifact. Its contents remain hidden and cannot be selected through a closed crate. Opening a moved crate reveals the artifact at that crate's current position.
+- 24 artifacts across eight forms, including obelisks, ceremonial chalices, vases, and arched stelae, with material variations across the collection. Whole artifacts can be moved, fractured with Three Pinata, and repaired by drawing their matching fragments together. Partial repairs survive drops.
+- 152 additional instanced crates build the distant storage stacks. These are static scenery, with collision bounds; the 24 central crates are the interactive collection in this version.
+- Eight 512px Sanctus texture sets: wood, concrete, ceramic, bronze, copper, gold, marble and stone. Lossless WebP conversion preserves the baked source pixels. Material provenance and limitations are in `docs/warehouse-materials.json`.
 
 ## Controls
 
-- **Break:** Point and tap the trigger or pinch. You can also touch an intact object with a controller tip or fingertip.
-- **Gather:** Hold the trigger or pinch on any broken piece. Move it near matching pieces to pull them together. The green rings show the magnetic range. For distant hand grabs, pull your pinched hand toward you to bring the piece closer, or push it away to extend your reach. Controller thumbstick forward/back adjusts the held ray distance.
-- **Drop:** Let go. Joined pieces stay joined, and you can pick up any part to continue.
-- **Place:** Once the object is whole, carry it near its original pedestal. Release when the label says **Release to place** to ease it home.
-- **Reset:** Use the scene's Restore All button, or either controller grip while your hands are free.
-- **Leave VR:** Use the headset's system menu or the browser's exit VR control.
+The experience itself displays no instructions. These controls are documented here for development and testing.
 
-On desktop, click intact objects to break them. Hold and drag a shard to gather; scroll while holding to adjust depth. Drag empty space to orbit, Space or R resets the room, and F toggles fullscreen. Hand tracking must be enabled on the headset for pinch controls.
+**Quest controllers**
 
-## Development and troubleshooting
+- Tap trigger to break a crate or artifact.
+- Hold trigger to grab. Grip grabs immediately. Release the same button to drop.
+- While holding with grip, tap trigger to break the held object.
+- Broken fragments and wooden panels grab immediately when selected.
+- While holding, move the thumbstick forward/back to adjust reach.
+- With a free controller, push its thumbstick forward to aim the teleport arc; release to neutral to teleport. Click the stick or pull it back to cancel.
+- Flick a free thumbstick left/right for a 30° snap turn. Return it to neutral for another turn.
 
-Breaking uses 12 recordings copied from your Ultimate SFX Bundle, with two variants per material: glass, concrete, rock, wood, light metal, and heavy metal. The sounds are predecoded before play, alternate to avoid identical repeated hits, and come from the object's position in VR. The Sound button mutes current sounds as well as new ones.
+**Hands**
 
-The 12 breaking clips use a shared **-22.39 LUFS** normalization target, measured within 0.06 LU, with true peaks at or below **-2.10 dBTP**. Fixed gain preserves their transients. Leading silence is trimmed to less than 3.3 ms; all 12 mono 48 kHz WAVs total about 948 KB. Your original library files are unchanged. Exact sources and measurements are in [the audio report](docs/audio-normalization.json).
+- Short pinch to break; held pinch to grab. Move your pinched hand toward your body to bring a distant object closer, or extend it to push it away.
+- Pinch empty floor to aim a teleport; release to travel to the valid ring.
+- Turn your left palm upward to reveal two small turn chevrons. Select one with your other hand to snap turn.
+- Deliberate fingertip taps also break objects; gentle contact does not instantly break them while preparing a pinch.
 
-Repair adds 18 normalized recordings from your library: Armor On pickup cues, Heavy Kicks for releases, two crossfaded stone-dragging loops, and material-specific footsteps for contacts and magnetic snaps. Pickup clips sit around -22.39 LUFS, drops -22.8, contact clips -26.8, and the drag textures -35. The maximum measured true peak is -2.10 dBTP. The loop follows movement at a maximum 12% gain, fades on release, and stops within 15 ms of completion. Idle holds are silent. [The repair audio report](docs/repair-audio-normalization.json) records sources, hashes, gains, and measurements. Source recordings are untouched.
+Movement releases held objects before relocating the player. Teleport destinations reserve standing clearance and respect walls and crate piles. Turning preserves the actual tracked head position. Movement input is suppressed while the system menu obscures the experience.
 
-Run `npm run audio:prepare-repair` to reproduce the repair sounds. `npm run test:repair` checks gathering, partial assembly, release, docking, collision events, and cleanup without a browser. `npm run test:repair-browser` exercises the complete loop with real desktop pointer input against the running preview. Set `RESTORE_URL` to test another owned preview port.
+**Desktop**
 
-Run `npm run audio:prepare` to reproduce the assets with FFmpeg, or `npm run test:audio` against the running preview to verify decoding, material routing, variation, and muting.
+- Click to break; hold and drag to pick up. Scroll while holding to change depth.
+- Drag empty space or drag with the right mouse button to look.
+- WASD or up/down arrows move; Q/E or left/right arrows snap turn.
+- Shift-click empty floor to teleport.
+- R or the circular reset icon restores the warehouse. F toggles fullscreen.
+
+## Run locally or on Quest over USB
+
+Requirements: Node.js 20.19+ or 22.12+, Android SDK Platform Tools, and a Quest with Developer Mode enabled and USB debugging authorized.
 
 ```sh
-npm run dev       # Local development with live updates
-npm run build     # Generate dist/
-npm run preview   # Preview dist/ on port 5207
-npm run test:smoke # With the server running; uses installed Google Chrome
+npm install
+npm run dev
 ```
 
-Run one server at a time on this port. `npm run quest` can reuse a verified Restore development or preview server; that server remains owned by its original terminal. Close it first when you want the launcher to serve the new production build itself.
-
-If ADB is missing, install [Android SDK Platform Tools](https://developer.android.com/tools/releases/platform-tools). The launcher searches your `PATH`, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and `~/Library/Android/sdk/platform-tools/adb`. You can set `ADB_PATH` to a different executable location.
-
-If the device is **unauthorized**, put on the headset and approve USB debugging. If it is **offline**, wake the headset and reconnect USB. If more than one authorized Android device is connected, select the headset explicitly:
+For the connected headset:
 
 ```sh
-ANDROID_SERIAL=YOUR_HEADSET_SERIAL npm run quest
+npm run quest
 ```
 
-The launcher uses numeric loopback because this headset's Horizon launcher rejects the `localhost` hostname. If Browser remains invisible after launch, close and reopen Browser; a stale background debugging tab does not prove that its headset window opened.
+The launcher builds the project, serves it on **127.0.0.1:5209**, forwards that port over USB, and opens Quest Browser. Choose the **headset icon** to enter VR and accept any system permission prompt. Keep the server and USB connection open. No APK or store submission is required.
 
-If the page cannot be reached after disconnecting USB or restarting the headset, reconnect and run `npm run quest` again. If the Browser does not come to the foreground, open Meta Quest Browser manually and visit `http://127.0.0.1:5207` while the launcher is running.
+Use `npm run quest -- --no-build` to reopen the current build. The launcher verifies server identity before reusing port5209. Numeric loopback is intentional: this headset's launcher rejected `http://localhost:5209`.
 
-To inspect the headset's browser, open desktop Chrome at `chrome://inspect/#devices`, find the Restore tab, and choose **inspect**. WebXR needs a secure context. USB forwarding makes the page local to the headset, so HTTP localhost is suitable for development. Plain HTTP on your computer's LAN IP does not have the same secure-context treatment.
+For a separate development preview, first confirm the port is free:
 
-## Why WebXR first
+```sh
+npx vite --host 127.0.0.1 --port 5208 --strictPort
+```
 
-Meta recommends testing a WebXR experience in Quest Browser before PWA packaging. A browser session requires a user gesture, which is why Restore has an **Enter VR** button. Hand joint access is requested through the WebXR session's `hand-tracking` feature, rather than a web app manifest permission alone.
+## Audio and materials
 
-An installable app can be added later through Meta's Bubblewrap / Trusted Web Activity packaging route with a hosted HTTPS URL, signing, and Digital Asset Links. None of that is needed to play this USB demo. A generic Android WebView wrapper should not be assumed to provide the Quest Browser's immersive runtime.
+The 30 predecoded sounds include material breaking recordings, Armor On pickups, Heavy Kick drops, quiet stone-dragging loops, and material-specific footstep contacts/snaps. Idle holds are silent; the loop fades on release and stops within15ms when reconstruction completes. Voices and repeated contact events are capped.
 
-References:
+All source recordings remain unchanged. `scripts/prepare-audio.py` and `scripts/prepare-repair-audio.py` reproduce the normalized WAVs. Per-asset measurements and hashes are in `docs/audio-normalization.json` and `docs/repair-audio-normalization.json`.
 
-- [Meta: Debug Browser content and USB port forwarding](https://developers.meta.com/horizon/documentation/web/browser-remote-debugging/)
-- [Meta: System deep linking](https://developers.meta.com/horizon/documentation/native/ps-system-deep-linking/)
-- [Meta: WebXR hands](https://developers.meta.com/horizon/documentation/web/webxr-hands/)
-- [W3C: WebXR Hand Input Module](https://www.w3.org/TR/webxr-hand-input-1/)
-- [W3C: Secure Contexts](https://www.w3.org/TR/secure-contexts/)
-- [Meta: Getting started with WebXR PWAs](https://developers.meta.com/horizon/documentation/web/pwa-webxr-gs/)
-- [Meta: PWA packaging overview](https://developers.meta.com/horizon/documentation/web/pwa-overview/)
-- [three-pinata source project](https://github.com/dgreenheck/three-pinata)
+Sanctus procedural node graphs are represented by locally baked base-color, packed ORM, and tangent normal maps. Normal maps change shading, not geometry. These are reusable surface samples; exact seamless tiling and Blender beauty-render parity are not claimed. Mirrored repetition reduces obvious border discontinuities.
+
+## Verification
+
+```sh
+npm run build
+npm run test:repair       # Original magnetic repair API regression
+npm run test:warehouse    # Crate / artifact / physics integration
+npm run test:locomotion   # Head pivot, teleport, collision, input latches
+npm run test:smoke        # Real desktop pointer crate and artifact loop
+npm run test:navigation   # Real keyboard, mouse look and floor teleport
+npm run test:audio        # Real WebAudio decodes, fades, routing and voice limits
+```
+
+Browser tests require installed Google Chrome and a running Restore server. Use `RESTORE_URL=http://127.0.0.1:5208` for gameplay/navigation tests on another owned port. The audio harness uses `RESTORE_TEST_URL`; set `RESTORE_TEST_AUDIO_SOURCE=server` to check built WAV copies.
+
+Desktop and synthetic XR-pose checks establish behavior but do not replace physical Quest controller/hand tests. Planar reflection uses a modest256px target and instancing keeps background draw calls low; physical stereo performance and hand gesture feel must be assessed on the headset.
+
+## References
+
+- [Meta locomotion input mappings](https://developers.meta.com/horizon/design/locomotion-input-maps/)
+- [Three.js WebXR basics](https://threejs.org/manual/en/webxr-basics.html)
+- [Three Pinata](https://github.com/dgreenheck/three-pinata)
+- [Meta browser remote debugging](https://developers.meta.com/horizon/documentation/web/browser-remote-debugging/)

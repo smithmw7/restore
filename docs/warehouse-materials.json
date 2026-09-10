@@ -1,0 +1,559 @@
+{
+  "version": 1,
+  "copiedFrom": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/catalog.json",
+  "mapConvention": {
+    "baseColor": "sRGB",
+    "orm": "Non-color, R occlusion, G roughness, B metallic",
+    "normal": "Non-color, OpenGL tangent +Y, current audited source files preserved without channel changes"
+  },
+  "runtimeNotes": [
+    "All sets are 512 pixel surface samples from the local ready catalog.",
+    "Seamless tiling and Blender renderer parity remain unverified, as stated in source catalog.",
+    "Source files are unchanged. Runtime tints and roughness multipliers are artistic adjustments, not source-fidelity claims.",
+    "No displacement or subsurface scattering is applied."
+  ],
+  "totalBytes": 5140228,
+  "materials": [
+    {
+      "key": "wood",
+      "sourceId": "wood-wood-planks",
+      "sourceName": "Wood planks",
+      "sourceMaterial": "wood_planks_04",
+      "sourceHash": "af6f1a404428c71744dd4f4f2db82df88707547f7dcb2f0093a29c6be14952f8",
+      "sourceCategory": "Wood",
+      "library": "Sanctus Library 3.4.20",
+      "maps": {
+        "baseColor": {
+          "url": "/materials/wood/basecolor.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/wood-wood-planks/basecolor.png",
+          "sourceSha256": "7512bf42f0964f0cb5fc801b5ba998411e7882031dea68871e2a4b187eacbb87",
+          "sha256": "3b77e75ac4717da1d2ef4c493909c03ff3db12a981890310b00e12c7c4f73c54",
+          "bytes": 195730,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "orm": {
+          "url": "/materials/wood/orm.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/wood-wood-planks/orm.png",
+          "sourceSha256": "d156e3f810d5a7563cc31722954ea4d0682fca44a117d128639fe0a3e2d1784f",
+          "sha256": "b3a7466bb01f26796b974ffa134a63b612abb14d09479e4b894f5c5d47d7be48",
+          "bytes": 106956,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "normal": {
+          "url": "/materials/wood/normal.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/wood-wood-planks/normal.png",
+          "sourceSha256": "72da5a4f35d5f23e9214ce1b373fb9e92007a74469b7f4ea3208a720ec6f0348",
+          "sha256": "01dde3f148d8d7981c87f47913ce0e20e03457326f8ef20d6dc95951953f5ee4",
+          "bytes": 441154,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        }
+      },
+      "qualification": {
+        "status": "preview",
+        "mappingMode": "surface-sample",
+        "sampleSizeBlenderUnits": [
+          2,
+          2
+        ],
+        "tileSizeMeters": null,
+        "seamless": "unverified",
+        "rendererParity": "unverified"
+      },
+      "normalAudit": {
+        "version": 1,
+        "status": "detailed",
+        "description": "Surface normal detail is present. Inspect close up under a light at a low angle.",
+        "sha256": "72da5a4f35d5f23e9214ce1b373fb9e92007a74469b7f4ea3208a720ec6f0348",
+        "visiblePixels": 262144,
+        "invalidVisiblePixels": 0,
+        "rgbStd255": [
+          16.1056,
+          23.1591,
+          4.8031
+        ],
+        "displacement": "not-used"
+      },
+      "sourceWarnings": []
+    },
+    {
+      "key": "concrete",
+      "sourceId": "concrete",
+      "sourceName": "Cast concrete",
+      "sourceMaterial": "concrete_04",
+      "sourceHash": "57a116c685fbebf8e0e63bd27acecbfd408b2591b8e418eabf3ff8029030c826",
+      "sourceCategory": "Buildings",
+      "library": "Sanctus Library 3.4.20",
+      "maps": {
+        "baseColor": {
+          "url": "/materials/concrete/basecolor.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/concrete/basecolor.png",
+          "sourceSha256": "adfd13173b3eb7700f9e62e1fc47c729ea309a10dc7ad382d8cfee59e7b59c87",
+          "sha256": "451984695bd7f8a07f6c13eac68bf4e58094e59dc2a81ac7b3afbd6d11c2b24e",
+          "bytes": 218408,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "orm": {
+          "url": "/materials/concrete/orm.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/concrete/orm.png",
+          "sourceSha256": "1b23be79ed61ce1d1b4e21083b29dff95e23f9be1bb81463ea3545be8a41d3da",
+          "sha256": "79db5349bc3f5a4286ed3fb7bfd5b51bb7a636058787525b77db7d55a5006fdd",
+          "bytes": 186796,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "normal": {
+          "url": "/materials/concrete/normal.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/concrete/normal.png",
+          "sourceSha256": "0aa921affa9fac78716fdd7d01326593715dd6bf92253af2ded6455f80ae2b88",
+          "sha256": "8043c9a90da950aa85568ee10cdd700fd19983603415f03365fc9624014eec64",
+          "bytes": 652080,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        }
+      },
+      "qualification": {
+        "status": "preview",
+        "mappingMode": "surface-sample",
+        "sampleSizeBlenderUnits": [
+          2,
+          2
+        ],
+        "tileSizeMeters": null,
+        "seamless": "unverified",
+        "rendererParity": "unverified",
+        "displacement": "Native displacement captured in tangent normals; no silhouette deformation"
+      },
+      "normalAudit": {
+        "version": 1,
+        "status": "detailed",
+        "description": "Surface normal detail is present. Inspect close up under a light at a low angle. Native displacement is captured in shading; silhouettes stay unchanged.",
+        "sha256": "0aa921affa9fac78716fdd7d01326593715dd6bf92253af2ded6455f80ae2b88",
+        "visiblePixels": 262144,
+        "invalidVisiblePixels": 0,
+        "rgbStd255": [
+          43.3394,
+          42.4285,
+          13.8205
+        ],
+        "displacement": "captured"
+      },
+      "sourceWarnings": []
+    },
+    {
+      "key": "ceramic",
+      "sourceId": "ceramic",
+      "sourceName": "Glazed ceramic",
+      "sourceMaterial": "ceramic_04",
+      "sourceHash": "cc1c6413269eeece36e8a43ff33d8f0e80a02386c272a0bc4918514fbac9b33e",
+      "sourceCategory": "Synthetics",
+      "library": "Sanctus Library 3.4.20",
+      "maps": {
+        "baseColor": {
+          "url": "/materials/ceramic/basecolor.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/ceramic/basecolor.png",
+          "sourceSha256": "f1b5c134cfc2137655658343d526a60f5f30f71bdc104dab9135677740375c32",
+          "sha256": "39337243c4ce946fbfd45713f6c2dac0bee2efb265f437253e4cd254628933a3",
+          "bytes": 132432,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "orm": {
+          "url": "/materials/ceramic/orm.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/ceramic/orm.png",
+          "sourceSha256": "d6bbf40825310cc855b9409b5ee083dc260c0f806474905f8893976e93f4bab9",
+          "sha256": "c9bd2f288de3b7da6282a9e458cde2b84b6ad7f3cc4f3b0c9144e0067391cfb2",
+          "bytes": 101530,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "normal": {
+          "url": "/materials/ceramic/normal.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/ceramic/normal.png",
+          "sourceSha256": "98478416e630c655da5eae1f6614d41aebfaddaffe6d93dde73c1ee83b56cf6f",
+          "sha256": "4e040f2a7e71e5660614edc0c8551cf53a68b670c07f42ee61a5af670d4fa841",
+          "bytes": 134644,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        }
+      },
+      "qualification": {
+        "status": "preview",
+        "mappingMode": "surface-sample",
+        "sampleSizeBlenderUnits": [
+          2,
+          2
+        ],
+        "tileSizeMeters": null,
+        "seamless": "unverified",
+        "rendererParity": "unverified",
+        "displacement": "Disconnected; only native shading normals captured"
+      },
+      "normalAudit": {
+        "version": 1,
+        "status": "detailed",
+        "description": "Surface normal detail is present. Inspect close up under a light at a low angle.",
+        "sha256": "98478416e630c655da5eae1f6614d41aebfaddaffe6d93dde73c1ee83b56cf6f",
+        "visiblePixels": 262144,
+        "invalidVisiblePixels": 0,
+        "rgbStd255": [
+          1.0801,
+          0.989,
+          0.0
+        ],
+        "displacement": "not-used"
+      },
+      "sourceWarnings": []
+    },
+    {
+      "key": "bronze",
+      "sourceId": "metals-worn-old-bronze",
+      "sourceName": "Old bronze",
+      "sourceMaterial": "old_bronze_04",
+      "sourceHash": "6cacc7df745590cc958dcfdd4ce64157b7316b971f80574acb25f2e7903fccba",
+      "sourceCategory": "Metals Worn",
+      "library": "Sanctus Library 3.4.20",
+      "maps": {
+        "baseColor": {
+          "url": "/materials/bronze/basecolor.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/metals-worn-old-bronze/basecolor.png",
+          "sourceSha256": "619339162b10deaf9a15bc7be809ec59e96187e673d6bf3106feded4f09ba080",
+          "sha256": "e580931ece676b14a5b7b3ff92b8685cb6d78845150d62e030be817cb8222a91",
+          "bytes": 222780,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "orm": {
+          "url": "/materials/bronze/orm.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/metals-worn-old-bronze/orm.png",
+          "sourceSha256": "e63d7584ed7845e5c82744b2482df75f8eed862df6f692c0325f56c754808742",
+          "sha256": "773d2d5436f960dfec0cbf21328602d65da9927d626505eb9aed43f7d870d66a",
+          "bytes": 137320,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "normal": {
+          "url": "/materials/bronze/normal.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/metals-worn-old-bronze/normal.png",
+          "sourceSha256": "87b4b02a9f2cefc1134eaa88fc1c1a337ca1091183323a93026ec82594e2256e",
+          "sha256": "b7022055678637e6f4e93f67a296d35ed55ac5f65d97d7ccba821f50d39b4f3b",
+          "bytes": 107638,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        }
+      },
+      "qualification": {
+        "status": "preview",
+        "mappingMode": "surface-sample",
+        "sampleSizeBlenderUnits": [
+          2,
+          2
+        ],
+        "tileSizeMeters": null,
+        "seamless": "unverified",
+        "rendererParity": "unverified"
+      },
+      "normalAudit": {
+        "version": 1,
+        "status": "subtle",
+        "description": "Very subtle normal detail. Inspect close up under a light at a low angle.",
+        "sha256": "87b4b02a9f2cefc1134eaa88fc1c1a337ca1091183323a93026ec82594e2256e",
+        "visiblePixels": 262144,
+        "invalidVisiblePixels": 0,
+        "rgbStd255": [
+          0.8481,
+          0.6511,
+          0.0
+        ],
+        "displacement": "not-used"
+      },
+      "sourceWarnings": []
+    },
+    {
+      "key": "copper",
+      "sourceId": "copper",
+      "sourceName": "Copper",
+      "sourceMaterial": "copper",
+      "sourceHash": "3d762da6cd7ed38bc037d032951425d3524d64a1219eebdcdaac2d915177f569",
+      "sourceCategory": "Metals",
+      "library": "Sanctus Library 3.4.20",
+      "maps": {
+        "baseColor": {
+          "url": "/materials/copper/basecolor.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/copper/basecolor.png",
+          "sourceSha256": "f5654ce7c3e20e8e1cec0612045a9d9467cf0fc6eeff5fd79d581f7a01f14f0a",
+          "sha256": "4a13ee2da77bb55236616b08abb06f8b9e94533cbb5d6adcd898d1a77e75998b",
+          "bytes": 269918,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "orm": {
+          "url": "/materials/copper/orm.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/copper/orm.png",
+          "sourceSha256": "769dbd149598b6b8a8855eac5c85821ed9804da16e8f0fa1ecddde5b94323325",
+          "sha256": "e4e187a0f261e4ef4ab6bb3614e0e9ad975104d5443efa8ea4b52a049ce25a19",
+          "bytes": 96916,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "normal": {
+          "url": "/materials/copper/normal.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/copper/normal.png",
+          "sourceSha256": "f06f0cc5c0f63f58ce71709ce8004ef4414fe307d30992302326d27f5ac14482",
+          "sha256": "5d0ece5ad0335e1b3381ed88bc5637126024b246c15814df04aa411f82873522",
+          "bytes": 138856,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        }
+      },
+      "qualification": {
+        "status": "preview",
+        "mappingMode": "surface-sample",
+        "sampleSizeBlenderUnits": [
+          2,
+          2
+        ],
+        "tileSizeMeters": null,
+        "seamless": "unverified",
+        "rendererParity": "unverified",
+        "displacement": "Disconnected; only native shading normals captured"
+      },
+      "normalAudit": {
+        "version": 1,
+        "status": "detailed",
+        "description": "Surface normal detail is present. Inspect close up under a light at a low angle.",
+        "sha256": "f06f0cc5c0f63f58ce71709ce8004ef4414fe307d30992302326d27f5ac14482",
+        "visiblePixels": 262144,
+        "invalidVisiblePixels": 0,
+        "rgbStd255": [
+          1.1672,
+          0.9658,
+          0.0
+        ],
+        "displacement": "not-used"
+      },
+      "sourceWarnings": []
+    },
+    {
+      "key": "gold",
+      "sourceId": "gold",
+      "sourceName": "Pure gold",
+      "sourceMaterial": "gold_pure",
+      "sourceHash": "4532f21b692bf23a11e23b08d721bb5cbb845cd1530c7d76c9ce4c962fca2e4b",
+      "sourceCategory": "Metals",
+      "library": "Sanctus Library 3.4.20",
+      "maps": {
+        "baseColor": {
+          "url": "/materials/gold/basecolor.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/gold/basecolor.png",
+          "sourceSha256": "a9c3945fc4daff89a551d836e0cc6607b29e527c89b642e49a3ba346445de455",
+          "sha256": "aa5f6b670702302bd17b4f177729f6425afbaba3ed47335088bda5c4494c6005",
+          "bytes": 54,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "orm": {
+          "url": "/materials/gold/orm.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/gold/orm.png",
+          "sourceSha256": "9b25816ec983a6c9d1ad334d3e7afe20f4a1290c95e8b989f0adca4ea7984997",
+          "sha256": "b75ef790611a9506bff2dbb23ede05c7a92087dc53af7c1c27f44263acca8c39",
+          "bytes": 96402,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "normal": {
+          "url": "/materials/gold/normal.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/gold/normal.png",
+          "sourceSha256": "e4c24f2734cef76d53337a1f643a4476ee7adeb81f357c0b82acbcdde4ede5fc",
+          "sha256": "c62814b34738c0f3ad8808ccfd44378a20851ae79f40ead56e388e88fedfe556",
+          "bytes": 265774,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        }
+      },
+      "qualification": {
+        "status": "preview",
+        "mappingMode": "surface-sample",
+        "sampleSizeBlenderUnits": [
+          2,
+          2
+        ],
+        "tileSizeMeters": null,
+        "seamless": "unverified",
+        "rendererParity": "unverified",
+        "displacement": "Disconnected; only native shading normals captured"
+      },
+      "normalAudit": {
+        "version": 1,
+        "status": "detailed",
+        "description": "Surface normal detail is present. Inspect close up under a light at a low angle.",
+        "sha256": "e4c24f2734cef76d53337a1f643a4476ee7adeb81f357c0b82acbcdde4ede5fc",
+        "visiblePixels": 262144,
+        "invalidVisiblePixels": 0,
+        "rgbStd255": [
+          4.362,
+          3.5485,
+          0.0659
+        ],
+        "displacement": "not-used"
+      },
+      "sourceWarnings": []
+    },
+    {
+      "key": "marble",
+      "sourceId": "marble",
+      "sourceName": "Calacatta marble",
+      "sourceMaterial": "marble_calacatta",
+      "sourceHash": "c13d588c1fed2d1dfda28ce303b7fbd7fb2803d4e0689044dc18ee47917c3229",
+      "sourceCategory": "Stones",
+      "library": "Sanctus Library 3.4.20",
+      "maps": {
+        "baseColor": {
+          "url": "/materials/marble/basecolor.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/marble/basecolor.png",
+          "sourceSha256": "a0341569ddc0c06bb31d039b5f98c22c453831946954c648486c286c1e97b267",
+          "sha256": "2d7171be0512093d1c8c9d8f2e675d9459994c4ecb66ace322186ddb6f589536",
+          "bytes": 234388,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "orm": {
+          "url": "/materials/marble/orm.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/marble/orm.png",
+          "sourceSha256": "98bbad9ea9eab284655ad907de40fcc6f371ef00158a18a98372facd5b2798bd",
+          "sha256": "fb7aef8639aecb8570b61fc0275d965abc26a9f27f52900c620f62c0e249066b",
+          "bytes": 54,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "normal": {
+          "url": "/materials/marble/normal.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/marble/normal.png",
+          "sourceSha256": "b16f85d9b379cf5078dbee19eb3b595c2b9b6712ea0c67d2d4e762a1db14226d",
+          "sha256": "262efa715854c6d766d032f4c9dfbee3007d1240d36e97e74dade6a53ef9faf1",
+          "bytes": 305328,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        }
+      },
+      "qualification": {
+        "status": "preview",
+        "mappingMode": "surface-sample",
+        "sampleSizeBlenderUnits": [
+          2,
+          2
+        ],
+        "tileSizeMeters": null,
+        "seamless": "unverified",
+        "rendererParity": "unverified",
+        "displacement": "Disconnected; only native shading normals captured"
+      },
+      "normalAudit": {
+        "version": 1,
+        "status": "detailed",
+        "description": "Surface normal detail is present. Inspect close up under a light at a low angle.",
+        "sha256": "b16f85d9b379cf5078dbee19eb3b595c2b9b6712ea0c67d2d4e762a1db14226d",
+        "visiblePixels": 262144,
+        "invalidVisiblePixels": 0,
+        "rgbStd255": [
+          7.7588,
+          6.5678,
+          0.7676
+        ],
+        "displacement": "not-used"
+      },
+      "sourceWarnings": []
+    },
+    {
+      "key": "stone",
+      "sourceId": "stones-basic-stone",
+      "sourceName": "Basic stone",
+      "sourceMaterial": "basic_stone_04",
+      "sourceHash": "18dd670afca3ae949b596c668e89a28e24e8fe5a19b9e9a1ba51aa2b01f6676a",
+      "sourceCategory": "Stones",
+      "library": "Sanctus Library 3.4.20",
+      "maps": {
+        "baseColor": {
+          "url": "/materials/stone/basecolor.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/stones-basic-stone/basecolor.png",
+          "sourceSha256": "937da77d4c3e54cbc2d8d70a95ffa30b01dc583c108aabb8472ac1c9ee2a6851",
+          "sha256": "4ac15b737f8b889dfbcb213a755e4bb953f7312fe8257f1af21ea6941ea1d151",
+          "bytes": 471026,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "orm": {
+          "url": "/materials/stone/orm.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/stones-basic-stone/orm.png",
+          "sourceSha256": "7a6060eba996722453a4b7fa0833a196c9f60a5c2892aa420533fcf6dcb3439e",
+          "sha256": "954b607baaec5c20b1b869c5eb50b77c2010e7685db14eefdfa40f24db617ff1",
+          "bytes": 218444,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        },
+        "normal": {
+          "url": "/materials/stone/normal.webp",
+          "sourceFile": "/Users/marshallsmith/Game Template/Blender/Assets/MaterialsSandbox/public/materials/stones-basic-stone/normal.png",
+          "sourceSha256": "795f92a9824648ae9590e51f61258f8254dbd748c7d2fa1967a0b26a54d08741",
+          "sha256": "b6e912e6d69df18b2ce01da0c9ac62893138a2f3f5f1dd7cf6221a7c1d0cafb6",
+          "bytes": 405600,
+          "width": 512,
+          "height": 512,
+          "encoding": "lossless RGB WebP, identical decoded pixels"
+        }
+      },
+      "qualification": {
+        "status": "preview",
+        "mappingMode": "surface-sample",
+        "sampleSizeBlenderUnits": [
+          2,
+          2
+        ],
+        "tileSizeMeters": null,
+        "seamless": "unverified",
+        "rendererParity": "unverified"
+      },
+      "normalAudit": {
+        "version": 1,
+        "status": "detailed",
+        "description": "Surface normal detail is present. Inspect close up under a light at a low angle.",
+        "sha256": "795f92a9824648ae9590e51f61258f8254dbd748c7d2fa1967a0b26a54d08741",
+        "visiblePixels": 262144,
+        "invalidVisiblePixels": 0,
+        "rgbStd255": [
+          13.2384,
+          9.8747,
+          2.7187
+        ],
+        "displacement": "not-used"
+      },
+      "sourceWarnings": []
+    }
+  ]
+}
