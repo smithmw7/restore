@@ -4,12 +4,24 @@ const OBJECT_SOUNDS = Object.freeze({
   bottle: 'glass', column: 'concrete', ring: 'metal-light', tablet: 'metal-heavy',
 });
 const REPAIR_FAMILIES = ['pickup', 'drop', 'drag', ...FAMILIES.map(family => `hit-${family}`)];
+const ACTION_FAMILIES = ['timber-break', 'wood-creak', 'scrape-wood-concrete', 'scrape-wood-wood', 'metal-creak'];
 const ALL_CLIPS = [
   ...FAMILIES.flatMap(family => [1, 2].map(variant => clipUrl('breaks', family, variant))),
   ...REPAIR_FAMILIES.flatMap(family => [1, 2].map(variant => clipUrl('repair', family, variant))),
+  ...ACTION_FAMILIES.flatMap(family => [1, 2].map(variant => clipUrl('actions', family, variant))),
 ];
 const MAX_VOICES = 12;
 const MAX_DRAG_GAIN = 0.12;
+const MAX_LOOP_VOICES = 2;
+const DRAG_FAMILIES = Object.freeze({
+  'stone-drag': { folder: 'repair', family: 'drag', gain: MAX_DRAG_GAIN },
+  'scrape-wood-concrete': { folder: 'actions', family: 'scrape-wood-concrete', gain: MAX_DRAG_GAIN },
+  'scrape-wood-wood': { folder: 'actions', family: 'scrape-wood-wood', gain: MAX_DRAG_GAIN },
+  // The fixed ceiling tether keeps a lamp much farther from the listener than
+  // a held prop; retain an audible creak after positional attenuation.
+  'metal-creak': { folder: 'actions', family: 'metal-creak', gain: .22 },
+});
+const isWoodProp = kind => kind === 'crate' || kind === 'crate-piece';
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 function clipUrl(folder, family, variant) {
   return `/audio/${folder}/${family}-${String(variant).padStart(2, '0')}.wav`;
@@ -122,7 +134,8 @@ export function createRestoreAudio() {
   }
 
   function playBreak(objectId, position, spatial = false) {
-    return playClip('break', objectId, 'breaks', OBJECT_SOUNDS[objectId] || 'concrete', position, spatial, 1, 3);
+    const family = OBJECT_SOUNDS[objectId] || 'concrete';
+    return playClip('break', objectId, family === 'wood' ? 'actions' : 'breaks', family === 'wood' ? 'timber-break' : family, position, spatial, 1, 3);
   }
 
   function chime(frequencies, volume = 0.03, position, spatial = false) {
@@ -164,14 +177,17 @@ export function createRestoreAudio() {
     return played;
   }
 
-  function startDrag(objectId, position, spatial = false) {
-    stopDrag({ immediate: true });
-    if (muted) return false;
-    const url = choose('repair', 'drag'), buffer = buffers.get(url);
+  function createDragLoop(session, family) {
+    const descriptor = DRAG_FAMILIES[family];
+    const url = choose(descriptor.folder, descriptor.family), buffer = buffers.get(url);
     if (!buffer) return false;
-    unlock();
+    // At most the incoming loop and one outgoing crossfade can coexist.
+    for (const retiring of retiringDrags) {
+      retiring.source.stop();
+      retiringDrags.delete(retiring);
+    }
     const source = context.createBufferSource(), gain = context.createGain();
-    const panner = createPanner(position, spatial);
+    const panner = createPanner(session.position, session.spatial);
     source.buffer = buffer;
     source.loop = true;
     source.loopStart = 0;
@@ -180,34 +196,34 @@ export function createRestoreAudio() {
     source.connect(gain);
     if (panner) gain.connect(panner).connect(limiter);
     else gain.connect(limiter);
-    const loop = { source, gain, panner, objectId, url, targetGain: 0, startedAt: context.currentTime, stopAt: null };
-    drag = loop;
+    const loop = { source, gain, panner, family, url, maxGain: descriptor.gain, targetGain: 0, stopAt: null };
     source.onended = () => {
-      if (drag === loop) drag = null;
       retiringDrags.delete(loop);
       source.disconnect(); gain.disconnect(); panner?.disconnect();
     };
     source.start();
-    record('dragStart', objectId, url, 0);
+    record('dragStart', session.objectId, url, 0);
+    return loop;
+  }
+
+  function startDrag(objectId, position, spatial = false, { kind = 'artifact' } = {}) {
+    stopDrag({ immediate: true });
+    if (muted) return false;
+    unlock();
+    const session = {
+      objectId, kind, spatial, position: position ? { ...position } : null,
+      surface: null, loop: null, pendingFamily: null, pendingSince: 0,
+      strainArmed: true, lastStrainAt: -Infinity,
+    };
+    drag = session;
+    const family = isWoodProp(kind) ? null : kind === 'hanging-light' ? 'metal-creak' : 'stone-drag';
+    if (family) session.loop = createDragLoop(session, family) || null;
     return true;
   }
 
-  function updateDrag({ position, speed = 0, strength = 0 } = {}) {
-    if (!drag || !context || muted) return;
-    movePanner(drag.panner, position);
-    // Asset is already -35 LUFS. Silence while held still; texture grows gently
-    // with actual piece motion and remains at most 12% gain even at full speed.
-    const movement = clamp((Math.abs(Number(speed) || 0) - 0.012) / 0.7, 0, 1);
-    const target = MAX_DRAG_GAIN * Math.sqrt(movement) * (0.78 + 0.22 * clamp(strength, 0, 1));
+  function fadeLoop(loop, immediate = false) {
+    if (!loop || !context) return;
     const now = context.currentTime;
-    drag.targetGain = target;
-    drag.gain.gain.setTargetAtTime(target, now, target > drag.gain.gain.value ? 0.05 : 0.033);
-  }
-
-  function stopDrag({ immediate = false } = {}) {
-    if (!drag || !context) return;
-    const loop = drag, now = context.currentTime;
-    drag = null;
     loop.targetGain = 0;
     const duration = immediate ? 0.015 : 0.1;
     if (loop.gain.gain.cancelAndHoldAtTime) loop.gain.gain.cancelAndHoldAtTime(now);
@@ -220,6 +236,60 @@ export function createRestoreAudio() {
     loop.stopAt = now + duration;
     retiringDrags.add(loop);
     loop.source.stop(loop.stopAt + 0.001);
+  }
+
+  function updateDrag({ position, speed = 0, strength = 0, kind, surface = null, scrapeSpeed = 0, load = 0 } = {}) {
+    if (!drag || !context || muted) return;
+    if (kind) drag.kind = kind;
+    if (position) drag.position = { x: position.x, y: position.y, z: position.z };
+    drag.surface = isWoodProp(drag.kind) && ['concrete', 'wood'].includes(surface) ? surface : null;
+    const wood = isWoodProp(drag.kind), lamp = drag.kind === 'hanging-light';
+    const family = wood ? drag.surface && `scrape-wood-${drag.surface}` : lamp ? 'metal-creak' : 'stone-drag';
+    // Wooden props use actual tangential contact speed. Travel through the air
+    // or pressure against an immovable surface cannot produce a sliding loop.
+    const actualSpeed = Math.abs(Number(wood ? scrapeSpeed : speed) || 0);
+    const movement = clamp((actualSpeed - .012) / (lamp ? .55 : .7), 0, 1);
+    const now = context.currentTime;
+    if (family && movement > 0 && drag.loop?.family !== family) {
+      if (!drag.loop || !wood) {
+        const next = createDragLoop(drag, family);
+        if (next) { fadeLoop(drag.loop); drag.loop = next; }
+      } else if (drag.pendingFamily !== family) {
+        drag.pendingFamily = family;
+        drag.pendingSince = now;
+      } else if (now - drag.pendingSince >= .12) {
+        const next = createDragLoop(drag, family);
+        if (next) { fadeLoop(drag.loop); drag.loop = next; }
+        drag.pendingFamily = null;
+      }
+    } else drag.pendingFamily = null;
+    const loop = drag.loop;
+    if (loop) {
+      movePanner(loop.panner, position);
+      const matching = family === loop.family;
+      // Every texture is normalized to -35 LUFS before this additional quiet
+      // gain cap. Shared easing keeps changes in contact material unobtrusive.
+      const target = matching ? loop.maxGain * Math.sqrt(movement) * (.78 + .22 * clamp(strength, 0, 1)) : 0;
+      loop.targetGain = target;
+      loop.gain.gain.setTargetAtTime(target, now, target > loop.gain.gain.value ? .05 : .025);
+    }
+    for (const retiring of retiringDrags) movePanner(retiring.panner, position);
+    const strain = clamp(Number(load) || 0, 0, 1);
+    if (strain < .15) drag.strainArmed = true;
+    if (wood && surface && drag.strainArmed && strain > .35 && now - drag.lastStrainAt > 1.4 && now >= quietContactsUntil) {
+      if (playClip('strain', drag.objectId, 'actions', 'wood-creak', drag.position, drag.spatial, .1 + .12 * strain, 1)) {
+        drag.strainArmed = false;
+        drag.lastStrainAt = now;
+      }
+    }
+  }
+
+  function stopDrag({ immediate = false } = {}) {
+    if (!context) return;
+    if (immediate) for (const loop of retiringDrags) fadeLoop(loop, true);
+    if (!drag) return;
+    fadeLoop(drag.loop, immediate);
+    drag = null;
     eventCounts.dragStop = (eventCounts.dragStop || 0) + 1;
   }
 
@@ -294,8 +364,10 @@ export function createRestoreAudio() {
     return {
       loaded, expected: ALL_CLIPS.length, muted, playCount, lastClip, activeVoices: voices.size,
       contextState: context?.state ?? 'uninitialized', loopActive: Boolean(drag),
-      loopGain: Number((drag?.gain.gain.value ?? 0).toFixed(5)),
-      loopTargetGain: Number((drag?.targetGain ?? 0).toFixed(5)), loopMaxGain: MAX_DRAG_GAIN,
+      loopGain: Number((drag?.loop?.gain.gain.value ?? 0).toFixed(5)),
+      loopTargetGain: Number((drag?.loop?.targetGain ?? 0).toFixed(5)), loopMaxGain: drag?.loop?.maxGain ?? MAX_DRAG_GAIN,
+      loopFamily: drag?.loop?.family ?? null, loopSurface: drag?.surface ?? null,
+      loopVoices: Number(Boolean(drag?.loop)) + retiringDrags.size, maxLoopVoices: MAX_LOOP_VOICES,
       loopObjectId: drag?.objectId ?? null, fadingLoops: retiringDrags.size,
       eventCounts: { ...eventCounts }, lastEvents: lastEvents.map(event => ({ ...event })),
     };

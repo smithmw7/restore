@@ -12,10 +12,10 @@ A 96 × 180 × 28 metre enclosed archive with towering steel trusses, long stora
 - All 36 pendant fixtures are attached to fixed ceiling anchors. They remain still until tapped or pulled, swing within their wire length, and gradually return to complete rest after release. Nearby real lights and their volumetric beams follow the moving fixtures; all fixtures share four render batches.
 - Another 1,103 sealed metal cases form 244 fixed stacks around and beyond the collection. These are unbreakable, stationary storage, rendered in three instanced batches with one collision shape per stack. The new storage leaves a central aisle and cross aisles; metal stacks and structural columns block movement and teleport destinations.
 - Each crate contains one artifact. Its contents remain hidden and cannot be selected through a closed crate. Opening a moved crate reveals the artifact at that crate's current position.
-- 176 artifacts across 15 forms. Eight alien designs include a thruster bell, reactor spindle, crescent hull section, gyroscopic coupler, sensor fin, navigation prism, flux key, and fossil sigil. Seven relic designs include amphorae, obelisks, a chalice, a stela, a fluted urn, and meteor shards. Larger shipping crates contain larger variants. Alien components use subtle luminous circuit inlays over the textured surfaces.
+- 176 artifacts across 15 forms. Eight alien designs include a thruster bell, reactor spindle, crescent hull section, gyroscopic coupler, sensor fin, navigation prism, flux key, and fossil sigil. Seven relic designs include amphorae, obelisks, a chalice, a stela, a fluted urn, and meteor shards. Every artifact is uniformly scaled from its measured geometry bounds to occupy 90% of the limiting interior crate dimension, with clearance from the boards. Larger crates contain larger artifacts, and all three dimensions constrain the fit. Alien components use subtle luminous circuit inlays over the textured surfaces.
 - Whole artifacts can be moved, fractured with Three Pinata, and repaired by drawing their matching fragments together. Partial repairs survive drops. Material variation keeps the recorded impact and repair sounds appropriate to each object.
 - Crates, loose boards and artifacts interpolate between physics updates for smooth motion at headset refresh rates. A small contact margin on sharp artifact hulls reduces floor chatter so fragments can sleep naturally. Resting objects wake on impact or when their support is removed; elapsed time never freezes a normally moving fragment.
-- Closed wooden crates use one instanced render batch; loose boards use three more. Each sealed wooden box has one solid collision shape with its original wood mass, plus its selection proxy, and navigation follows the remaining boxes instead of permanent stack barriers. Repeated artifact forms reuse fracture templates at startup while keeping their repair state independent.
+- Closed wooden crates use one instanced render batch; loose boards use three more. Each sealed wooden box has one solid collision shape with its original wood mass, plus its selection proxy, and navigation follows the remaining boxes instead of permanent stack barriers. All 176 artifact sizes reuse 15 cuts of the original forms; fragment vertices, offsets and mass scale together while repair state stays independent. Large repairs held near the floor ease upward enough to leave room for their remaining pieces, with their collision shapes still active.
 - Eight 512px Sanctus texture sets: wood, concrete, ceramic, bronze, copper, gold, marble and stone. Lossless WebP conversion preserves the baked source pixels. Material provenance and limitations are in `docs/warehouse-materials.json`.
 
 ## Controls
@@ -84,9 +84,11 @@ npx vite --host 127.0.0.1 --port 5208 --strictPort
 
 ## Audio and materials
 
-The 30 predecoded sounds include material breaking recordings, Armor On pickups, Heavy Kick drops, quiet stone-dragging loops, and material-specific footstep contacts/snaps. Idle holds are silent; the loop fades on release and stops within15ms when reconstruction completes. Voices and repeated contact events are capped.
+The 40 predecoded sounds include timber breaks, quiet wood strain, wood scraping against concrete or other wood, and metal creaks for pulled lamps. Armor On pickups, Heavy Kick drops, artifact stone-dragging loops, and material-specific footstep contacts/snaps remain. Wooden scraping follows the actual contact surface and relative tangential velocity, including rotation; airborne and stationary wood is silent. Low hand targets can press crates and boards against the solid floor for dragging. Wood strain only triggers on constrained contact with cooldown and hysteresis.
 
-All source recordings remain unchanged. `scripts/prepare-audio.py` and `scripts/prepare-repair-audio.py` reproduce the normalized WAVs. Per-asset measurements and hashes are in `docs/audio-normalization.json` and `docs/repair-audio-normalization.json`.
+Textures are normalized to -35 LUFS and fade with motion; wood/stone loops stay at or below .12 gain, and distant hanging lights use a .22 cap. Surface changes crossfade after 120 ms of stable contact. At most two loop sources and twelve one-shot voices can coexist. Release fades loops out; reset, mute and complete reconstruction stop them within 15 ms. New timber breaks are matched to -22.39 LUFS and load creaks to -28 LUFS.
+
+All source recordings remain unchanged. `scripts/prepare-audio.py`, `scripts/prepare-repair-audio.py` and `scripts/prepare-action-audio.py` reproduce the normalized WAVs. Measurements and hashes are in `docs/audio-normalization.json`, `docs/repair-audio-normalization.json` and `docs/action-audio-normalization.json`. The new contact textures are designed Foley blends; their game-action names do not claim the original recording surfaces. In particular, lamp strain blends a generic door creak with a faint metal texture. Physical headset listening remains a separate check.
 
 Sanctus procedural node graphs are represented by locally baked base-color, packed ORM, and tangent normal maps. Normal maps change shading, not geometry. These are reusable surface samples; exact seamless tiling and Blender beauty-render parity are not claimed. Mirrored repetition reduces obvious border discontinuities.
 
@@ -96,6 +98,10 @@ Sanctus procedural node graphs are represented by locally baked base-color, pack
 npm run build
 npm run test:repair       # Original magnetic repair API regression
 npm run test:warehouse    # Crate / artifact / physics integration
+npm run test:artifact-fit # All 176 crate fits, scaled fracture volume and floor-level repair
+npm run test:contact-audio # Physical surfaces, relative rubbing and airborne silence
+npm run test:action-audio # New normalized recordings, texture routing, fades and voice limits
+npm run test:contact-audio-browser # Real pointer floor/wood scraping, lamp creak and timber break
 npm run test:lights       # Fixed wires, pulling, settling and frame-rate consistency
 npm run test:scene-interactions # Shared prop/lamp ownership, tap routing and reset
 npm run test:lights-browser # Real pointer taps, pulls, release, audio and rest

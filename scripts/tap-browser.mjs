@@ -93,7 +93,7 @@ try {
   assert.equal(crate(nearby).state, 'open');
   assert.equal(nearby.state.openedCrates, 1);
   assert.equal(nearby.state.revealedArtifacts, 1);
-  assert.match(nearby.audio.lastEvents.findLast(event => event.type === 'break')?.clip || '', /breaks\/wood-/);
+  assert.match(nearby.audio.lastEvents.findLast(event => event.type === 'break')?.clip || '', /actions\/timber-break-/);
   checks.push('moving within eight feet lets one real pointer tap break the crate and reveal its artifact');
   await advance(700);
   await page.screenshot({ path: `${out}/nearby-broken.png` });

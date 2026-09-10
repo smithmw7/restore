@@ -4,6 +4,8 @@ The breaking recordings in `public/audio/breaks/` are derived from the user's lo
 
 The repair recordings in `public/audio/repair/` are derived from the same local bundle: Fighting Sounds Pro / Heavy Kicks, Survival Sound Kit - HD Remake / Dragging Stone, Sci FI Sounds Pro / Armor On, and Ultimate Footstep Sounds. See `docs/repair-audio-normalization.json` for exact source files and measurements.
 
+The contextual action recordings in `public/audio/actions/` are also derived from this user-owned bundle, including Survival Sound Kit / Wood Break, Dragging Stone, Sawing Wood, Door Creak and Sawing Metal, and Pirate Sounds Pro / Chest moving and Rudder Movement. Their game-action names describe designed Foley: wood-on-concrete and wood-on-wood sliding are blends, while lamp strain combines a generic door creak with a faint metal texture. The source filenames do not establish the original contact surfaces or door material. `docs/action-audio-normalization.json` records every layer, source/output hash, excerpt, blend, filter, loudness and loop seam measurement; `scripts/prepare-action-audio.py` reproduces the assets without changing the originals. These assets are included only in this private project repository and remain separate from the software licenses below.
+
 Restore uses these packages without modifying their source. Their license notices are retained in the installed packages.
 
 - [three-pinata](https://github.com/dgreenheck/three-pinata), Daniel Greenheck, MIT. Powers the actual fracture geometry.

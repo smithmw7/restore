@@ -259,7 +259,8 @@ export function createHangingLights({ parent, fixtures = [], housingMaterial, di
     if (!held) return { active: false, objectId: null, anchor: null, radius: 0, assembled: 0, total: 0, complete: false, speed: 0, goal: null, canDock: false, heldMesh: null };
     return { active: true, objectId: held.unit.id, soundId: 'tablet', kind: 'hanging-light', handId: held.handId,
       whole: true, anchor: held.unit.mesh.position.toArray(), radius: 0, assembled: 1, total: 1, complete: false,
-      speed: held.speed, goal: held.goal.toArray(), canDock: false, heldMesh: held.unit.mesh };
+      speed: held.speed, load: Math.sin(Math.acos(THREE.MathUtils.clamp(-held.unit.direction.y, -1, 1))),
+      goal: held.goal.toArray(), canDock: false, heldMesh: held.unit.mesh };
   }
 
   function getState() {

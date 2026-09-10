@@ -79,7 +79,7 @@ try {
   let current=await read();
   assert.ok(current.state.objects.some(object=>object.id==='artifact-02'));
   assert.equal(current.audio.eventCounts.break,1);
-  assert.match(current.audio.lastEvents.findLast(event=>event.type==='break').clip,/breaks\/wood-/);
+  assert.match(current.audio.lastEvents.findLast(event=>event.type==='break').clip,/actions\/timber-break-/);
   checks.push('a short pointer tap breaks a crate, plays wood, and reveals its artifact');
   // Step back for a clear view of the newly dropped contents; distance does
   // not prevent the existing hold-to-grab interaction.

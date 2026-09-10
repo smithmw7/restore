@@ -5,7 +5,9 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createDestructionLab } from './destruction.js';
 import { ARTIFACT_CATALOG, createArtifactGeometry } from './artifact-forms.js';
+import { fitArtifactToCrate } from './artifact-fit.js';
 import { createAlienMaterials } from './artifact-materials.js';
+import { createContactAudioProbe, setContactSurface } from './contact-audio.js';
 
 export const WAREHOUSE_BOUNDS = Object.freeze({ minX: -11.4, maxX: 11.4, minZ: -26.4, maxZ: 6.4 });
 const IDENTITY = new THREE.Quaternion();
@@ -141,15 +143,14 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
   const materialSounds = { ceramic: 'vase', marble: 'gem', bronze: 'orb', copper: 'orb', stone: 'gem', concrete: 'column', gold: 'ring', metal: 'tablet' };
   const artifactSpecs = crateSpecs.map((crate, index) => {
     const entry = index === 1 ? ARTIFACT_CATALOG.find((item) => item.form === 'obelisk') : collection[(Math.max(0, index - 1)) % collection.length];
-    const scale = index < crateCount ? 1 : crate.height >= 1.12 ? 1.55 : 1.15;
-    const halfHeight = entry.halfHeight * scale;
+    const fit = fitArtifactToCrate(entry.form, crate);
     const variation = Math.floor(index / collection.length);
     const materialKey = variation % 3 === 2 && ['copper', 'bronze', 'gold'].includes(entry.materialKey)
       ? ['bronze', 'gold', 'copper'][variation % 3] : entry.materialKey;
-    return { ...entry, id: crate.artifactId, kind: 'artifact', scale, halfHeight, materialKey,
+    return { ...entry, ...fit, id: crate.artifactId, kind: 'artifact', materialKey,
       color: entry.category === 'alien' ? '#8ca5ae' : '#cfb88e', accent: ['#68e8d5', '#ffad59', '#8ea6ff'][(index + variation) % 3],
-      soundId: materialSounds[materialKey], x: crate.x, y: crate.y - crate.height / 2 + 0.08 + halfHeight, z: crate.z,
-      fractureKey: `${entry.form}:${scale}`, initialHidden: true, pedestalHeight: 0 };
+      soundId: materialSounds[materialKey], x: crate.x, y: crate.y + fit.crateOffsetY, z: crate.z,
+      fractureKey: entry.form, fractureScale: fit.scale, initialHidden: true, pedestalHeight: 0 };
   });
 
   function emit(type, crate, position, extra = {}) {
@@ -174,6 +175,7 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     // Resolve heavy crate / tiny shard contacts enough for entire piles to rest.
     solverIterations: 8,
     geometryForSpec: (spec) => createArtifactGeometry(spec.form).scale(spec.scale, spec.scale, spec.scale),
+    fractureGeometryForSpec: (spec) => createArtifactGeometry(spec.form),
     materialForSpec: (spec) => ({ outside: alienMaterials.get(spec), inside: ['gold', 'bronze', 'copper', 'metal'].includes(spec.materialKey) ? materials[spec.materialKey] : materials.stone }),
     onProgress,
     onChange: () => { refreshTargets(); notify(); },
@@ -182,6 +184,7 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     afterPhysicsStep,
   });
   const world = lab.physicsWorld;
+  const readContactAudio = createContactAudioProbe(world);
 
   function registerBody(part, colliderDescriptions, type = 'dynamic') {
     const position = part.mesh.position;
@@ -198,6 +201,7 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     part.velocity.set(0, 0, 0);
     for (const description of colliderDescriptions) {
       const collider = world.createCollider(description.setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS), body);
+      setContactSurface(collider, 'wood');
       part.handles.push(collider.handle);
       lab.registerExternalCollider(collider, part, part.mesh);
     }
@@ -252,13 +256,15 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     // Let the initially separated tiers settle into contact, so removing their
     // support wakes the rest of the stack and it can collapse naturally.
     registerBody(crate, crate.descriptions);
+    const pose = artifactPose(crate);
+    lab.placeObject(spec.artifactId, pose.position, pose.quaternion, { visible: false, rebaseHome: true });
   }
   closedBatch.instanceColor.needsUpdate = true;
   for (const batch of panelBatches) batch.instanceColor.needsUpdate = true;
 
   function artifactPose(crate) {
     const artifact = artifactSpecs[crate.spec.index];
-    const local = new THREE.Vector3(0, -crate.spec.height / 2 + 0.08 + artifact.halfHeight, 0);
+    const local = new THREE.Vector3(0, artifact.crateOffsetY, 0);
     return { position: local.applyQuaternion(crate.mesh.quaternion).add(crate.mesh.position), quaternion: crate.mesh.quaternion.clone() };
   }
 
@@ -267,6 +273,7 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     return { active: true, objectId: held.crate.spec.id, soundId: 'cube', kind: held.panel ? 'crate-piece' : 'crate', whole: true,
       handId: held.handId, anchor: held.part.mesh.position.toArray(), radius: 0,
       assembled: 1, total: 1, complete: true, speed: held.speed,
+      surface: held.contact.surface, scrapeSpeed: held.contact.scrapeSpeed, load: held.contact.load,
       goal: held.goal.toArray(), canDock: false, heldMesh: held.part.mesh };
   }
 
@@ -335,8 +342,8 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     // Preserve the last physical pose and momentum. Rewinding to a rendered
     // interpolation sample could place the collider inside its neighbour.
     held = { crate, part, panel, handId, offset: part.position.clone().sub(worldPoint),
-      goal: part.position.clone(), speed: 0, velocity: new THREE.Vector3() };
-    emit('pickup', crate, part.mesh.position, { complete: true, whole: true, assembled: 1, total: 1 });
+      goal: part.position.clone(), speed: 0, velocity: new THREE.Vector3(), contact: { surface: null, scrapeSpeed: 0, load: 0 } };
+    emit('pickup', crate, part.mesh.position, { kind: panel ? 'crate-piece' : 'crate', complete: true, whole: true, assembled: 1, total: 1 });
     notify();
     return true;
   }
@@ -347,7 +354,9 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     held.goal.copy(worldPoint).add(held.offset);
     const margin = held.panel ? 0.15 : Math.max(held.crate.spec.width, held.crate.spec.depth) / 2;
     held.goal.x = THREE.MathUtils.clamp(held.goal.x, bounds.minX + margin, bounds.maxX - margin);
-    held.goal.y = THREE.MathUtils.clamp(held.goal.y, held.panel ? 0.12 : held.crate.spec.height / 2 + 0.03, 5.8);
+    // A low hand target may press the prop into contact for floor dragging.
+    // Its dynamic collider, rather than a hovering target clamp, stops it.
+    held.goal.y = THREE.MathUtils.clamp(held.goal.y, 0.01, 5.8);
     held.goal.z = THREE.MathUtils.clamp(held.goal.z, bounds.minZ + margin, bounds.maxZ - margin);
     return true;
   }
@@ -424,6 +433,7 @@ export async function createWarehouseGameplay({ scene, materials = {}, onEvent =
     if (held) {
       held.velocity.copy(held.part.position).sub(held.part.previousPosition).divideScalar(dt);
       held.speed = held.velocity.length();
+      readContactAudio(held.part.body, held.goal, held.contact);
     }
   }
 

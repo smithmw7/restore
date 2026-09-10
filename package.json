@@ -1,6 +1,6 @@
 {
   "name": "restore",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "private": true,
   "type": "module",
   "scripts": {
@@ -34,7 +34,12 @@
     "test:lights": "node scripts/hanging-lights-check.mjs",
     "test:scene-interactions": "node scripts/scene-interactions-check.mjs",
     "test:lights-browser": "node scripts/hanging-lights-browser.mjs",
-    "test:postprocessing": "node scripts/postprocessing-browser.mjs"
+    "test:postprocessing": "node scripts/postprocessing-browser.mjs",
+    "test:artifact-fit": "node scripts/artifact-fit-check.mjs",
+    "test:contact-audio": "node scripts/contact-audio-check.mjs",
+    "test:action-audio": "node scripts/action-audio-check.mjs",
+    "test:contact-audio-browser": "node scripts/contact-audio-browser.mjs",
+    "audio:prepare-actions": "python3 scripts/prepare-action-audio.py"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

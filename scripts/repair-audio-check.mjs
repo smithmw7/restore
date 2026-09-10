@@ -62,7 +62,7 @@ try {
     } finally { audio.stopDrag({immediate:true}); await realContext.close(); window.AudioContext = NativeContext; }
   });
   const c = result.checkpoints;
-  assert.equal(c.decoded.loaded, 30); assert.equal(c.decoded.expected,30);
+  assert.equal(c.decoded.loaded, 40); assert.equal(c.decoded.expected,40);
   assert.equal(result.contextState,'running');
   assert.match(c.pickup.lastClip,/repair\/pickup-/);
   assert.equal(c.stationary.loopGain,0); assert.equal(c.stationary.loopTargetGain,0);

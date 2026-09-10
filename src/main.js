@@ -43,7 +43,7 @@ const ui={vr:document.querySelector('#enter-vr'),sound:document.querySelector('#
 function objectAudio(mesh){return mesh?.userData.soundId||mesh?.userData.labObject||'cube';}
 function handleEvent(event){
   const {type,position,strength=1}=event,id=event.soundId||event.objectId,spatial=renderer.xr.isPresenting;
-  if(type==='pickup'){audio.unlock();audio.playPickup(id,position,spatial);if(!event.complete||event.whole)audio.startDrag(id,position,spatial);}
+  if(type==='pickup'){audio.unlock();audio.playPickup(id,position,spatial);if(!event.complete||event.whole)audio.startDrag(id,position,spatial,{kind:event.kind});}
   if(type==='break')audio.playBreak(id,position,spatial);
   if(type==='enddrag')audio.stopDrag({immediate:event.reason!=='release'});
   if(type==='drop')audio.playDrop(id,position,spatial);
@@ -295,7 +295,7 @@ function update(dt,time,frame){
   }else {updateDesktop(dt,time);camera.getWorldPosition(viewerPosition);}
   lab.step(dt);warehouse.update(dt,time/1000);
   atmosphere.update(dt,time/1000,viewerPosition);
-  const grab=lab.getGrabState();if(grab.active)audio.updateDrag({position:point.fromArray(grab.anchor),speed:grab.speed});
+  const grab=lab.getGrabState();if(grab.active)audio.updateDrag({position:point.fromArray(grab.anchor),speed:grab.speed,kind:grab.kind,surface:grab.surface,scrapeSpeed:grab.scrapeSpeed,load:grab.load});
 }
 renderer.setAnimationLoop((time,frame)=>{frameDelta=lastTime?Math.min((time-lastTime)/1000,.05):1/72;lastTime=time;update(frameDelta,time,frame);renderer.info.reset();postprocessing.render(scene,camera);});
 window.advanceTime=ms=>{for(let i=0;i<Math.max(1,Math.round(ms/(1000/72)));i++)update(1/72,performance.now());renderer.info.reset();postprocessing.render(scene,camera);};

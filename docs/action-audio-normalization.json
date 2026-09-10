@@ -1,0 +1,1124 @@
+{
+  "requested_targets_by_role_lufs": {
+    "break": -22.39,
+    "load": -28.0,
+    "texture": -35.0
+  },
+  "targets_by_role_lufs": {
+    "break": -22.39,
+    "load": -28.0,
+    "texture": -35.0
+  },
+  "peak_ceiling_dbtp": -2.0,
+  "method": "48 kHz mono PCM16, source trim at -60 dBFS with 3 ms preroll and 30 ms tail using prepare-audio.py. Fixed filtering and per-layer loudness gain; linear weighted blends; final role-matched fixed gain. Texture loops use a 120 ms cosine overlap crossfade. No compressor or limiter. Original sources unchanged and hashes rechecked.",
+  "measurement": "FFmpeg EBU R128 integrated loudness and true peak. Virtual minimum 0.8 second padding for measurements only; delivered clips have no padding. Final PCM16 outputs remeasured.",
+  "provenance": "Family names describe designed game actions, not source recording surfaces. Concrete scrape blends stone drag and chest movement; wood scrape blends chest movement and wood sawing; lamp strain blends generic door creaks and metal sawing.",
+  "playback": "Texture assets are deliberately very quiet at -35 LUFS and require runtime fade-in/out, movement/contact gating, and no pitch shift. Breaks retain a stronger transient role. Wood load creaks are quiet one-shots; pickup and drop recordings remain unchanged.",
+  "validation": "Measured normalization, format, duration, zero clipped output samples, original-file hashes and loop seam continuity. Audio audition was unavailable in this agent runtime; physical Quest listening still required.",
+  "ffmpeg_version": "ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers",
+  "total_bytes": 1593156,
+  "clips": [
+    {
+      "family": "timber-break",
+      "role": "break",
+      "loop": false,
+      "description": "Wood Break recordings for crate fracture.",
+      "output": "public/audio/actions/timber-break-01.wav",
+      "sources": [
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Wood Break 2.wav",
+          "source_sha256": "2a8377b8864bb91c9aa861e5b4d07f428674f150cde2472309bf2b35bc36ee2f",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "1.615374"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -17.37,
+            "true_peak_dbtp": 0.45,
+            "sample_peak_dbfs": -0.355
+          },
+          "source_duration_seconds": 1.615375,
+          "trim_start_seconds": 0.032771,
+          "trim_end_seconds": 0.814,
+          "before_gain": {
+            "integrated_lufs": -17.09,
+            "true_peak_dbtp": 0.45,
+            "sample_peak_dbfs": -0.355
+          },
+          "excerpt_offset_after_trim_seconds": 0,
+          "excerpt_duration_seconds": 0.7812291666666666,
+          "filters": "highpass=f=65",
+          "excerpt_measurement": {
+            "integrated_lufs": -17.33,
+            "true_peak_dbtp": 0.11,
+            "sample_peak_dbfs": -0.862
+          },
+          "layer_gain_db": -6.67,
+          "blend_weight": 1
+        }
+      ],
+      "loop_crossfade_seconds": 0,
+      "before_gain": {
+        "integrated_lufs": -24.03,
+        "true_peak_dbtp": -6.56,
+        "sample_peak_dbfs": -7.532
+      },
+      "target_lufs": -22.39,
+      "fixed_gain_db": 1.64,
+      "after_gain": {
+        "integrated_lufs": -22.38,
+        "true_peak_dbtp": -4.92,
+        "sample_peak_dbfs": -5.892
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "0.781229"
+        }
+      },
+      "output_duration_seconds": 0.781229,
+      "output_bytes": 75076,
+      "output_sha256": "16d6c648b9dbae0adc889aad823244d2b5dc39233aea0c3519ad0f829924baea",
+      "clipped_samples": 0
+    },
+    {
+      "family": "timber-break",
+      "role": "break",
+      "loop": false,
+      "description": "Wood Break recordings for crate fracture.",
+      "output": "public/audio/actions/timber-break-02.wav",
+      "sources": [
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Wood Break 7.wav",
+          "source_sha256": "c0d85be3e307685d5a6e9619f3428a0fe71301e866a2fb491c4fb5533b79d3f5",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "1.846145"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -14.42,
+            "true_peak_dbtp": 2.6,
+            "sample_peak_dbfs": 2.455
+          },
+          "source_duration_seconds": 1.846146,
+          "trim_start_seconds": 0.023229,
+          "trim_end_seconds": 1.479083,
+          "before_gain": {
+            "integrated_lufs": -14.28,
+            "true_peak_dbtp": 2.6,
+            "sample_peak_dbfs": 2.455
+          },
+          "excerpt_offset_after_trim_seconds": 0,
+          "excerpt_duration_seconds": 1.4558541666666667,
+          "filters": "highpass=f=65",
+          "excerpt_measurement": {
+            "integrated_lufs": -14.99,
+            "true_peak_dbtp": 3.01,
+            "sample_peak_dbfs": 3.001
+          },
+          "layer_gain_db": -9.01,
+          "blend_weight": 1
+        }
+      ],
+      "loop_crossfade_seconds": 0,
+      "before_gain": {
+        "integrated_lufs": -24.02,
+        "true_peak_dbtp": -6.0,
+        "sample_peak_dbfs": -6.009
+      },
+      "target_lufs": -22.39,
+      "fixed_gain_db": 1.63,
+      "after_gain": {
+        "integrated_lufs": -22.39,
+        "true_peak_dbtp": -4.37,
+        "sample_peak_dbfs": -4.379
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.455854"
+        }
+      },
+      "output_duration_seconds": 1.455854,
+      "output_bytes": 139840,
+      "output_sha256": "7eaa89d7b3d43979ea44df1c56dbb654d3d4de42172a03d203131172821c0226",
+      "clipped_samples": 0
+    },
+    {
+      "family": "wood-creak",
+      "role": "load",
+      "loop": false,
+      "description": "Filtered rudder movement Foley for a wooden crate taking load.",
+      "output": "public/audio/actions/wood-creak-01.wav",
+      "sources": [
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Pirate Sounds Pro/Rudder Movement/Rudder Movement 6.wav",
+          "source_sha256": "85688649e75efe205be950218409857267738979395fbbf6ddc662d827166b4c",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "2.117778"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -24.06,
+            "true_peak_dbtp": -8.19,
+            "sample_peak_dbfs": -8.19
+          },
+          "source_duration_seconds": 2.117792,
+          "trim_start_seconds": 0.056792,
+          "trim_end_seconds": 2.117792,
+          "before_gain": {
+            "integrated_lufs": -23.82,
+            "true_peak_dbtp": -8.19,
+            "sample_peak_dbfs": -8.19
+          },
+          "excerpt_offset_after_trim_seconds": 0,
+          "excerpt_duration_seconds": 2.061,
+          "filters": "highpass=f=80,lowpass=f=2300",
+          "excerpt_measurement": {
+            "integrated_lufs": -25.67,
+            "true_peak_dbtp": -9.18,
+            "sample_peak_dbfs": -9.179
+          },
+          "layer_gain_db": 1.67,
+          "blend_weight": 1
+        }
+      ],
+      "loop_crossfade_seconds": 0,
+      "before_gain": {
+        "integrated_lufs": -24.0,
+        "true_peak_dbtp": -7.51,
+        "sample_peak_dbfs": -7.509
+      },
+      "target_lufs": -28.0,
+      "fixed_gain_db": -4.0,
+      "after_gain": {
+        "integrated_lufs": -28.0,
+        "true_peak_dbtp": -11.51,
+        "sample_peak_dbfs": -11.509
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "2.061000"
+        }
+      },
+      "output_duration_seconds": 2.061,
+      "output_bytes": 197934,
+      "output_sha256": "7dd674448aab44eb0a8620bff5f86d774b9446af546b32ed71eed5c779f69fa6",
+      "clipped_samples": 0
+    },
+    {
+      "family": "wood-creak",
+      "role": "load",
+      "loop": false,
+      "description": "Filtered rudder movement Foley for a wooden crate taking load.",
+      "output": "public/audio/actions/wood-creak-02.wav",
+      "sources": [
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Pirate Sounds Pro/Rudder Movement/Rudder Movement 7.wav",
+          "source_sha256": "762706cb61a1668a94ac7a0bb935cabb84234421d88ac0683d1e808a84766ec4",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "2.136735"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -25.95,
+            "true_peak_dbtp": -4.86,
+            "sample_peak_dbfs": -4.86
+          },
+          "source_duration_seconds": 2.13675,
+          "trim_start_seconds": 0.077583,
+          "trim_end_seconds": 2.13675,
+          "before_gain": {
+            "integrated_lufs": -25.76,
+            "true_peak_dbtp": -4.86,
+            "sample_peak_dbfs": -4.86
+          },
+          "excerpt_offset_after_trim_seconds": 0,
+          "excerpt_duration_seconds": 2.0591666666666666,
+          "filters": "highpass=f=80,lowpass=f=2300",
+          "excerpt_measurement": {
+            "integrated_lufs": -27.63,
+            "true_peak_dbtp": -7.81,
+            "sample_peak_dbfs": -7.812
+          },
+          "layer_gain_db": 3.63,
+          "blend_weight": 1
+        }
+      ],
+      "loop_crossfade_seconds": 0,
+      "before_gain": {
+        "integrated_lufs": -23.98,
+        "true_peak_dbtp": -4.18,
+        "sample_peak_dbfs": -4.182
+      },
+      "target_lufs": -28.0,
+      "fixed_gain_db": -4.02,
+      "after_gain": {
+        "integrated_lufs": -28.01,
+        "true_peak_dbtp": -8.2,
+        "sample_peak_dbfs": -8.202
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "2.059167"
+        }
+      },
+      "output_duration_seconds": 2.059167,
+      "output_bytes": 197758,
+      "output_sha256": "eac76691dbe50ed9777170c86d03ff36fcf31aa085c06d1523339f82167c79f7",
+      "clipped_samples": 0
+    },
+    {
+      "family": "scrape-wood-concrete",
+      "role": "texture",
+      "loop": true,
+      "description": "Stone drag grain blended with chest movement to suggest wood sliding on concrete; source contact surfaces are unspecified.",
+      "output": "public/audio/actions/scrape-wood-concrete-01.wav",
+      "sources": [
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Dragging Stone 4.wav",
+          "source_sha256": "a92c612f001072cced153b537283407091582b10627c49bd5b901337a6bd972f",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "5.538458"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -25.9,
+            "true_peak_dbtp": -9.74,
+            "sample_peak_dbfs": -9.737
+          },
+          "source_duration_seconds": 5.538458,
+          "trim_start_seconds": 0.013938,
+          "trim_end_seconds": 5.374354,
+          "before_gain": {
+            "integrated_lufs": -25.89,
+            "true_peak_dbtp": -9.74,
+            "sample_peak_dbfs": -9.737
+          },
+          "excerpt_offset_after_trim_seconds": 0.45,
+          "excerpt_duration_seconds": 1.65,
+          "filters": "highpass=f=100,lowpass=f=3800",
+          "excerpt_measurement": {
+            "integrated_lufs": -29.0,
+            "true_peak_dbtp": -11.18,
+            "sample_peak_dbfs": -11.18
+          },
+          "layer_gain_db": 5.0,
+          "blend_weight": 0.72
+        },
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Pirate Sounds Pro/Chest moving/Chest moving 1.wav",
+          "source_sha256": "bde26b4ddb4b950ff24bbe744531e0a6c6a8dd0339511eced09f6738e19bc6ef",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "2.021338"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -25.54,
+            "true_peak_dbtp": -10.15,
+            "sample_peak_dbfs": -10.161
+          },
+          "source_duration_seconds": 2.021354,
+          "trim_start_seconds": 0.065042,
+          "trim_end_seconds": 2.021354,
+          "before_gain": {
+            "integrated_lufs": -25.37,
+            "true_peak_dbtp": -10.15,
+            "sample_peak_dbfs": -10.161
+          },
+          "excerpt_offset_after_trim_seconds": 0.2,
+          "excerpt_duration_seconds": 1.65,
+          "filters": "highpass=f=80,lowpass=f=1800",
+          "excerpt_measurement": {
+            "integrated_lufs": -25.34,
+            "true_peak_dbtp": -10.49,
+            "sample_peak_dbfs": -10.496
+          },
+          "layer_gain_db": 1.34,
+          "blend_weight": 0.28
+        }
+      ],
+      "loop_crossfade_seconds": 0.12,
+      "before_gain": {
+        "integrated_lufs": -26.21,
+        "true_peak_dbtp": -9.63,
+        "sample_peak_dbfs": -9.634
+      },
+      "output_loop_seam_delta": 0.002960205078125,
+      "adjacent_sample_delta_rms": 0.002310812010416332,
+      "target_lufs": -35.0,
+      "fixed_gain_db": -8.79,
+      "after_gain": {
+        "integrated_lufs": -35.01,
+        "true_peak_dbtp": -18.42,
+        "sample_peak_dbfs": -18.423
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.530000"
+        }
+      },
+      "output_duration_seconds": 1.53,
+      "output_bytes": 146958,
+      "output_sha256": "68a9715c404410a18b77f56b983dbb99f04828f358bba30632ed3e336dfb3faf",
+      "clipped_samples": 0,
+      "seam_to_adjacent_rms_ratio": 1.2810237547586871
+    },
+    {
+      "family": "scrape-wood-concrete",
+      "role": "texture",
+      "loop": true,
+      "description": "Stone drag grain blended with chest movement to suggest wood sliding on concrete; source contact surfaces are unspecified.",
+      "output": "public/audio/actions/scrape-wood-concrete-02.wav",
+      "sources": [
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Dragging Stone 6.wav",
+          "source_sha256": "dbbd4cfdd3368f91e25462547f35cea1fc727fb04b7bd50aa0102c1af3be73e6",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "2.307687"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -23.03,
+            "true_peak_dbtp": -9.47,
+            "sample_peak_dbfs": -9.466
+          },
+          "source_duration_seconds": 2.307688,
+          "trim_start_seconds": 0.003563,
+          "trim_end_seconds": 1.956333,
+          "before_gain": {
+            "integrated_lufs": -22.61,
+            "true_peak_dbtp": -9.47,
+            "sample_peak_dbfs": -9.466
+          },
+          "excerpt_offset_after_trim_seconds": 0.45,
+          "excerpt_duration_seconds": 1.35,
+          "filters": "highpass=f=100,lowpass=f=3800",
+          "excerpt_measurement": {
+            "integrated_lufs": -27.89,
+            "true_peak_dbtp": -11.23,
+            "sample_peak_dbfs": -11.227
+          },
+          "layer_gain_db": 3.89,
+          "blend_weight": 0.72
+        },
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Pirate Sounds Pro/Chest moving/Chest moving 2.wav",
+          "source_sha256": "2668e8da3ba7733f468a1ad8c0dc3427d78e08aa88eeff103dfc6518798c0fd1",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "1.626667"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -26.54,
+            "true_peak_dbtp": -12.7,
+            "sample_peak_dbfs": -12.712
+          },
+          "source_duration_seconds": 1.626667,
+          "trim_start_seconds": 0.006958,
+          "trim_end_seconds": 1.626667,
+          "before_gain": {
+            "integrated_lufs": -26.57,
+            "true_peak_dbtp": -12.7,
+            "sample_peak_dbfs": -12.712
+          },
+          "excerpt_offset_after_trim_seconds": 0.15,
+          "excerpt_duration_seconds": 1.35,
+          "filters": "highpass=f=80,lowpass=f=1800",
+          "excerpt_measurement": {
+            "integrated_lufs": -26.59,
+            "true_peak_dbtp": -12.88,
+            "sample_peak_dbfs": -12.89
+          },
+          "layer_gain_db": 2.59,
+          "blend_weight": 0.28
+        }
+      ],
+      "loop_crossfade_seconds": 0.12,
+      "before_gain": {
+        "integrated_lufs": -26.38,
+        "true_peak_dbtp": -10.2,
+        "sample_peak_dbfs": -10.201
+      },
+      "output_loop_seam_delta": 0.000244140625,
+      "adjacent_sample_delta_rms": 0.0007901719171710376,
+      "target_lufs": -35.0,
+      "fixed_gain_db": -8.62,
+      "after_gain": {
+        "integrated_lufs": -34.98,
+        "true_peak_dbtp": -18.82,
+        "sample_peak_dbfs": -18.821
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.230000"
+        }
+      },
+      "output_duration_seconds": 1.23,
+      "output_bytes": 118158,
+      "output_sha256": "af73cc3f4a740934ffb360486469d9dd2da263f144a204d2f40d995fa3f1ca1e",
+      "clipped_samples": 0,
+      "seam_to_adjacent_rms_ratio": 0.30897152846695547
+    },
+    {
+      "family": "scrape-wood-wood",
+      "role": "texture",
+      "loop": true,
+      "description": "Chest movement with a subdued wood-saw grain suggests wood rubbing against wood; the source recordings do not identify the contact pair.",
+      "output": "public/audio/actions/scrape-wood-wood-01.wav",
+      "sources": [
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Pirate Sounds Pro/Chest moving/Chest moving 1.wav",
+          "source_sha256": "bde26b4ddb4b950ff24bbe744531e0a6c6a8dd0339511eced09f6738e19bc6ef",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "2.021338"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -25.54,
+            "true_peak_dbtp": -10.15,
+            "sample_peak_dbfs": -10.161
+          },
+          "source_duration_seconds": 2.021354,
+          "trim_start_seconds": 0.065042,
+          "trim_end_seconds": 2.021354,
+          "before_gain": {
+            "integrated_lufs": -25.37,
+            "true_peak_dbtp": -10.15,
+            "sample_peak_dbfs": -10.161
+          },
+          "excerpt_offset_after_trim_seconds": 0.2,
+          "excerpt_duration_seconds": 1.55,
+          "filters": "highpass=f=80,lowpass=f=1700",
+          "excerpt_measurement": {
+            "integrated_lufs": -25.28,
+            "true_peak_dbtp": -10.5,
+            "sample_peak_dbfs": -10.503
+          },
+          "layer_gain_db": 1.28,
+          "blend_weight": 0.88
+        },
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Sawing Wood 4.wav",
+          "source_sha256": "b44ea52db78ec3a125c6f033590fbb8489bf9f4734934f5b031db087b6a123bd",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "2.769229"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -26.94,
+            "true_peak_dbtp": -9.98,
+            "sample_peak_dbfs": -9.979
+          },
+          "source_duration_seconds": 2.769229,
+          "trim_start_seconds": 0.062583,
+          "trim_end_seconds": 2.694521,
+          "before_gain": {
+            "integrated_lufs": -26.91,
+            "true_peak_dbtp": -9.98,
+            "sample_peak_dbfs": -9.979
+          },
+          "excerpt_offset_after_trim_seconds": 0.4,
+          "excerpt_duration_seconds": 1.55,
+          "filters": "highpass=f=120,lowpass=f=1100",
+          "excerpt_measurement": {
+            "integrated_lufs": -33.22,
+            "true_peak_dbtp": -16.37,
+            "sample_peak_dbfs": -16.394
+          },
+          "layer_gain_db": 9.22,
+          "blend_weight": 0.12
+        }
+      ],
+      "loop_crossfade_seconds": 0.12,
+      "before_gain": {
+        "integrated_lufs": -25.0,
+        "true_peak_dbtp": -10.32,
+        "sample_peak_dbfs": -10.326
+      },
+      "output_loop_seam_delta": 0.000732421875,
+      "adjacent_sample_delta_rms": 0.0014088446263274214,
+      "target_lufs": -35.0,
+      "fixed_gain_db": -10.0,
+      "after_gain": {
+        "integrated_lufs": -35.0,
+        "true_peak_dbtp": -20.32,
+        "sample_peak_dbfs": -20.326
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.430000"
+        }
+      },
+      "output_duration_seconds": 1.43,
+      "output_bytes": 137358,
+      "output_sha256": "b2d16b552a104fed75ec6fe4c56933c694dd332fb1e2ccb1fa98294a52afc390",
+      "clipped_samples": 0,
+      "seam_to_adjacent_rms_ratio": 0.5198741304137126
+    },
+    {
+      "family": "scrape-wood-wood",
+      "role": "texture",
+      "loop": true,
+      "description": "Chest movement with a subdued wood-saw grain suggests wood rubbing against wood; the source recordings do not identify the contact pair.",
+      "output": "public/audio/actions/scrape-wood-wood-02.wav",
+      "sources": [
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Pirate Sounds Pro/Chest moving/Chest moving 2.wav",
+          "source_sha256": "2668e8da3ba7733f468a1ad8c0dc3427d78e08aa88eeff103dfc6518798c0fd1",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "1.626667"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -26.54,
+            "true_peak_dbtp": -12.7,
+            "sample_peak_dbfs": -12.712
+          },
+          "source_duration_seconds": 1.626667,
+          "trim_start_seconds": 0.006958,
+          "trim_end_seconds": 1.626667,
+          "before_gain": {
+            "integrated_lufs": -26.57,
+            "true_peak_dbtp": -12.7,
+            "sample_peak_dbfs": -12.712
+          },
+          "excerpt_offset_after_trim_seconds": 0.15,
+          "excerpt_duration_seconds": 1.3,
+          "filters": "highpass=f=80,lowpass=f=1700",
+          "excerpt_measurement": {
+            "integrated_lufs": -26.62,
+            "true_peak_dbtp": -12.93,
+            "sample_peak_dbfs": -12.935
+          },
+          "layer_gain_db": 2.62,
+          "blend_weight": 0.88
+        },
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Sawing Wood 8.wav",
+          "source_sha256": "48499fdacd0c8205c947312f4af8caba65f0750188a4b96e6c685cb6c9945558",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "2.365374"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -29.79,
+            "true_peak_dbtp": -8.43,
+            "sample_peak_dbfs": -8.514
+          },
+          "source_duration_seconds": 2.365375,
+          "trim_start_seconds": 0.077167,
+          "trim_end_seconds": 2.346854,
+          "before_gain": {
+            "integrated_lufs": -29.68,
+            "true_peak_dbtp": -8.43,
+            "sample_peak_dbfs": -8.514
+          },
+          "excerpt_offset_after_trim_seconds": 0.3,
+          "excerpt_duration_seconds": 1.3,
+          "filters": "highpass=f=120,lowpass=f=1100",
+          "excerpt_measurement": {
+            "integrated_lufs": -33.7,
+            "true_peak_dbtp": -14.74,
+            "sample_peak_dbfs": -14.745
+          },
+          "layer_gain_db": 9.7,
+          "blend_weight": 0.12
+        }
+      ],
+      "loop_crossfade_seconds": 0.12,
+      "before_gain": {
+        "integrated_lufs": -25.17,
+        "true_peak_dbtp": -11.55,
+        "sample_peak_dbfs": -11.553
+      },
+      "output_loop_seam_delta": 0.0013427734375,
+      "adjacent_sample_delta_rms": 0.0010757316558655016,
+      "target_lufs": -35.0,
+      "fixed_gain_db": -9.83,
+      "after_gain": {
+        "integrated_lufs": -35.0,
+        "true_peak_dbtp": -21.38,
+        "sample_peak_dbfs": -21.381
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "1.180000"
+        }
+      },
+      "output_duration_seconds": 1.18,
+      "output_bytes": 113358,
+      "output_sha256": "4d619243622f7f2a2a51c954fbd7517c6c1f67e551fda5adfd0aa569dc64373b",
+      "clipped_samples": 0,
+      "seam_to_adjacent_rms_ratio": 1.248242003643227
+    },
+    {
+      "family": "metal-creak",
+      "role": "texture",
+      "loop": true,
+      "description": "Door creaks with faint filtered metal-saw grain form a restrained lamp suspension strain texture; the creaking door material is unspecified.",
+      "output": "public/audio/actions/metal-creak-01.wav",
+      "sources": [
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Door Creak 6.wav",
+          "source_sha256": "c06b16247a1467f376c0ac63ee4904d6a3c88952db45bddbc920c42f75f763e0",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "5.081723"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -30.97,
+            "true_peak_dbtp": -15.74,
+            "sample_peak_dbfs": -15.743
+          },
+          "source_duration_seconds": 5.081729,
+          "trim_start_seconds": 0.014313,
+          "trim_end_seconds": 4.826354,
+          "before_gain": {
+            "integrated_lufs": -30.87,
+            "true_peak_dbtp": -15.74,
+            "sample_peak_dbfs": -15.743
+          },
+          "excerpt_offset_after_trim_seconds": 0.3,
+          "excerpt_duration_seconds": 2.8,
+          "filters": "highpass=f=180,lowpass=f=3200",
+          "excerpt_measurement": {
+            "integrated_lufs": -29.98,
+            "true_peak_dbtp": -16.04,
+            "sample_peak_dbfs": -16.048
+          },
+          "layer_gain_db": 5.98,
+          "blend_weight": 0.92
+        },
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Sawing Metal 5.wav",
+          "source_sha256": "4b8a1f198301fb20a748ca43a10a9c8fa1756a1bea51406e4c5cf350b3365e43",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "2.960000"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -28.86,
+            "true_peak_dbtp": -12.84,
+            "sample_peak_dbfs": -12.922
+          },
+          "source_duration_seconds": 2.96,
+          "trim_start_seconds": 0.045083,
+          "trim_end_seconds": 2.96,
+          "before_gain": {
+            "integrated_lufs": -28.88,
+            "true_peak_dbtp": -12.84,
+            "sample_peak_dbfs": -12.922
+          },
+          "excerpt_offset_after_trim_seconds": 0.08,
+          "excerpt_duration_seconds": 2.8,
+          "filters": "highpass=f=350,lowpass=f=2600",
+          "excerpt_measurement": {
+            "integrated_lufs": -31.58,
+            "true_peak_dbtp": -17.44,
+            "sample_peak_dbfs": -17.445
+          },
+          "layer_gain_db": 7.58,
+          "blend_weight": 0.08
+        }
+      ],
+      "loop_crossfade_seconds": 0.12,
+      "before_gain": {
+        "integrated_lufs": -24.59,
+        "true_peak_dbtp": -10.57,
+        "sample_peak_dbfs": -10.585
+      },
+      "output_loop_seam_delta": 0.002471923828125,
+      "adjacent_sample_delta_rms": 0.0028335941353218163,
+      "target_lufs": -35.0,
+      "fixed_gain_db": -10.41,
+      "after_gain": {
+        "integrated_lufs": -35.0,
+        "true_peak_dbtp": -20.98,
+        "sample_peak_dbfs": -20.995
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "2.680000"
+        }
+      },
+      "output_duration_seconds": 2.68,
+      "output_bytes": 257358,
+      "output_sha256": "881bb90c0024adadf41907fb8865d58fbd8bf9770bbcbb3c17eabc4253c6ac44",
+      "clipped_samples": 0,
+      "seam_to_adjacent_rms_ratio": 0.8723634049462271,
+      "highpass_4khz_energy_fraction": 0.020557202301008957
+    },
+    {
+      "family": "metal-creak",
+      "role": "texture",
+      "loop": true,
+      "description": "Door creaks with faint filtered metal-saw grain form a restrained lamp suspension strain texture; the creaking door material is unspecified.",
+      "output": "public/audio/actions/metal-creak-02.wav",
+      "sources": [
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Door Creak 4.wav",
+          "source_sha256": "bee1a054bdfadb99643d4f0e12c085e85bf70839a20ef14ad1f468064ffa1140",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "3.004807"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -28.21,
+            "true_peak_dbtp": -12.61,
+            "sample_peak_dbfs": -12.646
+          },
+          "source_duration_seconds": 3.004812,
+          "trim_start_seconds": 0.008521,
+          "trim_end_seconds": 2.781104,
+          "before_gain": {
+            "integrated_lufs": -28.07,
+            "true_peak_dbtp": -12.61,
+            "sample_peak_dbfs": -12.646
+          },
+          "excerpt_offset_after_trim_seconds": 0.2,
+          "excerpt_duration_seconds": 2.3,
+          "filters": "highpass=f=180,lowpass=f=3200",
+          "excerpt_measurement": {
+            "integrated_lufs": -28.22,
+            "true_peak_dbtp": -12.9,
+            "sample_peak_dbfs": -12.931
+          },
+          "layer_gain_db": 4.22,
+          "blend_weight": 0.92
+        },
+        {
+          "source": "/Users/marshallsmith/SFX/Ultimate SFX Bundle - HD Remaster2/Survival Sound Kit - HD Remake/Sawing Metal 8.wav",
+          "source_sha256": "0583585438aecea3e14deca12779f4c0a0383ee5fca54e847c8deab987b951c4",
+          "source_format": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "pcm_s16le",
+                "sample_rate": "44100",
+                "channels": 2,
+                "bits_per_sample": 16
+              }
+            ],
+            "format": {
+              "duration": "2.975261"
+            }
+          },
+          "source_mono_measurement": {
+            "integrated_lufs": -30.65,
+            "true_peak_dbtp": -14.79,
+            "sample_peak_dbfs": -14.792
+          },
+          "source_duration_seconds": 2.975271,
+          "trim_start_seconds": 0.154958,
+          "trim_end_seconds": 2.926312,
+          "before_gain": {
+            "integrated_lufs": -30.65,
+            "true_peak_dbtp": -14.79,
+            "sample_peak_dbfs": -14.792
+          },
+          "excerpt_offset_after_trim_seconds": 0.25,
+          "excerpt_duration_seconds": 2.3,
+          "filters": "highpass=f=350,lowpass=f=2600",
+          "excerpt_measurement": {
+            "integrated_lufs": -38.6,
+            "true_peak_dbtp": -21.31,
+            "sample_peak_dbfs": -21.326
+          },
+          "layer_gain_db": 14.6,
+          "blend_weight": 0.08
+        }
+      ],
+      "loop_crossfade_seconds": 0.12,
+      "before_gain": {
+        "integrated_lufs": -24.45,
+        "true_peak_dbtp": -9.41,
+        "sample_peak_dbfs": -9.434
+      },
+      "output_loop_seam_delta": 0.000518798828125,
+      "adjacent_sample_delta_rms": 0.002474893409018206,
+      "target_lufs": -35.0,
+      "fixed_gain_db": -10.55,
+      "after_gain": {
+        "integrated_lufs": -35.0,
+        "true_peak_dbtp": -19.96,
+        "sample_peak_dbfs": -19.984
+      },
+      "output_format": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "pcm_s16le",
+            "sample_rate": "48000",
+            "channels": 1,
+            "bits_per_sample": 16
+          }
+        ],
+        "format": {
+          "duration": "2.180000"
+        }
+      },
+      "output_duration_seconds": 2.18,
+      "output_bytes": 209358,
+      "output_sha256": "b5f195537e4834863ec8cd41180341d0bf9f09048389d29e8d4abe5d0049b429",
+      "clipped_samples": 0,
+      "seam_to_adjacent_rms_ratio": 0.20962471605223928,
+      "highpass_4khz_energy_fraction": 0.018967847280441538
+    }
+  ]
+}

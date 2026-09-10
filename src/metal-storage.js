@@ -93,7 +93,7 @@ export function createMetalStorage({ scene, materials, bounds = DEFAULT_BOUNDS }
   const root = new THREE.Group();
   root.name = 'Sealed metal archive';
   root.userData.breakable = false;
-  const stacks = createMetalStorageSpecs(bounds), obstacles = stacks.map((stack) => stack.obstacle);
+  const stacks = createMetalStorageSpecs(bounds), obstacles = stacks.map((stack) => Object.assign(stack.obstacle, { audioSurface: 'metal' }));
   const textures = createCaseTextures();
   const bodyMaterial = new THREE.MeshStandardMaterial({
     name: 'Restore / worn enamel cargo cases', color: '#ffffff',

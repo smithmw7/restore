@@ -156,7 +156,7 @@ export function createWarehouse({ scene, renderer, materials, onEvent }) {
 
   // Open middle aisles, with tall portal columns between the storage lanes.
   // All columns have actual locomotion and rigid-body obstacles.
-  obstacles.push(...getArchiveColumnObstacles());
+  obstacles.push(...getArchiveColumnObstacles().map(box => Object.assign(box, { audioSurface: 'metal' })));
   for (const z of COLUMN_Z) {
     for (const x of COLUMN_X) {
       addBox(beamMat, [x, 13.8, z], [.4, 27.6, .52]);

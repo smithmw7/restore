@@ -3,6 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { DestructibleMesh, FractureOptions } from '@dgreenheck/three-pinata';
 import { nudgeBody } from './tap-influence.js';
 import { driveGrabbedBody, releaseGrabbedBody } from './physical-drag.js';
+import { setContactSurface } from './contact-audio.js';
 
 // Dimensions are metres. The stage uses these same specs for its pedestal visuals.
 export const OBJECT_SPECS = Object.freeze([
@@ -88,7 +89,7 @@ function makeHull(geometry, shrink = 1) {
  * Unit rotations are relative to the immutable, world-oriented home geometry.
  */
 export async function createDestructionLab({ scene, onProgress = () => {}, onChange = () => {}, onEvent = () => {},
-  specs = OBJECT_SPECS, materialForSpec = null, geometryForSpec = null, wholeObjects = false, pedestals = true,
+  specs = OBJECT_SPECS, materialForSpec = null, geometryForSpec = null, fractureGeometryForSpec = null, wholeObjects = false, pedestals = true,
   bounds = { minX: -6, maxX: 6, minZ: -7, maxZ: 6 }, statics = [],
   beforePhysicsStep = () => {}, afterPhysicsStep = () => {}, solverIterations = 4,
 }) {
@@ -107,6 +108,9 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   const scratch = new THREE.Vector3();
   const scratch2 = new THREE.Vector3();
   const scratchQuaternion = new THREE.Quaternion();
+  const repairBounds = new THREE.Box3();
+  const repairTransform = new THREE.Matrix4();
+  const unitScale = new THREE.Vector3(1, 1, 1);
   let ready = false;
   let restoring = false;
   let restoreTime = 0;
@@ -115,8 +119,9 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   let lastCollisionTime = -Infinity;
   let disposed = false;
   let grab = null;
-  // Opt-in keys describe identical local geometry, including any baked scale.
-  // Templates exist only during setup; objects always own their geometry.
+  // Opt-in keys describe identical local geometry. A positive fractureScale
+  // explicitly permits uniformly scaled copies of one canonical cut. Templates
+  // exist only during setup; objects always own their geometry and physics hulls.
   const fractureTemplates = new Map();
   let pendingObject = null;
 
@@ -126,20 +131,43 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     const key = typeof spec.fractureKey === 'string' && spec.fractureKey ? spec.fractureKey : null;
     const variants = key ? fractureTemplates.get(key) || [] : [];
     const form = spec.form || spec.id;
-    const scale = JSON.stringify(spec.scale ?? null);
+    const uniformScale = key && Number.isFinite(spec.fractureScale) && spec.fractureScale > 0 ? spec.fractureScale : null;
+    const scale = uniformScale === null ? JSON.stringify(spec.scale ?? null) : 'uniform';
     const cached = variants.find((template) => template.form === form && template.scale === scale
       && template.seed === spec.seed && template.count === options.fragmentCount);
-    if (cached) {
-      return cached.fragments.map((fragment) => {
+    function copyTemplate(template) {
+      return template.fragments.map((fragment) => {
         // Templates contain geometry only. Every instance keeps its own finish,
         // including emissive palettes and the material on newly exposed faces.
-        const piece = new DestructibleMesh(fragment.geometry.clone(), mesh.material, inside);
+        const geometry = fragment.geometry.clone();
+        if (uniformScale !== null) geometry.scale(uniformScale, uniformScale, uniformScale);
+        const piece = new DestructibleMesh(geometry, mesh.material, inside);
         piece.material = [mesh.material, inside];
-        piece.position.copy(fragment.center).applyMatrix4(mesh.matrixWorld);
+        piece.position.copy(fragment.center).multiplyScalar(uniformScale ?? 1).applyMatrix4(mesh.matrixWorld);
         piece.quaternion.copy(mesh.quaternion);
         piece.scale.copy(mesh.scale);
         return piece;
       });
+    }
+    if (cached) return copyTemplate(cached);
+    if (uniformScale !== null) {
+      // Cut the proven metre-sized form once, at the origin. Scaling both its
+      // vertices and centers afterward preserves volume and avoids 176 separate
+      // cuts merely because every storage crate has different dimensions.
+      // Prefer original source vertices to a Float32 scale/unscale round trip;
+      // tiny rounding changes can destabilize a cut through a thin flange.
+      const geometry = fractureGeometryForSpec ? fractureGeometryForSpec(spec)
+        : mesh.geometry.clone().scale(1 / uniformScale, 1 / uniformScale, 1 / uniformScale);
+      const canonical = new DestructibleMesh(geometry, mesh.material, inside);
+      canonical.updateMatrixWorld(true);
+      let pieces;
+      try { pieces = canonical.fracture(new FractureOptions(options)); }
+      finally { geometry.dispose(); }
+      const template = { form, scale, seed: spec.seed, count: options.fragmentCount,
+        fragments: pieces.map((piece) => ({ geometry: piece.geometry, center: piece.position.clone() })) };
+      variants.push(template);
+      fractureTemplates.set(key, variants);
+      return copyTemplate(template);
     }
     const pieces = mesh.fracture(new FractureOptions(options));
     pendingObject.pieces = pieces;
@@ -153,12 +181,12 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
     return pieces;
   }
 
-  world.createCollider(RAPIER.ColliderDesc.cuboid(Math.max(8, (bounds.maxX - bounds.minX) / 2 + 1), 0.05, Math.max(8, (bounds.maxZ - bounds.minZ) / 2 + 1))
-    .setTranslation((bounds.minX + bounds.maxX) / 2, -0.05, (bounds.minZ + bounds.maxZ) / 2).setFriction(0.8));
+  setContactSurface(world.createCollider(RAPIER.ColliderDesc.cuboid(Math.max(8, (bounds.maxX - bounds.minX) / 2 + 1), 0.05, Math.max(8, (bounds.maxZ - bounds.minZ) / 2 + 1))
+    .setTranslation((bounds.minX + bounds.maxX) / 2, -0.05, (bounds.minZ + bounds.maxZ) / 2).setFriction(0.8)), 'concrete');
   for (const box of statics) {
     const size = box.getSize(new THREE.Vector3()).multiplyScalar(0.5);
     const center = box.getCenter(new THREE.Vector3());
-    world.createCollider(RAPIER.ColliderDesc.cuboid(size.x, size.y, size.z).setTranslation(center.x, center.y, center.z).setFriction(0.8));
+    setContactSurface(world.createCollider(RAPIER.ColliderDesc.cuboid(size.x, size.y, size.z).setTranslation(center.x, center.y, center.z).setFriction(0.8)), box.audioSurface || 'concrete');
   }
   for (const spec of pedestals ? specs : []) {
     world.createCollider(RAPIER.ColliderDesc.cylinder(spec.pedestalHeight / 2, 0.32)
@@ -392,6 +420,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       mesh.userData.wholeGrabbable = wholeObjects;
       scene.add(mesh);
       mesh.updateMatrixWorld(true);
+      mesh.geometry.computeBoundingBox();
       const pieces = fracturePieces(mesh, spec, inside);
       pendingObject.pieces = pieces;
       if (pieces.length < 2) throw new Error(`Could not fracture ${spec.label}.`);
@@ -415,7 +444,7 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
       const object = {
         spec, mesh, fragments, units: [], broken: false, fractured: false, enabled: !spec.initialHidden, docking: null, age: 0,
         homePosition: mesh.position.clone(), homeQuaternion: mesh.quaternion.clone(),
-        intactHull: makeHull(mesh.geometry), intactCollider: null,
+        intactHull: makeHull(mesh.geometry), intactCollider: null, localBounds: mesh.geometry.boundingBox.clone(),
       };
       objects.push(object);
       pendingObject = null;
@@ -639,7 +668,19 @@ export async function createDestructionLab({ scene, onProgress = () => {}, onCha
   function updateGrab(dt) {
     if (!grab) return;
     const { unit: held, object } = grab;
-    driveGrabbedBody(world, held.body, grab.goal, identity, dt);
+    scratch.copy(grab.goal);
+    if (object.fractured && (held.members.length > 1 || object.units.some((unit) => unit !== held && unit.magnetized))) {
+      // Leave room for the assembling object's underside. Otherwise a large
+      // cluster held at floor level can ask its last shard to occupy a slot
+      // below the concrete forever. Lift the group's requested target, keeping
+      // the same finite-force movement and all external collision constraints.
+      scratch2.copy(object.homePosition).sub(held.anchor.homePosition).applyQuaternion(held.quaternion).add(scratch);
+      scratchQuaternion.copy(held.quaternion).multiply(object.homeQuaternion);
+      repairTransform.compose(scratch2, scratchQuaternion, unitScale);
+      repairBounds.copy(object.localBounds).applyMatrix4(repairTransform);
+      scratch.y += Math.max(0, 0.008 - repairBounds.min.y);
+    }
+    driveGrabbedBody(world, held.body, scratch, identity, dt);
     if (held.members.length === object.fragments.length) return;
     // Candidates belong to this original object only. A collected cluster moves
     // as one rigid unit, so previous assembly progress survives every release.
