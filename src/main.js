@@ -4,6 +4,8 @@ import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
 import { createRestoreAudio } from './audio.js';
 import { loadWarehouseMaterials } from './materials.js';
 import { createWarehouse } from './warehouse.js';
+import { createMetalStorage } from './metal-storage.js';
+import { createArchiveAtmosphere } from './atmosphere.js';
 import { createWarehouseGameplay } from './warehouse-gameplay.js';
 import { createLocomotion } from './locomotion.js';
 
@@ -17,11 +19,11 @@ renderer.info.autoReset=false;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.xr.enabled=true;renderer.xr.setReferenceSpaceType('local-floor');renderer.xr.setFramebufferScaleFactor(.8);renderer.xr.setFoveation(.65);
 const rig=new THREE.Group();rig.name='Player origin';rig.position.set(0,0,3.5);scene.add(rig);
-const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.05,80);rig.add(camera);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.05,260);rig.add(camera);
 function resetDesktopCamera(){camera.position.set(0,1.65,0);camera.rotation.set(-.07,0,0,'YXZ');}
 resetDesktopCamera();
 const audio=createRestoreAudio();
-let lab,warehouse,locomotion,ready=false,xrSupported=false,muted=false,lastTime=0,frameDelta=0;
+let lab,warehouse,metalStorage,atmosphere,locomotion,ready=false,xrSupported=false,muted=false,lastTime=0,frameDelta=0;
 let xrFrames=0,selectCount=0,contactCount=0,lastInput='none',sessionError=null,sessionVisibility=null;
 const raycaster=new THREE.Raycaster(),rotation=new THREE.Matrix4(),point=new THREE.Vector3(),direction=new THREE.Vector3();
 const viewerPosition=new THREE.Vector3(),viewerForward=new THREE.Vector3(),viewerUp=new THREE.Vector3();
@@ -248,8 +250,9 @@ function update(dt,time,frame){
     const viewer=renderer.xr.getCamera();viewer.getWorldPosition(viewerPosition);viewerForward.set(0,0,-1).transformDirection(viewer.matrixWorld);viewerUp.set(0,1,0).transformDirection(viewer.matrixWorld);audio.updateListener(viewerPosition,viewerForward,viewerUp);
     xrFrames++;
     if(sessionVisibility==='visible'){updateXRInputs(time,frame);locomotion.update(dt,inputs);}else palmTurns.visible=false;
-  }else updateDesktop(dt,time);
+  }else {updateDesktop(dt,time);camera.getWorldPosition(viewerPosition);}
   lab.step(dt);warehouse.update(dt,time/1000);
+  atmosphere.update(dt,time/1000,viewerPosition);
   const grab=lab.getGrabState();if(grab.active)audio.updateDrag({position:point.fromArray(grab.anchor),speed:grab.speed});
 }
 renderer.setAnimationLoop((time,frame)=>{frameDelta=lastTime?Math.min((time-lastTime)/1000,.05):1/72;lastTime=time;update(frameDelta,time,frame);renderer.info.reset();renderer.render(scene,camera);});
@@ -261,6 +264,13 @@ try{
   await refreshXR();
   const [materials]=await Promise.all([loadWarehouseMaterials(),audio.load()]);
   warehouse=createWarehouse({scene,renderer,materials});
+  metalStorage=createMetalStorage({scene,materials,bounds:warehouse.bounds});
+  warehouse.stats.structuralObstacleCount=warehouse.obstacles.length;
+  warehouse.obstacles.push(...metalStorage.obstacles);
+  warehouse.stats.obstacleCount=warehouse.obstacles.length;
+  warehouse.stats.metalStorage=metalStorage.stats;
+  atmosphere=createArchiveAtmosphere({scene,renderer,bounds:warehouse.bounds,lights:warehouse.atmosphereLights});
+  warehouse.stats.atmosphere=atmosphere.stats;
   lab=await createWarehouseGameplay({scene,materials,bounds:warehouse.bounds,obstacles:warehouse.obstacles,additionalCrates:warehouse.storageCrates,onEvent:handleEvent});
   locomotion=createLocomotion({scene,rig,camera,renderer,bounds:warehouse.bounds,getObstacles:()=>lab.getObstacles?.()||warehouse.obstacles,onBeforeMove:cancelInteractions});
   ready=true;document.body.classList.add('ready');ui.loader.hidden=true;ui.reset.disabled=false;updateVRButton();

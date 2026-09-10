@@ -1,6 +1,6 @@
 {
   "name": "restore",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -20,7 +20,9 @@
     "test:storage": "node scripts/storage-check.mjs",
     "test:artifacts": "node scripts/artifact-check.mjs",
     "test:storage-browser": "node scripts/storage-browser.mjs",
-    "test:fracture-cache": "node scripts/fracture-cache-check.mjs"
+    "test:fracture-cache": "node scripts/fracture-cache-check.mjs",
+    "test:archive": "node scripts/archive-check.mjs",
+    "test:archive-browser": "node scripts/archive-browser.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

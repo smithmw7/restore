@@ -2,7 +2,18 @@ import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { createStorageCrateSpecs } from './storage-crates.js';
 
-export const WAREHOUSE_BOUNDS = Object.freeze({ minX: -12, maxX: 12, minZ: -27, maxZ: 7 });
+export const ARCHIVE_DIMENSIONS = Object.freeze({ width: 96, depth: 180, height: 28, centerZ: -76 });
+export const WAREHOUSE_BOUNDS = Object.freeze({ minX: -48, maxX: 48, minZ: -166, maxZ: 14 });
+const COLUMN_X = [-47.35, -33.5, -17.5, 17.5, 33.5, 47.35];
+const COLUMN_Z = Array.from({ length: 15 }, (_, index) => 8 - index * 12);
+
+// Share the actual column clearance with layout/navigation checks without
+// requiring a WebGL renderer to construct the full hall and its reflection.
+export function getArchiveColumnObstacles() {
+  return COLUMN_Z.flatMap((z) => COLUMN_X.map((x) => new THREE.Box3().setFromCenterAndSize(
+    new THREE.Vector3(x, 13.85, z), new THREE.Vector3(.8, 27.7, .85),
+  )));
+}
 
 // One modest target per eye. The current Three Reflector maintains an individual
 // reflection camera for each XR eye; reflection rendering does not update shadows.
@@ -25,7 +36,7 @@ const floorShader = {
       vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
       vReflection = textureMatrix * vec4(position, 1.0);
       // Match the concrete slab even though the reflection plane is inset.
-      vFloorUv = (position.xy / vec2(24.0, 34.0) + 0.5) * vec2(12.0, 17.0);
+      vFloorUv = (position.xy / vec2(96.0, 180.0) + 0.5) * vec2(48.0, 90.0);
       vec3 viewNormal = normalize(normalMatrix * normal);
       vGrazing = 1.0 - abs(dot(normalize(-mvPosition.xyz), viewNormal));
       gl_Position = projectionMatrix * mvPosition;
@@ -63,10 +74,10 @@ const floorShader = {
 
 export function createWarehouse({ scene, renderer, materials }) {
   const root = new THREE.Group();
-  root.name = 'Warehouse';
+  root.name = 'The grand archive';
   scene.add(root);
-  scene.background = new THREE.Color('#182328');
-  scene.fog = new THREE.FogExp2('#182328', .026);
+  scene.background = new THREE.Color('#293539');
+  scene.fog = new THREE.FogExp2('#293539', .0105);
   const bounds = { ...WAREHOUSE_BOUNDS };
   const obstacles = [];
   const ownedMaterials = new Set();
@@ -95,17 +106,20 @@ export function createWarehouse({ scene, renderer, materials }) {
     }
     return result;
   };
-  const wallMat = copyMat(materials.concrete, '#687978', [4, 2]);
+  const wallMat = copyMat(materials.concrete, '#485957', [16, 7]);
   wallMat.normalScale.setScalar(.28);
-  const floorMat = copyMat(materials.concrete, '#80908b', [12, 17]);
+  const floorMat = copyMat(materials.concrete, '#7b8476', [48, 90]);
   floorMat.roughness = 1;
   floorMat.normalScale.setScalar(.65);
-  const beamMat = materials.metal;
-  const ceilingMat = localMat({ color: '#313b40', roughness: .88, metalness: .3 });
-  const seamMat = localMat({ color: '#343f3f', roughness: .98 });
-  const lampMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffd7a2').multiplyScalar(3), toneMapped: false });
-  const windowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#8bbace').multiplyScalar(1.6), toneMapped: false });
-  ownedMaterials.add(lampMat); ownedMaterials.add(windowMat);
+  const beamMat = copyMat(materials.metal, '#4b554e');
+  beamMat.roughness = .72;
+  const ceilingMat = localMat({ color: '#25312f', roughness: .94, metalness: .22 });
+  const seamMat = localMat({ color: '#323e39', roughness: .98 });
+  const vaultMat = localMat({ color: '#253c3d', roughness: .62, metalness: .52 });
+  const lampMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffce87').multiplyScalar(2.6), toneMapped: false });
+  const windowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#81b0bf').multiplyScalar(1.25), toneMapped: false });
+  const farLampMat = new THREE.MeshBasicMaterial({ color: '#c9a976', toneMapped: false });
+  ownedMaterials.add(lampMat); ownedMaterials.add(windowMat); ownedMaterials.add(farLampMat);
 
   function addBox(material, position, scale, rotation = [0, 0, 0], tint) {
     if (!batches.has(material)) batches.set(material, []);
@@ -123,76 +137,121 @@ export function createWarehouse({ scene, renderer, materials }) {
     addBox(material, dummy.position.toArray(), [thickness, length, thickness], euler.toArray().slice(0, 3));
   }
 
-  // Sealed structural shell. All foreground work happens on the same flat floor.
-  addBox(floorMat, [0, -.08, -10], [24, .12, 34]);
-  addBox(wallMat, [-12.16, 4.5, -10], [.32, 9, 34]);
-  addBox(wallMat, [12.16, 4.5, -10], [.32, 9, 34]);
-  addBox(wallMat, [0, 4.5, -27.16], [24, 9, .32]);
-  addBox(wallMat, [0, 4.5, 7.16], [24, 9, .32]);
-  addBox(ceilingMat, [0, 9.08, -10], [24.6, .16, 34.6]);
-  for (const x of [-12.05, 12.05]) obstacle([x, 4.5, -10], [.3, 9, 34.2]);
-  for (const z of [-27.05, 7.05]) obstacle([0, 4.5, z], [24.2, 9, .3]);
+  // A sealed hall with real metric dimensions. The original collection remains
+  // near the entrance; the roof and repeated portal frames carry its scale.
+  const { width, depth, height, centerZ } = ARCHIVE_DIMENSIONS;
+  addBox(floorMat, [0, -.08, centerZ], [width, .12, depth]);
+  addBox(wallMat, [-48.2, 14, centerZ], [.4, height, depth]);
+  addBox(wallMat, [48.2, 14, centerZ], [.4, height, depth]);
+  addBox(wallMat, [0, 14, -166.2], [width, height, .4]);
+  addBox(wallMat, [0, 14, 14.2], [width, height, .4]);
+  addBox(ceilingMat, [0, 28.15, centerZ], [96.8, .3, 180.8]);
+  for (const x of [-48.05, 48.05]) obstacle([x, 14, centerZ], [.3, height, depth + .2]);
+  for (const z of [-166.05, 14.05]) obstacle([0, 14, z], [width + .2, height, .3]);
 
-  // Sparse floor joints make scale legible without a repeating decorative grid.
-  for (let z = -26; z <= 6; z += 4) addBox(seamMat, [0, -.014, z], [23.9, .008, .014]);
-  for (const x of [-8, -4, 4, 8]) addBox(seamMat, [x, -.014, -10], [.014, .008, 33.9]);
+  // Four-meter concrete pours and wider expansion joints stay at human scale.
+  for (let z = -162; z <= 10; z += 4) addBox(seamMat, [0, -.014, z], [95.9, .008, .012]);
+  for (let x = -44; x <= 44; x += 4) addBox(seamMat, [x, -.014, centerZ], [.012, .008, 179.9]);
 
-  for (let z = 4; z >= -24; z -= 7) {
+  // Open middle aisles, with tall portal columns between the storage lanes.
+  // All columns have actual locomotion and rigid-body obstacles.
+  obstacles.push(...getArchiveColumnObstacles());
+  for (const z of COLUMN_Z) {
+    for (const x of COLUMN_X) {
+      addBox(beamMat, [x, 13.8, z], [.4, 27.6, .52]);
+      addBox(beamMat, [x, .2, z], [.8, .4, .85]);
+      addBox(beamMat, [x, 26.55, z], [.84, .42, .85]);
+      for (const sign of [-1, 1]) {
+        if (Math.abs(x + sign * 2.8) < 47.5) beam([x, 22.7, z], [x + sign * 2.8, 26.35, z], .18);
+      }
+    }
+    addBox(beamMat, [0, 27.15, z], [95.2, .34, .3]);
+    addBox(beamMat, [0, 24.9, z], [94.9, .2, .22]);
+    for (let x = -47; x < 47; x += 4) {
+      beam([x, 24.9, z], [x + 2, 27.15, z], .105);
+      beam([x + 2, 27.15, z], [Math.min(x + 4, 47), 24.9, z], .105);
+    }
+    // Cool clerestory glass makes both distant side walls feel enclosed.
     for (const sign of [-1, 1]) {
-      const x = sign * 11.57;
-      addBox(beamMat, [x, 4.45, z], [.32, 8.9, .42]);
-      addBox(beamMat, [x, .12, z], [.62, .24, .7]);
-      obstacle([x, 4.45, z], [.65, 8.9, .7]);
-      beam([x, 6.3, z], [sign * 8.8, 8.45, z], .15);
-      addBox(windowMat, [sign * 11.97, 6.55, z - 2.1], [.02, 1.18, 3.2]);
-      for (const offset of [-1.06, 0, 1.06]) addBox(beamMat, [sign * 11.93, 6.55, z - 2.1 + offset], [.08, 1.3, .08]);
-    }
-    addBox(beamMat, [0, 8.58, z], [23.4, .27, .25]);
-    addBox(beamMat, [0, 7.67, z], [22.8, .15, .18]);
-    for (let x = -10; x < 10; x += 2.5) {
-      beam([x, 7.67, z], [x + 1.25, 8.58, z], .075);
-      beam([x + 1.25, 8.58, z], [x + 2.5, 7.67, z], .075);
+      const wx = sign * 47.96;
+      addBox(windowMat, [wx, 22.5, z - 4.4], [.025, 2.35, 7.5]);
+      addBox(beamMat, [sign * 47.9, 21.2, z - 4.4], [.22, .2, 8]);
+      addBox(beamMat, [sign * 47.9, 23.8, z - 4.4], [.22, .2, 8]);
+      for (const offset of [-3.7, -1.85, 0, 1.85, 3.7]) {
+        addBox(beamMat, [sign * 47.88, 22.5, z - 4.4 + offset], [.18, 2.5, .1]);
+      }
+      // Low wall plinths and slender vertical ribs break up the concrete shell.
+      addBox(vaultMat, [sign * 47.96, 2.1, z - 4], [.12, 4.2, 7.4]);
     }
   }
-  for (const x of [-8, -4, 0, 4, 8]) addBox(beamMat, [x, 8.83, -10], [.12, .15, 34]);
+  for (let x = -42; x <= 42; x += 7) addBox(beamMat, [x, 27.62, centerZ], [.18, .2, depth]);
 
-  // The back loading door is solid, with no signs or implied text affordances.
-  addBox(beamMat, [0, 3.6, -26.85], [7.1, 7.2, .18]);
-  for (let x = -3.3; x <= 3.4; x += .3) addBox(ceilingMat, [x, 3.55, -26.72], [.2, 7.1, .09]);
-  addBox(beamMat, [0, 7.25, -26.55], [7.7, .32, .48]);
+  // A distant solid archive door gives the long central perspective an endpoint.
+  addBox(vaultMat, [0, 7.5, -165.78], [13, 15, .24]);
+  for (const x of [-6.8, 6.8]) addBox(beamMat, [x, 8, -165.55], [.6, 16, .55]);
+  addBox(beamMat, [0, 15.8, -165.55], [14.2, .6, .55]);
+  for (let x = -5.8; x <= 5.8; x += .65) addBox(ceilingMat, [x, 7.45, -165.6], [.12, 14.9, .14]);
+  for (const z of [13.75, -165.4]) {
+    addBox(windowMat, [0, 19.7, z], [15, .7, .06]);
+    for (const x of [-6, -3, 0, 3, 6]) addBox(beamMat, [x, 19.7, z + (z > 0 ? -.05 : .05)], [.1, 1, .12]);
+  }
 
-  // Gameplay owns every storage crate and its collider. Keeping only structural
-  // obstacles here means removing a crate also clears its former standing space.
+  // Gameplay retains the original wood collection and owns its colliders.
   const storageCrates = createStorageCrateSpecs();
-
-  const lampPositions = [[0, 7.38, -2], [0, 7.38, -11], [0, 7.38, -20]];
-  for (const [x, y, z] of lampPositions) {
-    addBox(beamMat, [x, 8.2, z], [.035, 1.6, .035]);
-    addBox(beamMat, [x, y + .1, z], [1.25, .18, .65]);
-    addBox(lampMat, [x, y, z], [1.08, .045, .5]);
-    const spot = new THREE.SpotLight('#ffd3a0', 430, 17, .73, .8, 2);
-    spot.position.set(x, y - .1, z);
-    spot.target.position.set(x, 0, z - .7);
+  const atmosphereLights = [];
+  const addAtmosphereLight = (source, target, startRadius, endRadius, color, density) => {
+    atmosphereLights.push({ source: new THREE.Vector3(...source), target: new THREE.Vector3(...target), startRadius, endRadius, color, density });
+  };
+  function pendant(x, z, lit = false) {
+    const y = 10.4;
+    addBox(beamMat, [x, 19, z], [.035, 17.2, .035]);
+    addBox(beamMat, [x, y + .15, z], [1.6, .3, .78]);
+    addBox(lit ? lampMat : farLampMat, [x, y, z], [1.32, .055, .58]);
+    // Only the nearby working collection pays for physical spotlights.
+    if (!lit) return;
+    const spot = new THREE.SpotLight('#ffd09a', 1050, 29, .68, .84, 2);
+    spot.position.set(x, y - .13, z);
+    spot.target.position.set(x, .2, z - 1.4);
     root.add(spot, spot.target);
+    addAtmosphereLight([x, y - .13, z], [x, .2, z - 1.4], .3, 2.8, '#f2bd83', .036);
   }
-  const ambient = new THREE.HemisphereLight('#b7cbd7', '#554c3e', 1.35);
-  const cold = new THREE.DirectionalLight('#a8ccdd', 1.6);
-  cold.position.set(9, 8, -3);
-  const warm = new THREE.DirectionalLight('#ffe0b4', 1.15);
-  warm.position.set(-5, 7, 5);
-  warm.target.position.set(0, 0, -7);
+  for (const z of [-2, -13, -26]) pendant(0, z, true);
+  for (let z = -38; z >= -158; z -= 12) {
+    for (const x of [-24, 0, 24]) pendant(x, z);
+  }
+  for (const x of [-24, 24]) {
+    for (const z of [-14, -50, -86, -122]) {
+      addBox(windowMat, [x, 27.78, z], [2.4, .045, 8]);
+      for (const offset of [-4, -2, 0, 2, 4]) addBox(beamMat, [x, 27.71, z + offset], [2.6, .12, .12]);
+      addAtmosphereLight([x, 27.72, z], [x * .64, .2, z + 7], 1.15, 4, '#8fbdcc', .028);
+    }
+  }
+  for (const z of [-43, -79, -115, -151]) {
+    addBox(windowMat, [0, 27.78, z], [3, .045, 10]);
+    for (const offset of [-5, -2.5, 0, 2.5, 5]) addBox(beamMat, [0, 27.71, z + offset], [3.2, .12, .12]);
+    addAtmosphereLight([0, 27.72, z], [4, .2, z + 8], 1.3, 3.8, '#abc4c9', .024);
+  }
+
+  const ambient = new THREE.HemisphereLight('#a6c5cb', '#5a4630', .52);
+  const cold = new THREE.DirectionalLight('#a1cad8', 1.05);
+  cold.position.set(28, 27, -35);
+  cold.target.position.set(-5, 0, -15);
+  const warm = new THREE.DirectionalLight('#ffcc88', 1.85);
+  warm.position.set(-9, 18, 9);
+  warm.target.position.set(0, 0, -10);
   warm.castShadow = true;
   warm.shadow.mapSize.set(1024, 1024);
-  Object.assign(warm.shadow.camera, { left: -8, right: 8, top: 14, bottom: -10, near: .5, far: 45 });
+  // Keep the only shadow map concentrated on the reachable first collection.
+  Object.assign(warm.shadow.camera, { left: -17, right: 17, top: 22, bottom: -14, near: .5, far: 65 });
   warm.shadow.normalBias = .055;
   warm.shadow.bias = -.00015;
-  root.add(ambient, cold, warm, warm.target);
+  root.add(ambient, cold, cold.target, warm, warm.target);
 
   for (const [material, instances] of batches) {
     const batch = new THREE.InstancedMesh(box, material, instances.length);
     batch.name = `Warehouse instances / ${material.name || material.type}`;
-    batch.castShadow = ![floorMat, lampMat, windowMat, seamMat].includes(material);
-    batch.receiveShadow = ![lampMat, windowMat].includes(material);
+    batch.castShadow = ![floorMat, lampMat, farLampMat, windowMat, seamMat].includes(material);
+    batch.receiveShadow = ![lampMat, farLampMat, windowMat].includes(material);
     for (let index = 0; index < instances.length; index++) {
       const value = instances[index];
       dummy.position.set(...value.position); dummy.rotation.set(...value.rotation); dummy.scale.set(...value.scale); dummy.updateMatrix();
@@ -206,7 +265,7 @@ export function createWarehouse({ scene, renderer, materials }) {
 
   // Subtle real planar reflection over the lit concrete base. No refraction,
   // full-screen postprocessing, or additional shadow pass is required.
-  const reflectorGeometry = new THREE.PlaneGeometry(23.98, 33.98);
+  const reflectorGeometry = new THREE.PlaneGeometry(95.98, 179.98);
   geometries.add(reflectorGeometry);
   const reflection = new Reflector(reflectorGeometry, {
     textureWidth: 256, textureHeight: 256, clipBias: .003, multisample: 0,
@@ -214,7 +273,7 @@ export function createWarehouse({ scene, renderer, materials }) {
   });
   reflection.name = 'Warehouse planar floor reflection';
   reflection.rotation.x = -Math.PI / 2;
-  reflection.position.set(0, -.018, -10);
+  reflection.position.set(0, -.018, centerZ);
   reflection.material.uniforms.roughnessMap.value = materials.concrete.roughnessMap;
   reflection.material.uniforms.normalMap.value = materials.concrete.normalMap;
   reflection.material.transparent = true;
@@ -226,7 +285,7 @@ export function createWarehouse({ scene, renderer, materials }) {
   // A tiny local environment map gives metal artifacts readable light bands.
   // It is generated from warehouse-colored practicals, not an external HDRI.
   const environmentScene = new THREE.Scene();
-  environmentScene.background = new THREE.Color('#78878a');
+  environmentScene.background = new THREE.Color('#617371');
   const environmentGeometry = new THREE.BoxGeometry(1, 1, 1);
   const environmentMaterials = [];
   for (const [position, scale, color, intensity] of [
@@ -242,12 +301,12 @@ export function createWarehouse({ scene, renderer, materials }) {
   const generator = new THREE.PMREMGenerator(renderer);
   const environment = generator.fromScene(environmentScene, .07, .1, 40);
   scene.environment = environment.texture;
-  scene.environmentIntensity = .55;
+  scene.environmentIntensity = .30;
   generator.dispose(); environmentGeometry.dispose(); environmentMaterials.forEach((material) => material.dispose());
 
-  const stats = { staticCrates: 0, storageCrates: storageCrates.length, instancedBatches: batches.size, staticInstances: [...batches.values()].reduce((sum, values) => sum + values.length, 0), reflectionResolution: 256, obstacleCount: obstacles.length };
+  const stats = { dimensions: { ...ARCHIVE_DIMENSIONS }, volumeCubicMeters: width * depth * height, atmosphereLights: atmosphereLights.length, realSpotlights: 3, shadowMaps: 1, staticCrates: 0, storageCrates: storageCrates.length, instancedBatches: batches.size, staticInstances: [...batches.values()].reduce((sum, values) => sum + values.length, 0), reflectionResolution: 256, obstacleCount: obstacles.length };
   return {
-    root, bounds, obstacles, storageCrates, stats,
+    root, bounds, obstacles, storageCrates, atmosphereLights, stats,
     update() {},
     dispose() {
       root.removeFromParent();

@@ -24,6 +24,6 @@ d=await diag();assert.equal(d.state.locomotion.teleportCount,1);assert(Math.hypo
 assert.equal(d.state.openedCrates,0,'Navigation did not accidentally break a crate');
 await page.screenshot({path:'output/warehouse/navigation.png'});
 await page.keyboard.press('KeyR');assert.equal((await diag()).state.closedCrates,176);
-assert.deepEqual(errors,[]);const result={passed:true,checks:['No visible text','176 interactive crates and no scenery crates','WASD aisle movement','snap turns around head','mouse look','floor teleport','no accidental crate breaks','reset'],state:d.state.locomotion,errors};
+assert.deepEqual(errors,[]);const result={passed:true,checks:['No visible text','176 interactive wooden crates','WASD aisle movement','snap turns around head','mouse look','floor teleport','no accidental crate breaks','reset'],state:d.state.locomotion,errors};
 await writeFile('output/warehouse/navigation-results.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));
 }finally{await browser.close();}
