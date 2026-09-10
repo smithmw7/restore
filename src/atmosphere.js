@@ -61,7 +61,7 @@ const shaftFragment = `
       float along = clamp(height / uLength, 0.0, 1.0);
       float radius = mix(uStartRadius, uEndRadius, along);
       float radial = length(p - uAxis * height) / max(radius, .01);
-      float feather = 1.0 - smoothstep(.42, 1.0, radial);
+      float feather = 1.0 - smoothstep(.52, 1.0, radial);
       float caps = smoothstep(0.0, .035, along) * (1.0 - smoothstep(.83, 1.0, along));
       vec3 worldPoint = p + uSource;
       float eddies = .89 + .11 * sin(worldPoint.x * .49 + uTime * .045)
@@ -71,7 +71,7 @@ const shaftFragment = `
     float distanceFade = 1.0 - smoothstep(48.0, 92.0, nearT);
     float alpha = (1.0 - exp(-uDensity * opticalDepth)) * distanceFade;
     if (alpha < .001) discard;
-    gl_FragColor = vec4(uColor, min(alpha, .30));
+    gl_FragColor = vec4(uColor, min(alpha, .32));
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
@@ -106,10 +106,10 @@ const mistFragment = `
         * sin(worldPoint.z * .33 - uTime * .021);
       opticalDepth += edge * eddies * stepLength;
     }
-    float alpha = (1.0 - exp(-opticalDepth * .03))
+    float alpha = (1.0 - exp(-opticalDepth * .019))
       * (1.0 - smoothstep(34.0, 66.0, nearT));
     if (alpha < .001) discard;
-    gl_FragColor = vec4(uColor, min(alpha, .105));
+    gl_FragColor = vec4(uColor, min(alpha, .065));
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
   }
@@ -122,6 +122,11 @@ const dustVertex = `
   uniform vec3 uViewer;
   uniform float uPixelScale;
   uniform vec4 uBounds;
+  uniform int uBeamCount;
+  uniform vec3 uBeamSource[15];
+  uniform vec3 uBeamAxis[15];
+  uniform vec3 uBeamShape[15];
+  uniform float uBeamWarmth[15];
   varying float vOpacity;
   varying float vWarmth;
   void main() {
@@ -138,8 +143,24 @@ const dustVertex = `
     float farFade = 1.0 - smoothstep(12.0, 22.0, distanceToEye);
     float inside = step(uBounds.x + .2, p.x) * step(p.x, uBounds.y - .2)
       * step(uBounds.z + .2, p.z) * step(p.z, uBounds.w - .2);
-    vOpacity = (.13 + .19 * aSize) * nearFade * farFade * inside;
-    vWarmth = exp(-abs(p.x) * .22) * (1.0 - smoothstep(28.0, 45.0, -p.z));
+    // Evaluate only per mote, not per pixel. Actual light frusta reveal dust;
+    // the dim baseline keeps particles from looking self-lit in the shadows.
+    float beamLight = 0.0;
+    float warmLight = 0.0;
+    for (int i = 0; i < 15; i++) {
+      if (i >= uBeamCount) break;
+      vec3 offset = p - uBeamSource[i];
+      float height = dot(offset, uBeamAxis[i]);
+      float along = height / max(uBeamShape[i].x, .01);
+      float radius = mix(uBeamShape[i].y, uBeamShape[i].z, clamp(along, 0.0, 1.0));
+      vec3 radial = offset - uBeamAxis[i] * height;
+      float lit = (1.0 - smoothstep(.18, 1.0, dot(radial, radial) / max(radius * radius, .01)))
+        * step(0.0, along) * step(along, 1.0);
+      beamLight = max(beamLight, lit);
+      warmLight = max(warmLight, lit * uBeamWarmth[i]);
+    }
+    vOpacity = (.025 + .035 * aSize + .24 * beamLight) * nearFade * farFade * inside;
+    vWarmth = warmLight;
     gl_Position = projectionMatrix * mvPosition;
     gl_PointSize = clamp(aSize * .017 * uPixelScale / max(.5, -mvPosition.z), 1.0, 3.2);
   }
@@ -210,7 +231,7 @@ export function createArchiveAtmosphere({ scene, renderer, bounds, lights = [] }
     mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), axis);
     if (light.moving) {
       mesh.scale.y = length;
-      movingShafts.push({ light, mesh, source, target, axis });
+      movingShafts.push({ light, mesh, source, target, axis, restLength: length, startRadius, endRadius });
     }
     mesh.renderOrder = 3;
     mesh.userData.atmosphere = 'shaft';
@@ -242,7 +263,7 @@ export function createArchiveAtmosphere({ scene, renderer, bounds, lights = [] }
     const material = volumeMaterial(mistFragment);
     material.uniforms = {
       uCenter: { value: center }, uRadii: { value: radii },
-      uColor: { value: new THREE.Color('#827f71') }, uTime: timeUniform,
+      uColor: { value: new THREE.Color('#6c6b61') }, uTime: timeUniform,
     };
     const mesh = new THREE.Mesh(sphere, material);
     mesh.name = `Low archive mist ${i + 1}`;
@@ -270,11 +291,25 @@ export function createArchiveAtmosphere({ scene, renderer, bounds, lights = [] }
   dustGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   dustGeometry.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
   dustGeometry.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
+  const dustBeamSources = [], dustBeamAxes = [], dustBeamShapes = [], dustBeamWarmth = [];
+  for (let index = 0; index < 15; index++) {
+    const mesh = shafts[index], uniforms = mesh?.material.uniforms;
+    dustBeamSources.push(uniforms?.uSource.value || new THREE.Vector3());
+    dustBeamAxes.push(uniforms?.uAxis.value || new THREE.Vector3(0, -1, 0));
+    const shape = new THREE.Vector3(uniforms?.uLength.value || 1, uniforms?.uStartRadius.value || 0, uniforms?.uEndRadius.value || 0);
+    dustBeamShapes.push(shape);
+    const moving = movingShafts.find(shaft => shaft.mesh === mesh);
+    if (moving) moving.dustShape = shape;
+    dustBeamWarmth.push(moving ? 1 : .15);
+  }
   const dustMaterial = new THREE.ShaderMaterial({
     vertexShader: dustVertex, fragmentShader: dustFragment,
     uniforms: {
       uTime: timeUniform, uViewer: viewerUniform, uPixelScale: { value: 800 },
       uBounds: { value: new THREE.Vector4(bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ) },
+      uBeamCount: { value: Math.min(15, shafts.length) },
+      uBeamSource: { value: dustBeamSources }, uBeamAxis: { value: dustBeamAxes },
+      uBeamShape: { value: dustBeamShapes }, uBeamWarmth: { value: dustBeamWarmth },
     },
     transparent: true, depthTest: true, depthWrite: false, fog: false,
   });
@@ -300,7 +335,7 @@ export function createArchiveAtmosphere({ scene, renderer, bounds, lights = [] }
     update(dt, time, viewerPosition) {
       timeUniform.value = Number.isFinite(time) ? time : timeUniform.value + Math.min(dt, .1);
       if (viewerPosition) viewerUniform.value.copy(viewerPosition);
-      for (const { light, mesh, source, target, axis } of movingShafts) {
+      for (const { light, mesh, source, target, axis, restLength, startRadius, endRadius, dustShape } of movingShafts) {
         source.copy(light.source);
         target.copy(light.target);
         axis.subVectors(target, source);
@@ -309,9 +344,13 @@ export function createArchiveAtmosphere({ scene, renderer, bounds, lights = [] }
         if (!mesh.visible) continue;
         axis.divideScalar(length);
         mesh.material.uniforms.uLength.value = length;
+        const spread = length / restLength;
+        mesh.material.uniforms.uStartRadius.value = startRadius * spread;
+        mesh.material.uniforms.uEndRadius.value = endRadius * spread;
         mesh.position.copy(source).add(target).multiplyScalar(.5);
         mesh.quaternion.setFromUnitVectors(_down, axis);
-        mesh.scale.y = length;
+        mesh.scale.set(spread, length, spread);
+        dustShape?.set(length, startRadius * spread, endRadius * spread);
       }
     },
     dispose() {

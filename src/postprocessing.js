@@ -27,7 +27,7 @@ function fullscreenMaterial(name, fragmentShader, uniforms) {
 // Keep the scene linear until the last pass. Each XR eye is processed separately
 // so blur samples can never cross into the other eye's image. Reusing the buffers
 // also keeps their memory cost independent of the number of views.
-export function createRestorePostprocessing(renderer) {
+export function createRestorePostprocessing(renderer, { ambientOcclusion = true } = {}) {
   const hdr = renderer.extensions.has('EXT_color_buffer_float');
   const type = hdr ? THREE.HalfFloatType : THREE.UnsignedByteType;
   const targetOptions = { type, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false };
@@ -76,14 +76,73 @@ export function createRestorePostprocessing(renderer) {
   const composite = fullscreenMaterial('Restore / bloom and warm film finish', `
     uniform sampler2D tScene;
     uniform sampler2D tBloom;
-    uniform sampler2D tDepth;
+    uniform highp sampler2D tDepth;
     uniform float bloomStrength;
     uniform float vignette;
+    uniform float aoEnabled;
+    uniform vec2 depthTexel;
+    uniform mat4 inverseProjection;
+    uniform vec2 projectionScale;
+    uniform vec2 emissiveProtection;
     #include <tonemapping_pars_fragment>
     #include <colorspace_pars_fragment>
+    vec3 viewPosition(vec2 uv, float depth) {
+      vec4 p = inverseProjection * vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+      return p.xyz / p.w;
+    }
+    vec3 depthPosition(vec2 uv) {
+      return viewPosition(uv, texture(tDepth, uv).r);
+    }
+    float contactVisibility(float depth, float luminance) {
+      if (aoEnabled < .5 || depth >= .999999) return 1.0;
+      vec3 center = viewPosition(vUv, depth);
+      float fade = 1.0 - smoothstep(8.0, 18.0, -center.z);
+      if (fade <= 0.0) return 1.0;
+      // Choose the continuous side of each derivative at silhouettes. A depth
+      // jump across an object's edge must not become an invented tilted normal.
+      vec3 left = center - depthPosition(vUv - vec2(depthTexel.x, 0.0));
+      vec3 right = depthPosition(vUv + vec2(depthTexel.x, 0.0)) - center;
+      vec3 down = center - depthPosition(vUv - vec2(0.0, depthTexel.y));
+      vec3 up = depthPosition(vUv + vec2(0.0, depthTexel.y)) - center;
+      vec3 dx = abs(left.z) < abs(right.z) ? left : right;
+      vec3 dy = abs(down.z) < abs(up.z) ? down : up;
+      vec3 crossNormal = cross(dx, dy);
+      if (dot(crossNormal, crossNormal) < 1.e-14 || max(length(dx), length(dy)) > .11) return 1.0;
+      vec3 normal = normalize(crossNormal);
+      if (dot(normal, -center) < 0.0) normal = -normal;
+      const float radius = .22;
+      // Eight fixed directions avoid temporal grain in the headset. The radius
+      // is local in metres and capped in pixels, so close silhouettes stay tight.
+      vec2 screenRadius = min(projectionScale * radius / max(.05, -center.z), depthTexel * 32.0);
+      const vec2 offsets[8] = vec2[8](
+        vec2(.42, 0.0), vec2(-.42, 0.0), vec2(0.0, .42), vec2(0.0, -.42),
+        vec2(.7071, .7071), vec2(-.7071, .7071), vec2(.7071, -.7071), vec2(-.7071, -.7071)
+      );
+      float occlusion = 0.0;
+      for (int i = 0; i < 8; i++) {
+        vec2 uv = vUv + screenRadius * offsets[i];
+        if (any(lessThan(uv, depthTexel)) || any(greaterThan(uv, vec2(1.0) - depthTexel))) continue;
+        float sampleDepth = texture(tDepth, uv).r;
+        if (sampleDepth >= .999999) continue;
+        vec3 delta = viewPosition(uv, sampleDepth) - center;
+        float distance = length(delta);
+        // Reject unrelated foreground/background layers, including a lifted
+        // artifact whose projected silhouette overlaps a much deeper floor.
+        float range = 1.0 - smoothstep(radius * .3, radius, distance);
+        float facing = max(0.0, dot(normal, delta) / max(.001, distance) - .075);
+        occlusion += facing * range;
+      }
+      float shade = min(.34, occlusion * .25) * fade;
+      shade *= 1.0 - smoothstep(emissiveProtection.x, emissiveProtection.y, luminance);
+      return 1.0 - shade;
+    }
     void main() {
       vec4 sceneColor = texture(tScene, vUv);
-      vec3 color = (sceneColor.rgb + texture(tBloom, vUv).rgb * bloomStrength) * vec3(1.018, 1.0, .965);
+      float depth = texture(tDepth, vUv).r;
+      float visibility = contactVisibility(depth, dot(sceneColor.rgb, vec3(.2126, .7152, .0722)));
+      // Bloom stays additive; contact shading cannot blacken lamp halos or the
+      // luminous completion sweep that is already in the highlight buffer.
+      vec3 color = (sceneColor.rgb * visibility + texture(tBloom, vUv).rgb * bloomStrength) * vec3(1.018, 1.0, .965);
       vec2 corner = (vUv - .5) * 1.41421356;
       color *= 1.0 - vignette * smoothstep(.2, 1.0, dot(corner, corner));
       #ifdef RESTORE_TONE_MAPPING
@@ -95,11 +154,14 @@ export function createRestorePostprocessing(renderer) {
       #endif
       // Preserve real scene depth for XR reprojection instead of supplying the
       // fullscreen triangle's depth to the headset compositor.
-      gl_FragDepth = texture(tDepth, vUv).r;
+      gl_FragDepth = depth;
     }
   `, {
     tScene: { value: sceneTarget.texture }, tBloom: { value: bloomA.texture }, tDepth: { value: sceneTarget.depthTexture },
     toneMappingExposure: { value: 1 }, bloomStrength: { value: .15 }, vignette: { value: .065 },
+    aoEnabled: { value: ambientOcclusion ? 1 : 0 }, depthTexel: { value: new THREE.Vector2(1, 1) },
+    inverseProjection: { value: new THREE.Matrix4() }, projectionScale: { value: new THREE.Vector2() },
+    emissiveProtection: { value: new THREE.Vector2(hdr ? .6 : .45, hdr ? 1.5 : .92) },
   });
   composite.depthTest = true;
   composite.depthWrite = true;
@@ -114,7 +176,9 @@ export function createRestorePostprocessing(renderer) {
   const screenCamera = new THREE.Camera();
   const eyeCameras = [];
   const size = new THREE.Vector2(), viewport = new THREE.Vector4(), scissor = new THREE.Vector4(), currentViewport = new THREE.Vector4();
-  const stats = { enabled: true, hdr, bloomStrength: .15, bloomScale: .25, eyeIsolated: true, preservesDepth: true, mode: 'desktop', views: 0, scenePasses: 0, postPasses: 0, resolution: [1, 1], bloomResolution: [1, 1] };
+  const stats = { enabled: true, hdr, bloomStrength: .15, bloomScale: .25, eyeIsolated: true, preservesDepth: true,
+    ambientOcclusion: { enabled: !!ambientOcclusion, radius: .22, samples: 8, normalSamples: 4, maximumShade: .34, extraPasses: 0 },
+    mode: 'desktop', views: 0, scenePasses: 0, postPasses: 0, resolution: [1, 1], bloomResolution: [1, 1] };
   let width = 1, height = 1, outputSignature = '';
 
   function resize(nextWidth, nextHeight) {
@@ -128,6 +192,7 @@ export function createRestorePostprocessing(renderer) {
     bloomA.setSize(Math.max(1, Math.ceil(width / 4)), Math.max(1, Math.ceil(height / 4)));
     bloomB.setSize(bloomA.width, bloomA.height);
     threshold.uniforms.texel.value.set(1 / width, 1 / height);
+    composite.uniforms.depthTexel.value.set(1 / width, 1 / height);
     stats.resolution = [width, height]; stats.bloomResolution = [bloomA.width, bloomA.height];
   }
 
@@ -183,6 +248,8 @@ export function createRestorePostprocessing(renderer) {
         renderer.shadowMap.autoUpdate = shadowAutoUpdate && index === 0;
         renderer.setRenderTarget(sceneTarget);
         renderer.render(scene, renderCamera);
+        composite.uniforms.inverseProjection.value.copy(renderCamera.projectionMatrixInverse);
+        composite.uniforms.projectionScale.value.set(renderCamera.projectionMatrix.elements[0] * .5, renderCamera.projectionMatrix.elements[5] * .5);
         drawPass(threshold, bloomA);
         blur.uniforms.tSource.value = bloomA.texture; blur.uniforms.stepSize.value.set(2 / bloomA.width, 0);
         drawPass(blur, bloomB);
@@ -213,7 +280,7 @@ export function createRestorePostprocessing(renderer) {
 
   return {
     render, resize, stats,
-    getState: () => ({ ...stats, resolution: [...stats.resolution], bloomResolution: [...stats.bloomResolution] }),
+    getState: () => ({ ...stats, ambientOcclusion: { ...stats.ambientOcclusion }, resolution: [...stats.resolution], bloomResolution: [...stats.bloomResolution] }),
     dispose() {
       sceneTarget.depthTexture.dispose(); sceneTarget.dispose(); bloomA.dispose(); bloomB.dispose();
       threshold.dispose(); blur.dispose(); composite.dispose(); geometry.dispose(); stats.enabled = false;

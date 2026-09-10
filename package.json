@@ -1,6 +1,6 @@
 {
   "name": "restore",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "private": true,
   "type": "module",
   "scripts": {
@@ -42,7 +42,8 @@
     "audio:prepare-actions": "python3 scripts/prepare-action-audio.py",
     "test:completion": "node scripts/completion-check.mjs",
     "test:completion-browser": "node scripts/completion-browser.mjs",
-    "test:completion-audio": "node scripts/completion-audio-check.mjs"
+    "test:completion-audio": "node scripts/completion-audio-check.mjs",
+    "test:ambient-occlusion": "node scripts/ambient-occlusion-browser.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

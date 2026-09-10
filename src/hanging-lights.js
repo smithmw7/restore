@@ -130,12 +130,19 @@ export function createHangingLights({ parent, fixtures = [], housingMaterial, di
       active: false, quietTime: 0, elapsed: 0, spot: null, atmosphere: null,
     };
     if (lit) {
-      unit.spot = new THREE.SpotLight(fixture.color || '#ffbd7d', fixture.intensity ?? 780, 29, .68, .84, 2);
+      unit.spot = new THREE.SpotLight(fixture.color || '#ffbd7d', fixture.intensity ?? 780, 29, .49, .66, 2);
       unit.spot.name = `${id} / warm pool`;
+      unit.spot.castShadow = fixture.castShadow === true;
+      if (unit.spot.castShadow) {
+        unit.spot.shadow.mapSize.set(1024, 1024);
+        unit.spot.shadow.normalBias = .02;
+        unit.spot.shadow.bias = -.0001;
+        Object.assign(unit.spot.shadow.camera, { near: .15, far: 29 });
+      }
       root.add(unit.spot, unit.spot.target);
       unit.atmosphere = {
-        source: new THREE.Vector3(), target: new THREE.Vector3(), startRadius: .3, endRadius: 2.8,
-        color: fixture.shaftColor || '#eab67e', density: fixture.density ?? .034, moving: true,
+        source: new THREE.Vector3(), target: new THREE.Vector3(), startRadius: .22, endRadius: 2.45,
+        color: fixture.shaftColor || '#eab67e', density: fixture.density ?? .046, moving: true,
       };
       atmosphereLights.push(unit.atmosphere);
     }
@@ -287,6 +294,7 @@ export function createHangingLights({ parent, fixtures = [], housingMaterial, di
     reset();
     disposed = true;
     root.removeFromParent();
+    units.forEach((unit) => unit.spot?.shadow.dispose());
     batches.forEach((batch) => batch.dispose());
     geometries.forEach((geometry) => geometry.dispose());
     ownedMaterials.forEach((material) => material.dispose());

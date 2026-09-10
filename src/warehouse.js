@@ -57,15 +57,19 @@ const floorShader = {
       float grain = texture2D(roughnessMap, vFloorUv).g;
       vec2 grainNormal = texture2D(normalMap, vFloorUv).xy * 2.0 - 1.0;
       vec2 projected = vReflection.xy / vReflection.w;
-      projected += grainNormal * .004;
-      // A small cross filter softens the image without a second blur pass.
-      float blur = mix(.002, .0045, grain);
-      vec3 reflection = texture2D(tDiffuse, projected).rgb * .5;
-      reflection += texture2D(tDiffuse, projected + vec2(blur, 0.0)).rgb * .125;
-      reflection += texture2D(tDiffuse, projected - vec2(blur, 0.0)).rgb * .125;
-      reflection += texture2D(tDiffuse, projected + vec2(0.0, blur)).rgb * .125;
-      reflection += texture2D(tDiffuse, projected - vec2(0.0, blur)).rgb * .125;
-      float opacity = (.18 + .3 * pow(vGrazing, 2.0)) * (1.0 - grain * .28);
+      projected += grainNormal * .008;
+      // Broad, faint reflected light on dry aggregate, with no extra blur pass.
+      float blur = mix(.009, .021, grain);
+      vec3 reflection = texture2D(tDiffuse, projected).rgb * .2;
+      reflection += texture2D(tDiffuse, projected + vec2(blur, 0.0)).rgb * .12;
+      reflection += texture2D(tDiffuse, projected - vec2(blur, 0.0)).rgb * .12;
+      reflection += texture2D(tDiffuse, projected + vec2(0.0, blur)).rgb * .12;
+      reflection += texture2D(tDiffuse, projected - vec2(0.0, blur)).rgb * .12;
+      reflection += texture2D(tDiffuse, projected + vec2(blur, blur)).rgb * .08;
+      reflection += texture2D(tDiffuse, projected + vec2(-blur, blur)).rgb * .08;
+      reflection += texture2D(tDiffuse, projected + vec2(blur, -blur)).rgb * .08;
+      reflection += texture2D(tDiffuse, projected - vec2(blur, blur)).rgb * .08;
+      float opacity = (.025 + .075 * pow(vGrazing, 3.0)) * mix(.85, .4, grain);
       gl_FragColor = vec4(reflection * color, opacity);
       #include <tonemapping_fragment>
       #include <colorspace_fragment>
@@ -77,8 +81,8 @@ export function createWarehouse({ scene, renderer, materials, onEvent }) {
   const root = new THREE.Group();
   root.name = 'The grand archive';
   scene.add(root);
-  scene.background = new THREE.Color('#2b2c29');
-  scene.fog = new THREE.FogExp2('#2b2c29', .0118);
+  scene.background = new THREE.Color('#1c1e1b');
+  scene.fog = new THREE.FogExp2('#1c1e1b', .0135);
   const bounds = { ...WAREHOUSE_BOUNDS };
   const obstacles = [];
   const ownedMaterials = new Set();
@@ -109,9 +113,41 @@ export function createWarehouse({ scene, renderer, materials, onEvent }) {
   };
   const wallMat = copyMat(materials.concrete, '#514f45', [16, 7]);
   wallMat.normalScale.setScalar(.28);
-  const floorMat = copyMat(materials.concrete, '#7b8476', [48, 90]);
+  const floorMat = copyMat(materials.concrete, '#79776d', [48, 90]);
   floorMat.roughness = 1;
-  floorMat.normalScale.setScalar(.65);
+  floorMat.metalness = 0;
+  floorMat.envMapIntensity = .38;
+  floorMat.normalScale.setScalar(.92);
+  floorMat.onBeforeCompile = shader => {
+    shader.vertexShader = `varying vec2 vConcreteWorld;\n${shader.vertexShader}`.replace('#include <begin_vertex>', `
+      #include <begin_vertex>
+      vec4 concretePosition = vec4(transformed, 1.0);
+      #ifdef USE_INSTANCING
+        concretePosition = instanceMatrix * concretePosition;
+      #endif
+      vConcreteWorld = (modelMatrix * concretePosition).xz;
+    `);
+    shader.fragmentShader = `
+      varying vec2 vConcreteWorld;
+      float concreteHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float concreteNoise(vec2 p) {
+        vec2 cell = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(concreteHash(cell), concreteHash(cell + vec2(1., 0.)), f.x),
+          mix(concreteHash(cell + vec2(0., 1.)), concreteHash(cell + vec2(1., 1.)), f.x), f.y);
+      }
+    ${shader.fragmentShader}`
+      .replace('#include <map_fragment>', `
+        #include <map_fragment>
+        // Slow mottling breaks up repeated pours without repainting source maps.
+        float wear = concreteNoise(vConcreteWorld * .43) * .7 + concreteNoise(vConcreteWorld * 1.37) * .3;
+        diffuseColor.rgb *= mix(.74, 1.035, wear);
+      `)
+      .replace('#include <roughnessmap_fragment>', `
+        #include <roughnessmap_fragment>
+        roughnessFactor = mix(.90, .99, clamp(roughnessFactor, 0.0, 1.0));
+      `);
+  };
+  floorMat.customProgramCacheKey = () => 'restore-dry-concrete-v1';
   const beamMat = copyMat(materials.metal, '#514f45');
   beamMat.roughness = .72;
   const ceilingMat = localMat({ color: '#25312f', roughness: .94, metalness: .22 });
@@ -206,7 +242,7 @@ export function createWarehouse({ scene, renderer, materials, onEvent }) {
   const fixtures = [];
   const pendant = (x, z, lit = false) => fixtures.push({
     id: `hanging-light-${String(fixtures.length + 1).padStart(2, '0')}`,
-    x, z, y: 10.4, anchorY: 27.6, lit,
+    x, z, y: 10.4, anchorY: 27.6, lit, castShadow: lit && z === -2,
   });
   for (const z of [-2, -13, -26]) pendant(0, z, true);
   for (let z = -38; z >= -158; z -= 12) {
@@ -221,28 +257,24 @@ export function createWarehouse({ scene, renderer, materials, onEvent }) {
     for (const z of [-14, -50, -86, -122]) {
       addBox(windowMat, [x, 27.78, z], [2.4, .045, 8]);
       for (const offset of [-4, -2, 0, 2, 4]) addBox(beamMat, [x, 27.71, z + offset], [2.6, .12, .12]);
-      addAtmosphereLight([x, 27.72, z], [x * .64, .2, z + 7], 1.15, 4, '#b6baa5', .025);
+      addAtmosphereLight([x, 27.72, z], [x * .64, .2, z + 7], .95, 2.75, '#b6baa5', .043);
     }
   }
   for (const z of [-43, -79, -115, -151]) {
     addBox(windowMat, [0, 27.78, z], [3, .045, 10]);
     for (const offset of [-5, -2.5, 0, 2.5, 5]) addBox(beamMat, [0, 27.71, z + offset], [3.2, .12, .12]);
-    addAtmosphereLight([0, 27.72, z], [4, .2, z + 8], 1.3, 3.8, '#bdb9a3', .022);
+    addAtmosphereLight([0, 27.72, z], [4, .2, z + 8], 1.05, 2.65, '#bdb9a3', .041);
   }
 
-  const ambient = new THREE.HemisphereLight('#c2bba7', '#594331', .4);
-  const cold = new THREE.DirectionalLight('#b9c2b5', .68);
+  const ambient = new THREE.HemisphereLight('#c2bba7', '#594331', .16);
+  const cold = new THREE.DirectionalLight('#b9c2b5', .18);
   cold.position.set(28, 27, -35);
   cold.target.position.set(-5, 0, -15);
-  const warm = new THREE.DirectionalLight('#ffc184', 1.5);
+  const warm = new THREE.DirectionalLight('#ffc184', .48);
   warm.position.set(-9, 18, 9);
   warm.target.position.set(0, 0, -10);
-  warm.castShadow = true;
-  warm.shadow.mapSize.set(1024, 1024);
-  // Keep the only shadow map concentrated on the reachable first collection.
-  Object.assign(warm.shadow.camera, { left: -17, right: 17, top: 22, bottom: -14, near: .5, far: 65 });
-  warm.shadow.normalBias = .055;
-  warm.shadow.bias = -.00015;
+  // The first practical pendant owns the one shadow map. Global fill stays low
+  // and does not cast an unrelated directional shadow across its light pool.
   root.add(ambient, cold, cold.target, warm, warm.target);
 
   for (const [material, instances] of batches) {
@@ -299,7 +331,7 @@ export function createWarehouse({ scene, renderer, materials, onEvent }) {
   const generator = new THREE.PMREMGenerator(renderer);
   const environment = generator.fromScene(environmentScene, .07, .1, 40);
   scene.environment = environment.texture;
-  scene.environmentIntensity = .26;
+  scene.environmentIntensity = .12;
   generator.dispose(); environmentGeometry.dispose(); environmentMaterials.forEach((material) => material.dispose());
 
   const stats = { dimensions: { ...ARCHIVE_DIMENSIONS }, volumeCubicMeters: width * depth * height, atmosphereLights: atmosphereLights.length, hangingLights: fixtures.length, realSpotlights: 3, shadowMaps: 1, staticCrates: 0, storageCrates: storageCrates.length, instancedBatches: batches.size, staticInstances: [...batches.values()].reduce((sum, values) => sum + values.length, 0), reflectionResolution: 256, obstacleCount: obstacles.length };
