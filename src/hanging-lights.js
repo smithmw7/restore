@@ -27,8 +27,11 @@ export function createHangingLights({ parent, fixtures = [], housingMaterial, di
   const farDiffuser = fallback(farDiffuserMaterial, { color: '#a68760', toneMapped: false }, true);
   const housingGeometry = new THREE.BoxGeometry(1.6, .3, .78);
   const diffuserGeometry = new THREE.BoxGeometry(1.32, .055, .58);
+  // Include the illuminated underside in the canonical selection target. At a
+  // shallow distant angle, a ray aimed at the glow can miss the housing above it.
+  const pickGeometry = new THREE.BoxGeometry(1.6, .356, .78).translate(0, -.028, 0);
   const wireGeometry = new THREE.CylinderGeometry(.018, .018, 1, 6);
-  const geometries = [housingGeometry, diffuserGeometry, wireGeometry];
+  const geometries = [housingGeometry, diffuserGeometry, pickGeometry, wireGeometry];
   const pickMaterial = new THREE.MeshBasicMaterial({ visible: false });
   ownedMaterials.push(pickMaterial);
   const litCount = fixtures.filter((fixture) => fixture.lit).length;
@@ -114,12 +117,9 @@ export function createHangingLights({ parent, fixtures = [], housingMaterial, di
     const id = fixture.id || `hanging-light-${String(index + 1).padStart(2, '0')}`;
     // Raycast proxies stay visible to the input system, but their material
     // does not render. The whole archive's fixtures cost only four batches.
-    const mesh = new THREE.Mesh(housingGeometry, pickMaterial);
+    const mesh = new THREE.Mesh(pickGeometry, pickMaterial);
     mesh.name = id;
     mesh.userData = { kind: 'hanging-light', labObject: id, soundId: 'tablet' };
-    const emission = new THREE.Mesh(diffuserGeometry, pickMaterial);
-    emission.position.y = -.178;
-    mesh.add(emission);
     const wire = new THREE.Object3D();
     wire.name = `${id} / fixed wire`;
     root.add(mesh, wire);

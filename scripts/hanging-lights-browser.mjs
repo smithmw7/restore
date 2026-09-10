@@ -134,12 +134,53 @@ try {
   assert.equal(current.audio.loopActive, false);
   await look(-360);
   await page.screenshot({ path: `${out}/warm-archive.png` });
+  const distantPulls = [];
+  for (const farId of ['hanging-light-03', 'hanging-light-14']) {
+    const before = await read();
+    const farLight = before.state.hangingLights.lights.find(item => item.id === farId);
+    const farTarget = before.state.objects.find(item => item.id === farId);
+    const range = distance(farLight.position, before.input.camera.position);
+    assert.ok(range > (farId === 'hanging-light-14' ? 70 : 25), 'fixture must be well beyond both the breaking reach and old XR depth cap');
+    assert.ok(farTarget.screen.x > 20 && farTarget.screen.x < 1420 && farTarget.screen.y > 20 && farTarget.screen.y < 880);
+    await page.mouse.move(farTarget.screen.x, farTarget.screen.y);
+    await page.mouse.down();
+    await page.waitForFunction(id => window.__restoreDiagnostics().state.grab.objectId === id, farId, { timeout: 4000 });
+    const pickup = await read();
+    const initialGoal = pickup.state.grab.goal;
+    // Keep the pointer still: sustained pulling must not inherit tap falloff.
+    await advance(7000);
+    const pulled = await read();
+    const movedLight = pulled.state.hangingLights.lights.find(item => item.id === farId);
+    const displacement = distance(movedLight.position, farLight.position);
+    const goalTravel = distance(pulled.state.grab.goal, initialGoal);
+    assert.equal(pulled.state.grab.objectId, farId);
+    assert.equal(movedLight.state, 'held');
+    assert.ok(displacement > 1 && goalTravel > 2, `distant hold was weakened by tap distance: ${displacement}, ${goalTravel}`);
+    assert.ok(Math.abs(distance(movedLight.position, movedLight.anchor) - movedLight.pendulumLength) < 1e-7);
+    assert.equal(pulled.state.closedCrates, 176);
+    assert.equal(pulled.audio.eventCounts.break || 0, before.audio.eventCounts.break || 0);
+    assert.equal(pulled.audio.eventCounts.pickup, (before.audio.eventCounts.pickup || 0) + 1);
+    await page.screenshot({ path: `${out}/distant-pull-${farId}.png` });
+    await page.mouse.up();
+    const released = await read();
+    assert.equal(released.state.grab.active, false);
+    assert.equal(released.audio.eventCounts.drop || 0, before.audio.eventCounts.drop || 0);
+    assert.equal(released.audio.loopActive, false);
+    await advance(700);
+    const swing = (await read()).state.hangingLights.lights.find(item => item.id === farId);
+    assert.equal(swing.state, 'swinging');
+    distantPulls.push({ id: farId, range, displacement, goalTravel });
+    await page.keyboard.press('KeyR');
+    await advance(1000);
+  }
+  current = await read();
+  checks.push('stationary pointer holds pull lamps over 25m and 70m away at full strength while their wires stay fixed');
   assert.deepEqual(errors, []);
   checks.push('reset during a real lamp drag clears ownership and audio, restores every light and all 176 crates');
   const result = { passed: true, checks, errors, tap: tapped.input.lastTap, tapSound, held, final: current.state.hangingLights,
-    postprocessing: current.state.postprocessing, samples };
+    postprocessing: current.state.postprocessing, distantPulls, samples };
   await writeFile(`${out}/browser-results.json`, JSON.stringify(result, null, 2));
-  console.log(JSON.stringify({ passed: true, checks, errors, samples: samples.length, postprocessing: current.state.postprocessing }, null, 2));
+  console.log(JSON.stringify({ passed: true, checks, errors, samples: samples.length, distantPulls, postprocessing: current.state.postprocessing }, null, 2));
 } catch (error) {
   await writeFile(`${out}/browser-failure.json`, JSON.stringify({ message: error.message, checks, errors,
     diagnostics: await page?.evaluate(() => window.__restoreDiagnostics?.()).catch(() => null), samples }, null, 2));

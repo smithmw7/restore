@@ -28,7 +28,7 @@ Distant held objects gradually reel toward you after a short pause, speeding up 
 
 Dragged crates, boards, artifacts and repair pieces remain solid physical objects. They stop against floors and obstacles, slide along surfaces, and gently push movable props according to their mass. A blocked hand target cannot build an artificial throw on release. Raised wooden braces have collision coverage too. A returning artifact only docks when its path and home are clear; an obstructed return drops naturally.
 
-Hanging lights use the same grab controls. Holding pulls a fixture toward you as far as its fixed wire allows; release lets it swing and settle. Tapping always gives a distance-sensitive push, even nearby. A lamp cannot break or detach, and releasing one does not play a heavy drop sound.
+Hanging lights use the same grab controls at any visible distance. The eight-foot break threshold and tap falloff do not weaken a sustained lamp pull. VR hand and thumbstick depth adjustments preserve a distant lamp's actual reach, and aiming at its glowing underside selects the fixture. Holding pulls it toward you as far as its fixed wire allows; release lets it swing and settle. Tapping always gives a distance-sensitive push, even nearby. A lamp cannot break or detach, and releasing one does not play a heavy drop sound.
 
 **Quest controllers**
 

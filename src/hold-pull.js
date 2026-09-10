@@ -4,6 +4,13 @@ export function createHoldPull(clearance = .9) {
   return { elapsed: 0, clearance: Math.max(.4, clearance) };
 }
 
+// Distant ceiling fixtures keep their actual ray depth. Their fixed wire limits
+// movement; the ordinary prop depth cap must not jump a lamp's goal to 9 metres.
+export function adjustHoldDistance(distance, delta, kind) {
+  if (!Number.isFinite(distance) || !Number.isFinite(delta) || !Number.isFinite(distance + delta)) return distance;
+  return Math.max(.2, Math.min(kind === 'hanging-light' ? Infinity : 9, distance + delta));
+}
+
 export function stepHoldPull(state, dt, { origin, direction, distance, viewer, manual = false }) {
   if (!state || !Number.isFinite(distance) || !Number.isFinite(dt) || dt <= 0) return distance;
   if (manual) { state.elapsed = 0; return distance; }

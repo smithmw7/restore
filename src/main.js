@@ -8,7 +8,7 @@ import { createMetalStorage } from './metal-storage.js';
 import { createArchiveAtmosphere } from './atmosphere.js';
 import { createWarehouseGameplay } from './warehouse-gameplay.js';
 import { createLocomotion } from './locomotion.js';
-import { createHoldPull, stepHoldPull } from './hold-pull.js';
+import { createHoldPull, stepHoldPull, adjustHoldDistance } from './hold-pull.js';
 import { dispatchTap } from './tap-influence.js';
 import { createSceneInteractions } from './scene-interactions.js';
 import { createRestorePostprocessing } from './postprocessing.js';
@@ -119,7 +119,7 @@ function holdPullFor(mesh,hitPoint){
 }
 function startGrab(input,hit,button='select'){
   if(!hit||!lab.beginGrab(hit.object,hit.point,input.id))return false;
-  clearHover();input.grabbing=true;input.grabButton=button;input.near=!!hit.near;input.grabDistance=Math.max(.15,hit.distance);
+  clearHover();input.grabbing=true;input.grabButton=button;input.grabKind=hit.object.userData.kind;input.near=!!hit.near;input.grabDistance=Math.max(.15,hit.distance);
   input.previousHandDepth=input.contactValid?input.contactPoint.distanceTo(viewerPosition):null;input.manualHandDepth=input.previousHandDepth;
   input.holdPull=holdPullFor(hit.object,hit.point);input.pending=null;lastInput=`${input.kind}-grab`;return true;
 }
@@ -191,11 +191,11 @@ function updateXRInputs(time,frame,dt){
         let manual=false;
         if(source.hand&&input.contactValid){
           const depth=input.contactPoint.distanceTo(viewerPosition);
-          if(input.previousHandDepth!==null)input.grabDistance=THREE.MathUtils.clamp(input.grabDistance+(depth-input.previousHandDepth)*3,.2,9);
+          if(input.previousHandDepth!==null)input.grabDistance=adjustHoldDistance(input.grabDistance,(depth-input.previousHandDepth)*3,input.grabKind);
           if(input.manualHandDepth===null||Math.abs(depth-input.manualHandDepth)>.015){manual=true;input.manualHandDepth=depth;}
           input.previousHandDepth=depth;
         }
-        const axes=source.gamepad?.axes,axis=axes?.length>=4?axes[3]:0;if(Math.abs(axis)>.18){input.grabDistance=THREE.MathUtils.clamp(input.grabDistance+axis*dt*2,.2,9);manual=true;}
+        const axes=source.gamepad?.axes,axis=axes?.length>=4?axes[3]:0;if(Math.abs(axis)>.18){input.grabDistance=adjustHoldDistance(input.grabDistance,axis*dt*2,input.grabKind);manual=true;}
         input.grabDistance=stepHoldPull(input.holdPull,dt,{origin:raycaster.ray.origin,direction:raycaster.ray.direction,distance:input.grabDistance,viewer:viewerPosition,manual});
         raycaster.ray.at(input.grabDistance,point);lab.moveGrab(point,input.id);
       }

@@ -63,6 +63,35 @@ check('hidden rendering proxies still select the visible fixture with a real ray
   lights.dispose();
 });
 
+check('30, 80 and 150 metre underside rays select and pull only the visible lamp', () => {
+  for (const distance of [30, 80, 150]) for (const underside of [-.178, -.2]) {
+    const { lights, parent, mesh } = create([
+      { id: 'target', x: 0, z: -2, lit: true },
+      { id: 'left-neighbour', x: -4, z: -2, lit: true },
+      { id: 'right-neighbour', x: 4, z: -2, lit: true },
+    ]);
+    const initial = lights.getState().lights;
+    parent.updateMatrixWorld(true);
+    const origin = new THREE.Vector3(0, 1.65, mesh.position.z + distance);
+    const visiblePoint = mesh.localToWorld(new THREE.Vector3(0, underside, 0));
+    const ray = new THREE.Raycaster(origin, visiblePoint.clone().sub(origin).normalize());
+    const hits = ray.intersectObjects(lights.targets, false);
+    assert.equal(hits.length, 1, `${distance}m underside ray selected an unrelated fixture`);
+    assert.equal(hits[0]?.object, mesh, `${distance}m underside ray missed its canonical lamp target`);
+    assert.ok(hits[0].distance > distance - 1, 'fixture was selected at an incorrect distance');
+    assert.equal(lights.beginGrab(hits[0].object, hits[0].point, 'remote'), true);
+    assert.equal(lights.moveGrab(hits[0].point.clone().addScaledVector(ray.ray.direction, -4), 'remote'), true);
+    advance(lights, 5, 72, (state) => {
+      assertConstraint(state.lights[0]);
+      assert.deepEqual(state.lights.slice(1), initial.slice(1), 'remote pull disturbed a neighbouring lamp');
+      assert.equal(lights.getGrabState().heldMesh, mesh);
+    });
+    assert.ok(mesh.position.distanceTo(vector(initial[0].position)) > 1, 'distant underside grab did not pull the lamp');
+    assert.equal(lights.endGrab('remote'), true);
+    lights.dispose();
+  }
+});
+
 check('a remote tap shakes only its own lamp and then returns to exact rest', () => {
   const { lights, mesh, events } = create([{ id: 'near', z: -2, lit: true }, { id: 'other', z: -13 }]);
   const original = lights.getState().lights;

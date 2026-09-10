@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createHoldPull, stepHoldPull } from '../src/hold-pull.js';
+import { adjustHoldDistance, createHoldPull, stepHoldPull } from '../src/hold-pull.js';
 
 const checks = [];
 const point = (x, y, z) => ({ x, y, z });
@@ -109,6 +109,60 @@ check('zero elapsed time and a long frame remain finite and respect the same sto
   assert.equal(stepHoldPull(state, 0, { ...standard, distance: 4 }), 4);
   const result = stepHoldPull(state, 60, { ...standard, distance: 4 });
   assert.ok(Number.isFinite(result) && result >= .9 && result <= 4, `long frame produced ${result}`);
+});
+
+check('distant lamps keep their actual depth through stationary hands and small hand or stick adjustments', () => {
+  for (const distance of [30, 80, 160]) {
+    assert.equal(adjustHoldDistance(distance, 0, 'hanging-light'), distance, 'a stationary hand collapsed lamp depth');
+    for (const delta of [.03 * 3, -.03 * 3, .75 * (1 / 72) * 2, -.75 * (1 / 72) * 2]) {
+      assert.ok(Math.abs(adjustHoldDistance(distance, delta, 'hanging-light') - distance - delta) < 1e-10,
+        'a manual lamp adjustment applied a different depth cap');
+    }
+  }
+});
+
+check('repeated far-lamp hand updates preserve gradual time-based pull without an initial range jump', () => {
+  for (const start of [30, 80]) {
+    const endings = [];
+    for (const fps of [30, 72, 120]) {
+      const pull = createHoldPull(1.2), dt = 1 / fps;
+      let distance = start;
+      for (let frame = 0; frame < fps * 8; frame++) {
+        const previous = distance;
+        distance = adjustHoldDistance(distance, 0, 'hanging-light');
+        distance = stepHoldPull(pull, dt, { ...standard, distance });
+        assert.ok(previous - distance >= -1e-10 && previous - distance <= .6 * dt + 1e-10,
+          'far lamp pull jumped instead of following the shared velocity ramp');
+        if (frame < Math.floor(.4 * fps)) assert.equal(distance, start, 'lamp moved during the pickup grace period');
+      }
+      assert.ok(distance < start - 2 && distance >= start - 4.8, 'far lamp did not gradually approach');
+      endings.push(distance);
+    }
+    assert.ok(Math.max(...endings) - Math.min(...endings) < .035, 'lamp distance depends on headset refresh rate');
+  }
+});
+
+check('manual far-lamp movement restarts the pull ramp at the adjusted distance', () => {
+  const pull = createHoldPull(1.2);
+  let distance = simulate(pull, 80, 4);
+  distance = adjustHoldDistance(distance, -.06, 'hanging-light');
+  const adjusted = distance;
+  distance = stepHoldPull(pull, 1 / 72, { ...standard, distance, manual: true });
+  assert.equal(distance, adjusted);
+  assert.equal(simulate(pull, distance, .35), adjusted);
+  assert.ok(distance > 75, 'manual input reapplied the ordinary object range cap');
+});
+
+check('ordinary prop depth limits and invalid-input guards remain unchanged', () => {
+  for (const kind of ['crate', 'crate-piece', 'artifact', 'fragment', undefined]) {
+    assert.equal(adjustHoldDistance(30, 0, kind), 9);
+    assert.equal(adjustHoldDistance(8.9, .3, kind), 9);
+    assert.equal(adjustHoldDistance(.3, -.5, kind), .2);
+    assert.equal(adjustHoldDistance(3, -.2, kind), 2.8);
+  }
+  assert.equal(adjustHoldDistance(.3, -.5, 'hanging-light'), .2);
+  for (const delta of [NaN, Infinity, -Infinity]) assert.equal(adjustHoldDistance(80, delta, 'hanging-light'), 80);
+  assert.equal(adjustHoldDistance(1e308, 1e308, 'hanging-light'), 1e308, 'an overflow must not enter the held target');
 });
 
 console.log(JSON.stringify({ passed: true, checks, frameRates: [30, 72, 120] }, null, 2));
