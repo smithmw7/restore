@@ -26,6 +26,27 @@ async function tap(id) {
   const point = await target(id);
   await page.mouse.click(point.x, point.y, { delay: 30 }); await pause(130);
 }
+async function verifyWheelPose(digits) {
+  await page.waitForFunction(expected => {
+    const root = window.__restoreOpening.scene.getObjectByName('Briefcase');
+    return expected.every((digit, index) => {
+      const angle = root.getObjectByName(`Wheel_${index}`).rotation.x + digit * Math.PI * 2 / 10;
+      return Math.abs(Math.atan2(Math.sin(angle), Math.cos(angle))) < .004;
+    });
+  }, digits, { timeout: 10000 });
+  const poses = await page.evaluate(() => {
+    const root = window.__restoreOpening.scene.getObjectByName('Briefcase');
+    root.updateMatrixWorld(true);
+    return [0, 1, 2, 3].map(index => {
+      const wheel = root.getObjectByName(`Wheel_${index}`), glyphs = root.getObjectByName(`WheelNumerals_${index}`);
+      const marker = glyphs.position.clone().setFromMatrixPosition(glyphs.matrixWorld).applyMatrix4(wheel.parent.matrixWorld.clone().invert()).sub(wheel.position);
+      const expected = glyphs.position.clone().applyEuler(wheel.rotation);
+      return { angle: wheel.rotation.x, markerError: marker.distanceTo(expected), visible: glyphs.visible };
+    });
+  });
+  assert.ok(poses.every(pose => pose.markerError < 1e-6 && pose.visible), 'physical numeral origins follow their rotating drums');
+  return poses;
+}
 const pass = name => { checks.push(name); console.log(`PASS: ${name}`); };
 
 try {
@@ -34,6 +55,9 @@ try {
   const state = (await read()).state.opening;
   assert.equal(state.briefcase.loaded, true, state.briefcase.error || 'authored asset did not load');
   assert.ok(state.briefcase.triangles > 1000);
+  assert.equal(state.briefcase.physicalNumerals, true);
+  assert.equal(state.briefcase.numeralsPerWheel, 10);
+  assert.equal(state.briefcase.handle, false);
   assert.equal(state.caseOpen, false);
   const asset = await page.evaluate(() => {
     const { scene, opening } = window.__restoreOpening;
@@ -58,9 +82,17 @@ try {
       controls: opening.targets.filter(mesh => mesh.userData.openingId.startsWith('wheel-') || mesh.userData.openingId.startsWith('case-latch')).map(mesh => ({
         id: mesh.userData.openingId, visible: mesh.visible, rendered: mesh.material.visible,
       })),
-      displays: [0, 1, 2, 3].map(index => {
-        const display = root.getObjectByName(`NumberDisplay_${index}`);
-        return { canvas: display.material.map.image instanceof HTMLCanvasElement, visible: display.visible };
+      handle: !!root.getObjectByName('HandlePivot'),
+      numeralWheels: [0, 1, 2, 3].map(index => {
+        const glyphs = root.getObjectByName(`WheelNumerals_${index}`), wheel = root.getObjectByName(`Wheel_${index}`);
+        return {
+          stationaryDisplay: !!root.getObjectByName(`NumberDisplay_${index}`),
+          mesh: glyphs?.isMesh,
+          carried: !!wheel.getObjectById(glyphs.id),
+          black: glyphs.material.color.toArray().every(value => value < .025),
+          textured: Object.values(glyphs.material).some(value => value?.isTexture),
+          visible: glyphs.visible,
+        };
       }),
     };
   });
@@ -68,18 +100,31 @@ try {
   assert.equal(asset.lidVerticesOutsideProxy, 0, 'the articulated collision proxy encloses the imported lid, rim and caps');
   assert.equal(asset.controls.length, 6);
   assert.ok(asset.controls.every(control => control.visible && !control.rendered), 'all six proxy targets remain selectable without duplicate visible meshes');
-  assert.ok(asset.displays.every(display => display.canvas && display.visible));
+  assert.equal(asset.handle, false);
+  assert.ok(asset.numeralWheels.every(wheel => !wheel.stationaryDisplay && wheel.mesh && wheel.carried && wheel.black && !wheel.textured && wheel.visible), 'black modeled numerals rotate with their wheels without stationary displays or numeral textures');
   pass('authored briefcase replaces placeholder rendering and retains six physical input targets');
 
   await view([6.15, 0, 9.45], [6.15, 1.12, 8.35]);
   await page.screenshot({ path: `${out}/01-closed.png` });
   await tap('case-latch-left');
   assert.equal((await read()).state.opening.caseOpen, false);
+  const detents = [];
+  await verifyWheelPose([0, 0, 0, 0]);
+  for (let turn = 1; turn <= 10; turn++) {
+    for (let index = 0; index < 4; index++) await tap(`wheel-${index}`);
+    const digits = Array(4).fill(turn % 10);
+    assert.deepEqual((await read()).state.opening.wheels, digits);
+    detents.push({ digits, poses: await verifyWheelPose(digits) });
+    if (turn === 9) await page.screenshot({ path: `${out}/01b-digits-9999.png` });
+  }
+  assert.ok(detents[9].poses.every((pose, index) => Math.abs(pose.angle - detents[8].poses[index].angle + Math.PI * 2 / 10) < .008), '9 to 0 advances one detent without reversing a full revolution');
+  await writeFile(`${out}/wheel-detents.json`, JSON.stringify(detents, null, 2));
+  pass('all four physical numeral rings complete 0 through 9 and wrap smoothly back to 0 with actual pointer taps');
   for (const [index, turns] of [4, 1, 7, 2].entries()) {
     for (let count = 0; count < turns; count++) await tap(`wheel-${index}`);
   }
   assert.deepEqual((await read()).state.opening.wheels, [4, 1, 7, 2]);
-  await pause(400);
+  await verifyWheelPose([4, 1, 7, 2]);
   await page.screenshot({ path: `${out}/02-code.png` });
   await tap('case-latch-left');
   await pause(1000);
@@ -116,6 +161,7 @@ try {
   assert.equal((await read()).state.opening.caseOpen, true);
   assert.equal((await read()).state.opening.briefcase.loaded, true);
   assert.deepEqual((await read()).state.opening.wheels, [4, 1, 7, 2]);
+  await verifyWheelPose([4, 1, 7, 2]);
   pass('either latch can close and reopen the case, and the saved open pose reloads');
   assert.deepEqual(errors, []);
   pass('no browser or console errors');

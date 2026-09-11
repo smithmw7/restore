@@ -1,11 +1,18 @@
 {
-  "assetVersion": "1.0.4",
-  "triangles": 34236,
-  "renderMeshes": 20,
+  "numeralGeometry": true,
+  "numeralsPerWheel": 10,
+  "totalNumeralGlyphs": 40,
+  "separatorCountPerWheel": 10,
+  "wheelStep": 0.6283185307179586,
+  "wheelZeroAngle": 0,
+  "numeralInsetMeters": 0.0003,
+  "handleRemoved": true,
+  "assetVersion": "1.1.0",
+  "triangles": 51808,
+  "renderMeshes": 19,
   "nodes": [
     "Briefcase",
     "LidPivot",
-    "HandlePivot",
     "LatchPivot_L",
     "LatchPivot_R",
     "Wheel_0",
@@ -20,18 +27,17 @@
     "LidStatic_Fabric",
     "LidStatic_Leather",
     "BodyStatic_Leather",
-    "HandlePivot_Mesh_0",
-    "HandlePivot_Mesh_3",
     "LatchPivot_L_Mesh_3",
     "LatchPivot_R_Mesh_3",
     "Wheel_0_Mesh_3",
-    "NumberDisplay_0",
+    "WheelNumerals_0",
     "Wheel_1_Mesh_3",
-    "NumberDisplay_1",
+    "WheelNumerals_1",
     "Wheel_2_Mesh_3",
-    "NumberDisplay_2",
+    "WheelNumerals_2",
     "Wheel_3_Mesh_3",
-    "NumberDisplay_3"
+    "WheelNumerals_3",
+    "ReadingIndex"
   ],
   "bodyBounds": [
     -0.48,
@@ -42,5 +48,6 @@
     0.315
   ],
   "atlas": "briefcase-basecolor-final.png",
-  "glbBytes": 5761548
+  "glbBytes": 6471924,
+  "glbSha256": "38ba0a7d46b6fe09efdb3324eb46bb8be869668257538eab24fb140287bd3d44"
 }

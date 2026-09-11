@@ -1,8 +1,8 @@
 # Restore
 
-## Briefcase art pass (0.6.1)
+## Engraved combination wheels (0.6.2)
 
-The office briefcase now uses a separately articulated Blender model with aged PBR textures, real shell thickness, a lined interior, hinges, twin clasps and a leather handle. The original combination and photograph interactions still work. See the [quality pass, source model and render sheets](docs/BRIEFCASE-QUALITY.md). Open `/briefcase-review.html` on the running server to orbit the exported model, open its lid and inspect the exploded assemblies.
+The office case now has a clean handle-free silhouette and four real combination drums. Each drum carries ten evenly spaced, black inlaid 3D numerals with a separator groove between digits. The numerals turn with the metal wheel, including a smooth 9-to-0 transition. Aged PBR surfaces, hollow shells, lining, hinges, twin clasps and the photograph puzzle remain. See the [quality pass, source model and render sheets](docs/BRIEFCASE-QUALITY.md). Open `/briefcase-review.html` to orbit the exported model, turn all ten wheel positions, open the lid and inspect the exploded assemblies.
 
 A Three.js / WebXR playground for collecting, breaking, and restoring objects. The original bright-room demo is preserved at Git tag **restore-demo-v1** and on `main`. The default **warehouse** branch extends it into an enclosed artifact storehouse.
 

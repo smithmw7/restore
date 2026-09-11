@@ -312,7 +312,12 @@ export function createOpeningEnvironment({ scene, materials = {} }) {
   workshopFill.position.set(-7, 2.93, 10.1);
   const taskLight = new THREE.PointLight('#ffd098', 1.8, 2.3, 2);
   taskLight.position.set(7.94, 1.345, 8.045);
-  root.add(officeFill, workshopFill, taskLight);
+  // A restrained low bounce catches the selected, front-facing lock
+  // facets. The overhead practical otherwise lights only the neighboring digits.
+  const lockBounce = new THREE.PointLight('#ffd6a4', 1.5, 1.7, 2);
+  lockBounce.name = 'Opening / lock reading bounce';
+  lockBounce.position.set(6.15, .8, 9.3);
+  root.add(officeFill, workshopFill, taskLight, lockBounce);
 
   let staticInstances = 0;
   for (const { geometry, material, values } of batches.values()) {
@@ -353,7 +358,7 @@ export function createOpeningEnvironment({ scene, materials = {} }) {
     staticInstances,
     instancedBatches: batches.size,
     obstacleCount: obstacles.length,
-    pointLights: 3,
+    pointLights: 4,
     addedShadowMaps: 0,
     generatedTextures: 1,
     generatedTextureResolution: 128,

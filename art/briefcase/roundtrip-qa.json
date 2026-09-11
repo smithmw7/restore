@@ -1,18 +1,14 @@
 {
-  "assetVersion": "1.0.4",
+  "glbSha256": "38ba0a7d46b6fe09efdb3324eb46bb8be869668257538eab24fb140287bd3d44",
+  "assetVersion": "1.1.0",
   "importedGLB": "briefcase.glb",
-  "triangles": 34236,
-  "renderMeshes": 20,
+  "triangles": 51808,
+  "renderMeshes": 19,
   "embeddedImages": [
     {
       "name": "briefcase-basecolor-final",
       "width": 1254,
       "height": 1254
-    },
-    {
-      "name": "briefcase-digit-0",
-      "width": 256,
-      "height": 256
     },
     {
       "name": "briefcase-normal",
@@ -47,9 +43,374 @@
       "paintedShellTriangleIntersections": 0
     }
   ],
+  "wheelDetents": [
+    {
+      "wheel": 0,
+      "digit": 0,
+      "rotationX": 0.0,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 0,
+      "digit": 1,
+      "rotationX": -0.6283185307179586,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 0,
+      "digit": 2,
+      "rotationX": -1.2566370614359172,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 0,
+      "digit": 3,
+      "rotationX": -1.8849555921538759,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 0,
+      "digit": 4,
+      "rotationX": -2.5132741228718345,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 0,
+      "digit": 5,
+      "rotationX": -3.141592653589793,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 0,
+      "digit": 6,
+      "rotationX": -3.7699111843077517,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 0,
+      "digit": 7,
+      "rotationX": -4.39822971502571,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 0,
+      "digit": 8,
+      "rotationX": -5.026548245743669,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 0,
+      "digit": 9,
+      "rotationX": -5.654866776461628,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 1,
+      "digit": 0,
+      "rotationX": 0.0,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 1,
+      "digit": 1,
+      "rotationX": -0.6283185307179586,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 1,
+      "digit": 2,
+      "rotationX": -1.2566370614359172,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 1,
+      "digit": 3,
+      "rotationX": -1.8849555921538759,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 1,
+      "digit": 4,
+      "rotationX": -2.5132741228718345,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 1,
+      "digit": 5,
+      "rotationX": -3.141592653589793,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 1,
+      "digit": 6,
+      "rotationX": -3.7699111843077517,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 1,
+      "digit": 7,
+      "rotationX": -4.39822971502571,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 1,
+      "digit": 8,
+      "rotationX": -5.026548245743669,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 1,
+      "digit": 9,
+      "rotationX": -5.654866776461628,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 2,
+      "digit": 0,
+      "rotationX": 0.0,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 2,
+      "digit": 1,
+      "rotationX": -0.6283185307179586,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 2,
+      "digit": 2,
+      "rotationX": -1.2566370614359172,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 2,
+      "digit": 3,
+      "rotationX": -1.8849555921538759,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 2,
+      "digit": 4,
+      "rotationX": -2.5132741228718345,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 2,
+      "digit": 5,
+      "rotationX": -3.141592653589793,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 2,
+      "digit": 6,
+      "rotationX": -3.7699111843077517,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 2,
+      "digit": 7,
+      "rotationX": -4.39822971502571,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 2,
+      "digit": 8,
+      "rotationX": -5.026548245743669,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 2,
+      "digit": 9,
+      "rotationX": -5.654866776461628,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 3,
+      "digit": 0,
+      "rotationX": 0.0,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 3,
+      "digit": 1,
+      "rotationX": -0.6283185307179586,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 3,
+      "digit": 2,
+      "rotationX": -1.2566370614359172,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 3,
+      "digit": 3,
+      "rotationX": -1.8849555921538759,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 3,
+      "digit": 4,
+      "rotationX": -2.5132741228718345,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 3,
+      "digit": 5,
+      "rotationX": -3.141592653589793,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 3,
+      "digit": 6,
+      "rotationX": -3.7699111843077517,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 3,
+      "digit": 7,
+      "rotationX": -4.39822971502571,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 3,
+      "digit": 8,
+      "rotationX": -5.026548245743669,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    },
+    {
+      "wheel": 3,
+      "digit": 9,
+      "rotationX": -5.654866776461628,
+      "frontInkHeight": 0.022,
+      "inset": 0.0003,
+      "solidGlyphs": 10,
+      "solidSeparators": 10
+    }
+  ],
   "checks": [
-    "GLB self contained with four embedded textures",
-    "Twenty render meshes, matching exported geometry, below 35,000 triangles",
+    "GLB self contained with three embedded atlas textures and texture-free solid black numerals",
+    "Nineteen render meshes, matching exported geometry, below 60,000 triangles",
+    "All forty physical glyph detents read upright, centered and 0.30 mm inset after GLB reimport",
+    "Ten manifold solid glyphs and ten solid separator inlays in each wheel material batch",
+    "No handle, attachments, static number display nodes or digit images",
     "Positive transforms, finite coordinates, complete UV layers",
     "Five imported hinge poses without painted shell intersections",
     "Four actual imported GLB Blender studio renders"

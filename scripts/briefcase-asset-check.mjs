@@ -22,6 +22,15 @@ assert.ok(bytes.length < 12 * 1024 * 1024, 'single prop download remains under 1
 assert.ok(!document.buffers.some(buffer => buffer.uri), 'geometry is self-contained');
 const named = name => document.nodes.find(node => node.name === name);
 for (const name of ['Briefcase', 'BodyStatic', 'LidPivot', 'LidStatic', ...Array.from({length:4}, (_,i)=>`Wheel_${i}`)]) assert.ok(named(name), `articulated node ${name} exported`);
+assert.ok(!document.nodes.some(node => /Handle|NumberDisplay/i.test(node.name || '')), 'handle and stationary digit displays removed');
+const metadata = named('Briefcase').extras;
+assert.equal(metadata.numeralGeometry, true, 'numbers are authored geometry');
+assert.equal(metadata.numeralsPerWheel, 10);
+assert.equal(metadata.wheelNumerals, '0123456789');
+assert.equal(metadata.handleRemoved, true);
+assert.equal(metadata.separatorCountPerWheel, 10);
+assert.ok(Math.abs(metadata.wheelStep - Math.PI * 2 / 10) < 1e-8);
+assert.equal(metadata.wheelZeroAngle, 0);
 const parents = new Map();
 document.nodes.forEach((node, index) => (node.children || []).forEach(child => parents.set(child, index)));
 function matrix(index) {
@@ -43,6 +52,34 @@ function values(accessorIndex) {
   const [read,size] = component[accessor.componentType], width = elementSizes[accessor.type];
   const data = new DataView(binary.buffer,binary.byteOffset,binary.byteLength), stride=view.byteStride || width*size;
   return Array.from({length:accessor.count},(_,index)=>Array.from({length:width},(_,c)=>data[read]((view.byteOffset||0)+(accessor.byteOffset||0)+index*stride+c*size,true)));
+}
+const numeralWheels = [];
+for (let wheel = 0; wheel < 4; wheel++) {
+  const wheelIndex = document.nodes.findIndex(node => node.name === `Wheel_${wheel}`);
+  const numeralIndex = document.nodes.findIndex(node => node.name === `WheelNumerals_${wheel}`);
+  assert.ok(numeralIndex >= 0, `wheel ${wheel} exports numeral geometry`);
+  let ancestor = numeralIndex;
+  while (parents.has(ancestor) && ancestor !== wheelIndex) ancestor = parents.get(ancestor);
+  assert.equal(ancestor, wheelIndex, `numerals rotate with wheel ${wheel}`);
+  const numeralNode = document.nodes[numeralIndex];
+  assert.notEqual(numeralNode.mesh, undefined, `wheel ${wheel} numbers are a mesh`);
+  const transform = matrix(wheelIndex).invert().multiply(matrix(numeralIndex));
+  const sectors = Array(10).fill(0);
+  for (const primitive of document.meshes[numeralNode.mesh].primitives) {
+    const material = document.materials[primitive.material];
+    const pbr = material.pbrMetallicRoughness;
+    assert.ok(pbr.baseColorFactor.slice(0, 3).every(value => value < .025), 'physical numeral inlay is black');
+    assert.ok(!pbr.baseColorTexture && !pbr.metallicRoughnessTexture && !material.normalTexture && !material.emissiveTexture, 'numerals need no bitmap or displacement texture');
+    for (const point of values(primitive.attributes.POSITION)) {
+      const local = new THREE.Vector3(...point).applyMatrix4(transform);
+      assert.ok(Math.hypot(local.y, local.z) > .035, 'numerals sit on the outer drum surface');
+      const angle = (Math.atan2(-local.y, local.z) + Math.PI * 2) % (Math.PI * 2);
+      const sector = Math.round(angle / metadata.wheelStep) % 10;
+      sectors[sector]++;
+    }
+  }
+  assert.ok(sectors.every(count => count > 12), `wheel ${wheel} contains substantial physical glyph geometry in all ten detents: ${sectors}`);
+  numeralWheels.push({ wheel, verticesPerDetent: sectors });
 }
 let triangles=0, vertices=0, primitives=0, texturedPrimitives=0;
 const bounds=new THREE.Box3();
@@ -67,7 +104,7 @@ for (const [nodeIndex,node] of document.nodes.entries()) {
     triangles+=count/3;vertices+=positions.length;primitives++;
   }
 }
-assert.ok(triangles>=2000 && triangles<=35000, `prop geometry budget: ${triangles} triangles`);
+assert.ok(triangles>=2000 && triangles<=60000, `prop geometry budget: ${triangles} triangles`);
 assert.ok(texturedPrimitives>0,'Blender UV textures shipped with model');
 assert.ok(primitives<=40,`bounded draw primitives: ${primitives}`);
 assert.ok(document.materials.length<=12, 'bounded material count');
@@ -79,10 +116,10 @@ const images=document.images.map(image=>{
  assert.ok(data.length>1000,'nonempty embedded texture');
  return {name:image.name,mimeType:image.mimeType,bytes:data.length,sha256:createHash('sha256').update(data).digest('hex')};
 });
-assert.ok(images.length>=3,'base color and PBR surface detail exported');
+assert.equal(images.length,3,'only the three shared PBR maps are embedded, with no numeral bitmap');
 const finalAlbedo = await readFile('art/briefcase/textures/briefcase-basecolor-final.png');
 assert.ok(images.some(image=>image.sha256===createHash('sha256').update(finalAlbedo).digest('hex')),'enhanced atlas is actually embedded in the final model');
-const report={file,bytes:bytes.length,triangles,vertices,primitives,materials:document.materials.length,images,bounds:{min:bounds.min.toArray(),max:bounds.max.toArray()},lidPivot:pivot.toArray(),sha256:createHash('sha256').update(bytes).digest('hex')};
+const report={file,bytes:bytes.length,version:metadata.assetVersion,triangles,vertices,primitives,materials:document.materials.length,images,numeralWheels,bounds:{min:bounds.min.toArray(),max:bounds.max.toArray()},lidPivot:pivot.toArray(),sha256:createHash('sha256').update(bytes).digest('hex')};
 await mkdir('output/briefcase',{recursive:true});
 await writeFile('output/briefcase/asset-report.json',JSON.stringify(report,null,2));
 console.log(JSON.stringify(report,null,2));

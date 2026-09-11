@@ -3,7 +3,7 @@ Run: Blender --background --python scripts/blender/briefcase-build.py -- [--skip
 Atlas quadrants (image top-down): painted metal | warm hardware / leather | cloth.
 Three.js coordinates are authored explicitly; Blender converts (x,y,z) to (x,-z,y).
 """
-import bpy, math, os, sys, json, time, argparse
+import bpy, math, os, sys, json, time, argparse, hashlib
 import numpy as np
 from mathutils import Vector
 from collections import defaultdict
@@ -64,7 +64,7 @@ for q,name in enumerate(mat_names):
 root=bpy.data.objects.new('Briefcase',None); COL.objects.link(root)
 def empty(name,pos=(0,0,0),parent=root):
     ob=bpy.data.objects.new(name,None); COL.objects.link(ob); ob.location=coord(pos); ob.parent=parent; return ob
-lid=empty('LidPivot',(0,.12,-.315)); handle=empty('HandlePivot',(0,-.045,.349)); latchL=empty('LatchPivot_L',(-.365,.105,.337)); latchR=empty('LatchPivot_R',(.365,.105,.337))
+lid=empty('LidPivot',(0,.12,-.315)); latchL=empty('LatchPivot_L',(-.365,.105,.337)); latchR=empty('LatchPivot_R',(.365,.105,.337))
 parts=[]
 def assign(ob,name,mat,parent,group):
     ob.name=name
@@ -74,6 +74,9 @@ def assign(ob,name,mat,parent,group):
 
 def uv(ob,q):
     if not ob.data.uv_layers: ob.data.uv_layers.new(name='UVMap')
+    if q==4:
+        for v in ob.data.uv_layers.active.data:v.uv=(.25,.25)
+        return
     layer=ob.data.uv_layers.active.data; vs=ob.data.vertices
     # One physical texel density on both planar axes. Tiny bevels/hardware sample tiny
     # patches; narrow walls never stretch an entire atlas quadrant across their height.
@@ -196,28 +199,6 @@ for xx in [-.303,.303]:
     for dx in [-.052,.052]:
         screw('Hinge fixed screw',(xx+dx,.047,-.325),root,group='hinge')
         screw('Hinge lid screw',(xx+dx,.026,-.015),lid,group='lid')
-# Handle rotates on two pivot brackets. Flat leather-wrapped arch with stitched rolled edges.
-for xx in [-.168,.168]:
-    box('Handle attachment plate',(.044,.075,.009),(xx,-.027,.326),3,root,.009,'handle-bracket')
-    cyl('Handle swiveling rivet',.012,.041,(xx,-.045,.350),3,root,'X',20,'handle-bracket')
-    screw('Handle plate fastener',(xx,.001,.334))
-# Arch is a thick, closed band in horizontal XZ, gracefully bowed away from the front panel.
-def handle_band(name,width,depth,mat):
-    vv=[];samples=24
-    for yv,rr in [(-depth/2,0),(depth/2,0),(depth/2,width),(-depth/2,width)]:
-        for i in range(samples+1):
-            t=math.pi*i/samples;xx=(.166-rr)*math.cos(t);zz=(.107-rr)*math.sin(t)
-            vv.append((xx,yv,zz))
-    nn=samples+1;ff=[]
-    for k in range(4):
-        for i in range(samples):ff.append((k*nn+i,k*nn+i+1,((k+1)%4)*nn+i+1,((k+1)%4)*nn+i))
-    ff += [(0,nn,2*nn,3*nn),(nn-1,4*nn-1,3*nn-1,2*nn-1)]
-    return mesh_obj(name,vv,ff,mat,handle,'handle',.002)
-handle_band('Leather handle shaped grip',.030,.034,0)
-for i in range(33):
-    t=.17+(math.pi-.34)*i/32
-    for sy in [-1,1]:
-        ob=box('Handle saddle stitch',(.0032,.0011,.0018),(.153*math.cos(t),sy*.0175,.096*math.sin(t)),3,handle,.0003,'handle')
 # Twin spring clasps: backing plates + pivot pins + articulated retaining tongues.
 for xx,piv in [(-.365,latchL),(.365,latchR)]:
     box('Clasp stamped backing plate',(.091,.129,.012),(xx,.012,.327),3,root,.012,'clasp')
@@ -228,46 +209,96 @@ for xx,piv in [(-.365,latchL),(.365,latchR)]:
     box('Articulated clasp tongue',(.053,.105,.009),(0,-.049,.012),3,piv,.007,'moving-clasp')
     box('Clasp lever thumb lip',(.057,.015,.021),(0,-.098,.026),3,piv,.005,'moving-clasp')
     box('Clasp engraved inset',(.029,.043,.001),(0,-.055,.0173),3,piv,.004,'moving-clasp')
-# The default GLB is self-contained: Blender renders a tiny emission-only numeral texture.
-# Runtime swaps the same full-UV surfaces for live combination digits.
-def numeral_material():
-    path=OUT+'/briefcase-digit-0.png'
-    if not os.path.exists(path):
-        prev=bpy.context.window.scene; temp=bpy.data.scenes.new('Numeral albedo bake');bpy.context.window.scene=temp
-        temp.render.engine='CYCLES';temp.cycles.samples=1;temp.cycles.use_denoising=False
-        temp.render.resolution_x=256;temp.render.resolution_y=256;temp.render.resolution_percentage=100
-        temp.view_settings.view_transform='Standard';temp.render.image_settings.file_format='PNG';temp.render.image_settings.color_mode='RGB'
-        temp.world=bpy.data.worlds.new('Numeral black world');temp.world.color=(0,0,0)
-        def emat(name,color):
-            m=bpy.data.materials.new(name);m.use_nodes=True;m.node_tree.nodes.clear();e=m.node_tree.nodes.new('ShaderNodeEmission');e.inputs[0].default_value=(*color,1);o=m.node_tree.nodes.new('ShaderNodeOutputMaterial');m.node_tree.links.new(e.outputs[0],o.inputs[0]);return m
-        bpy.ops.mesh.primitive_plane_add(size=2);plane=bpy.context.object;plane.data.materials.append(emat('Numeral dark enamel',(.014,.017,.013)))
-        text=bpy.data.curves.new('Engraved zero','FONT');text.body='0';text.align_x='CENTER';text.align_y='CENTER';text.size=.82;text.resolution_u=8
-        font=bpy.data.objects.new('Engraved zero',text);temp.collection.objects.link(font);font.location=(0,0,.01);text.materials.append(emat('Warm ivory enamel inlay',(.67,.66,.55)))
-        cd=bpy.data.cameras.new('Numeral camera');cam=bpy.data.objects.new('Numeral camera',cd);temp.collection.objects.link(cam);cam.location=(0,0,1);cd.type='ORTHO';cd.ortho_scale=1;temp.camera=cam
-        temp.render.filepath=path;bpy.ops.render.render(write_still=True)
-        bpy.context.window.scene=prev
-        for ob in list(temp.objects):bpy.data.objects.remove(ob,do_unlink=True)
-        bpy.data.scenes.remove(temp)
-    im=bpy.data.images.load(path,check_existing=True);im.colorspace_settings.name='sRGB'
-    m=bpy.data.materials.new('Inlaid lock numeral');m.use_nodes=True;bs=m.node_tree.nodes.get('Principled BSDF');bs.inputs['Roughness'].default_value=.59;tex=m.node_tree.nodes.new('ShaderNodeTexImage');tex.image=im;m.node_tree.links.new(tex.outputs['Color'],bs.inputs['Base Color']);return m
-numbermat=numeral_material()
-# Four independent knurled wheels, a common cast escutcheon and dark numeral windows.
+# Ten equally spaced physical numeral facets. These are real cut-and-inlaid meshes,
+# parented to their wheel, so animation never replaces a decal or a numeral image.
+numbermat=bpy.data.materials.new('Black enamel numeral inlay');numbermat.use_nodes=True
+nbs=numbermat.node_tree.nodes.get('Principled BSDF');nbs.inputs['Base Color'].default_value=(.008,.010,.009,1)
+nbs.inputs['Roughness'].default_value=.87;nbs.inputs['Metallic'].default_value=0;nbs.inputs['Specular IOR Level'].default_value=.15
+numbermat.diffuse_color=(.008,.010,.009,1);mats.append(numbermat)
+WHEEL_STEP=math.tau/10; WHEEL_RADIUS=.0475; WHEEL_APOTHEM=WHEEL_RADIUS*math.cos(math.pi/10)
+font=bpy.data.fonts.load('/System/Library/Fonts/Supplemental/DIN Alternate Bold.ttf')
 box('Combination lock common escutcheon',(.557,.112,.040),(0,.01,.332),3,root,.017,'lock')
-for sign in [-1,1]: screw('Lock mounting screw',(sign*.259,.01,.355),root)
+for sign in [-1,1]:screw('Lock mounting screw',(sign*.259,.01,.355),root)
+wheel_glyphs={};wheel_drums={}
+def rotate_three_x(v,a):
+    x,y,z=v;return (x,y*math.cos(a)-z*math.sin(a),y*math.sin(a)+z*math.cos(a))
+def glyph_mesh(digit,depth,front,name,angle,parent):
+    curve=bpy.data.curves.new(name,'FONT');curve.body=str(digit);curve.font=font
+    curve.align_x='CENTER';curve.align_y='CENTER';curve.size=.036;curve.resolution_u=3
+    curve.extrude=depth/2;curve.bevel_depth=0
+    ob=bpy.data.objects.new(name,curve);COL.objects.link(ob);ob.parent=parent
+    # Center actual ink bounds, not font metrics, so 1 and 7 share the exact baseline.
+    bpy.context.view_layer.update()
+    bounds=[Vector(v)for v in ob.bound_box];lo=Vector([min(v[i]for v in bounds)for i in range(3)]);hi=Vector([max(v[i]for v in bounds)for i in range(3)])
+    height=hi.y-lo.y;scale=.022/height
+    curve.size*=scale;bpy.context.view_layer.update();bounds=[Vector(v)for v in ob.bound_box]
+    center=(Vector([min(v[i]for v in bounds)for i in range(3)])+Vector([max(v[i]for v in bounds)for i in range(3)]))/2
+    # Text local X is right, Y is up; its local +Z extrusion points out from a facet.
+    ob.rotation_euler.x=math.pi/2+angle
+    ob.location=coord(rotate_three_x((-center.x,-center.y,front),angle))
+    bpy.ops.object.select_all(action='DESELECT');ob.select_set(True);bpy.context.view_layer.objects.active=ob
+    bpy.ops.object.convert(target='MESH');ob=bpy.context.object
+    import bmesh
+    bm=bmesh.new();bm.from_mesh(ob.data);bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=1e-7);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces));bm.to_mesh(ob.data);bm.free()
+    ob.select_set(False)
+    return ob
+
+def boolean_recess(drum,cutter):
+    bpy.context.view_layer.update();bpy.context.view_layer.objects.active=drum
+    mod=drum.modifiers.new('Machined engraving recess','BOOLEAN');mod.operation='DIFFERENCE';mod.solver='EXACT';mod.object=cutter
+    bpy.ops.object.modifier_apply(modifier=mod.name);bpy.data.objects.remove(cutter,do_unlink=True)
+
+# Build one engraved metal drum, then reuse its mesh for the other identical wheels.
 for i in range(4):
-    xx=(i-1.5)*.132; wp=empty('Wheel_'+str(i),(xx,.01,.358));
-    cyl('Number wheel '+str(i),.047,.063,(0,0,0),3,wp,'X',32,'wheel')
-    for j in range(24):
-        t=j*math.tau/24
-        ob=box('Wheel knurled tooth',(.062,.004,.004),(0,.047*math.cos(t),.047*math.sin(t)),3,wp,.0008,'wheel');ob.rotation_euler[0]=t
-    for dx in [-.043,.043]:box('Wheel retaining shoulder',(.015,.087,.035),(xx+dx,.01,.359),3,root,.004,'lock')
-    # Display front is +Z in Three. Runtime replaces only this plane's material with its numeral canvas.
-    ob=mesh_obj('NumberDisplay_'+str(i),[(-.029,-.030,0),(.029,-.030,0),(.029,.030,0),(-.029,.030,0)],[(0,1,2,3)],0,root,'display')
-    ob.location=coord((xx,.01,.409));ob.data.materials.clear();ob.data.materials.append(numbermat);
-    # conventional full UV, independent of the material atlas for runtime replacement.
-    for loop,co in zip(ob.data.uv_layers.active.data,[(0,0),(1,0),(1,1),(0,1)]):loop.uv=co
+    xx=(i-1.5)*.132;wp=empty('Wheel_'+str(i),(xx,.01,.358))
+    wp['numerals']='0123456789';wp['step']=WHEEL_STEP;wp['zeroAngle']=0.0;wp['rotationAxis']='X'
+    if i==0:
+        profile=[(-WHEEL_RADIUS*math.sin((j+.5)*WHEEL_STEP),WHEEL_RADIUS*math.cos((j+.5)*WHEEL_STEP))for j in range(10)]
+        vv=[(x,y,z)for x in [-.0315,.0315]for y,z in profile]
+        ff=[tuple(range(9,-1,-1)),tuple(range(10,20))]+[(j,(j+1)%10,(j+1)%10+10,j+10)for j in range(10)]
+        drum=mesh_obj('Wheel engraved metal drum 0',vv,ff,3,wp,'wheel',.0003)
+        for digit in range(10):
+            angle=digit*WHEEL_STEP
+            cutter=glyph_mesh(digit,.0017,WHEEL_APOTHEM-.0003,'Engraving cutter',angle,wp)
+            boolean_recess(drum,cutter)
+            # One separator line at the boundary, extending into both neighboring facets.
+            angle=(digit+.5)*WHEEL_STEP
+            cutter=box('Separator cutter',(.052,.0018,.004),rotate_three_x((0,0,WHEEL_RADIUS-.0003),angle),3,wp,0,'temporary')
+            cutter.rotation_euler.x=angle;parts.remove(cutter);boolean_recess(drum,cutter)
+        drum.data.update();uv(drum,3)
+        for poly in drum.data.polygons:poly.use_smooth=False
+        # Boolean loops must not inherit weighted corner normals from the uncut drum.
+        loop_normals=[(0,0,0)]*len(drum.data.loops)
+        for poly in drum.data.polygons:
+            for li in poly.loop_indices:loop_normals[li]=tuple(poly.normal)
+        drum.data.normals_split_custom_set(loop_normals)
+        drum.data.update()
+        template=drum.data.copy()
+    else:
+        drum=bpy.data.objects.new('Wheel engraved metal drum '+str(i),template);COL.objects.link(drum);drum.parent=wp
+        drum['part_group']='wheel';drum['atlas_quadrant']=3;parts.append(drum)
+    wheel_drums[i]=drum;wheel_glyphs[i]=[]
+    for digit in range(10):
+        angle=digit*WHEEL_STEP
+        ob=glyph_mesh(digit,.00085,WHEEL_APOTHEM-.000725,'Wheel '+str(i)+' numeral '+str(digit),angle,wp)
+        ob.data.materials.append(numbermat);ob['part_group']='numerals';ob['atlas_quadrant']=4;ob['digit']=digit;ob['detentAngle']=angle
+        uv(ob,4);parts.append(ob);wheel_glyphs[i].append(ob)
+        # The separator groove floor is darkened metal, not a raised knurled tooth.
+        angle=(digit+.5)*WHEEL_STEP
+        ob=box('Wheel separator inlay',(.051,.0012,.0002),rotate_three_x((0,0,WHEEL_RADIUS-.00125),angle),4,wp,0,'numerals');ob.rotation_euler.x=angle
+    # Narrow end collars, comfortably outside the numbered working face.
+    for dx in [-.0345,.0345]:cyl('Wheel smooth end collar',.048,.004,(dx,0,0),3,wp,'X',40,'wheel')
+    for dx in [-.045,.045]:box('Wheel retaining shoulder',(.011,.087,.031),(xx+dx,.01,.357),3,root,.003,'lock')
+# Two small fixed reading arrows on the outer retaining shoulders identify the
+# selected row, without an instruction label or a floating display.
+for sign in [-1,1]:
+    cx=sign*.243; yy=.01; zz=.373
+    outline=[(cx+sign*.0035,yy-.0032),(cx-sign*.0035,yy),(cx+sign*.0035,yy+.0032)]
+    vv=[(x,y,z)for z in [zz,zz+.00020]for x,y in outline]
+    mesh_obj('Fixed wheel reading index',vv,[(0,2,1),(3,4,5),(0,1,4,3),(1,2,5,4),(2,0,3,5)],4,root,'lock')
 # Export notes and component grouping remain in the editable .blend as custom properties.
-root['assetVersion']='1.0.4';root['asset']='Restore archival briefcase';root['units']='meters';root['three_coordinate_contract']='x right, y up, z front';root['lid_open_rotation_x']=-1.75
+root['assetVersion']='1.1.0';root['asset']='Restore archival briefcase';root['units']='meters';root['three_coordinate_contract']='x right, y up, z front';root['lid_open_rotation_x']=-1.75
+root['wheelStep']=WHEEL_STEP;root['wheelZeroAngle']=0.0;root['wheelNumerals']='0123456789';root['numeralsPerWheel']=10;root['wheelCount']=4;root['numeralGeometry']=True;root['numeralInsetMeters']=.00030;root['separatorCountPerWheel']=10;root['handleRemoved']=True
 root['atlas_layout']='top-left painted metal; top-right champagne hardware; bottom-left oxblood leather; bottom-right woven lining'
 bpy.context.view_layer.update()
 
@@ -283,9 +314,7 @@ def export_asset():
         cp=ob.copy();cp.name=ob.name+'_export';export_col.objects.link(cp);cp.parent=parentmap.get(ob.parent,exroot);parentmap[ob]=cp
     buckets=defaultdict(list)
     for ob in parts:
-        if ob.name.startswith('NumberDisplay_'):
-            key=(ob.parent,ob.name)
-        else:key=(ob.parent,int(ob['atlas_quadrant']))
+        key=(ob.parent,int(ob['atlas_quadrant']))
         buckets[key].append(ob)
     exports=[];names=[]
     for (par,key),objects in buckets.items():
@@ -297,7 +326,7 @@ def export_asset():
         bpy.context.view_layer.objects.active=copied[0]
         if len(copied)>1:bpy.ops.object.join()
         cp=bpy.context.view_layer.objects.active
-        if isinstance(key,str): name=key
+        if key==4:name='ReadingIndex' if par==root else 'WheelNumerals_'+par.name.split('_')[-1]
         elif par==root:name='BodyStatic' if key==2 else 'BodyStatic_'+['Leather','Fabric','Paint','Hardware'][key]
         elif par==lid:name='LidStatic' if key==2 else 'LidStatic_'+['Leather','Fabric','Paint','Hardware'][key]
         else:name=par.name+'_Mesh_'+str(key)
@@ -314,7 +343,9 @@ def export_asset():
     target=OUT+'/briefcase.glb'
     bpy.ops.export_scene.gltf(filepath=target,export_format='GLB',use_selection=True,export_apply=False,export_yup=True,export_materials='EXPORT',export_image_format='AUTO',export_cameras=False,export_lights=False,export_extras=True)
     tris=sum(sum(len(p.vertices)-2 for p in ob.data.polygons)for ob in exports)
-    report={'assetVersion':root['assetVersion'],'triangles':tris,'renderMeshes':len(exports),'nodes':[ob.name for ob in export_col.objects],'bodyBounds':[-.48,-.10,-.315,.48,.10,.315],'atlas':os.path.basename(baseim.filepath),'glbBytes':os.path.getsize(target)}
+    assert tris<=60000,tris
+    assert len(exports)<32,len(exports)
+    report={'numeralGeometry':True,'numeralsPerWheel':10,'totalNumeralGlyphs':40,'separatorCountPerWheel':10,'wheelStep':WHEEL_STEP,'wheelZeroAngle':0,'numeralInsetMeters':.00030,'handleRemoved':True,'assetVersion':root['assetVersion'],'triangles':tris,'renderMeshes':len(exports),'nodes':[ob.name for ob in export_col.objects],'bodyBounds':[-.48,-.10,-.315,.48,.10,.315],'atlas':os.path.basename(baseim.filepath),'glbBytes':os.path.getsize(target),'glbSha256':hashlib.sha256(open(target,'rb').read()).hexdigest()}
     with open(ART+'/asset-report.json','w') as f:json.dump(report,f,indent=2)
     for ob in list(export_col.objects):bpy.data.objects.remove(ob,do_unlink=True)
     bpy.data.collections.remove(export_col)
@@ -327,11 +358,12 @@ import bmesh
 issues=[];totaltri=0
 for ob in parts:
     totaltri+=sum(len(p.vertices)-2 for p in ob.data.polygons)
-    if ob.name.startswith('NumberDisplay_'):continue # intentional one-sided decal surface
     bm=bmesh.new();bm.from_mesh(ob.data);bad=[e for e in bm.edges if not e.is_manifold]
     if bad:issues.append({'part':ob.name,'nonManifoldEdges':len(bad)})
     bm.free()
-    q=int(ob['atlas_quadrant']);u0=(q%2)*.5;v0=(q//2)*.5
+    q=int(ob['atlas_quadrant']);
+    if q==4:continue
+    u0=(q%2)*.5;v0=(q//2)*.5
     if any(not (u0+.02-1e-6<=v.uv.x<=u0+.48+1e-6 and v0+.02-1e-6<=v.uv.y<=v0+.48+1e-6)for v in ob.data.uv_layers.active.data):issues.append({'part':ob.name,'uvOutsideMaterialTile':True})
 # Test the actual outer shells through the hinge sweep, including triangle intersection.
 from mathutils.bvhtree import BVHTree
@@ -349,7 +381,34 @@ for a in angles:
     lid.rotation_euler.x=a;bpy.context.view_layer.update();pvt=lid.matrix_world.translation
     sweep.append({'angle':a,'pivotBlender':list(pvt),'shellTriangleIntersections':len(base_bvh.overlap(mesh_bvh(lidshell))), 'finite':all(math.isfinite(v) for ob in parts if ob.parent==lid for vv in ob.bound_box for v in ob.matrix_world@Vector(vv))})
 lid.rotation_euler.x=0
-with open(ART+'/geometry-qa.json','w')as f:json.dump({'manufacturedParts':len(parts),'triangles':totaltri,'issues':issues,'closedBoundsThree':closed_bounds,'hingeSweep':sweep,'note':'Open decal planes intentionally excluded from manifold requirement. Both shells are closed solids surrounding a genuinely hollow interior.'},f,indent=2)
+# Rotate every real glyph into the reading window. Ray tests prove that black inlay
+# occupies a machined recess rather than intersecting an uncut metallic face.
+wheel_detents=[];flat_normal_loops=0
+for i in range(4):
+    drum_mesh=wheel_drums[i].data
+    for poly in drum_mesh.polygons:
+        for li in poly.loop_indices:
+            assert poly.normal.dot(drum_mesh.corner_normals[li].vector)>.9999,(i,poly.index,li)
+            flat_normal_loops+=1
+    wp=bpy.data.objects['Wheel_'+str(i)]
+    for digit,ob in enumerate(wheel_glyphs[i]):
+        wp.rotation_euler.x=-digit*WHEEL_STEP;bpy.context.view_layer.update()
+        pts=[ob.matrix_world@v.co for v in ob.data.vertices]
+        front=max(-v.y for v in pts);height=max(v.z for v in pts)-min(v.z for v in pts)
+        center_y=(max(v.z for v in pts)+min(v.z for v in pts))/2
+        inset=.358+WHEEL_APOTHEM-front
+        assert abs(inset-.0003)<1e-6,(i,digit,inset)
+        assert abs(height-.022)<1e-6 and abs(center_y-.01)<1e-6,(i,digit,height,center_y)
+        # Tessellate so the probe falls inside ink even for counters such as 0 and 8.
+        ob.data.calc_loop_triangles();cap=next(t for t in ob.data.loop_triangles if t.normal.z>.9)
+        center=sum((ob.data.vertices[v].co for v in cap.vertices),Vector())/3
+        ink=ob.matrix_world@center;normal=Vector((0,-1,0))
+        hit,normal_hit,index,distance=mesh_bvh(wheel_drums[i]).ray_cast(ink+normal*.005,-normal,.02)
+        assert hit is not None and distance>.00570,(i,digit,distance)
+        wheel_detents.append({'wheel':i,'digit':digit,'rotationX':-digit*WHEEL_STEP,'insetMeters':round(inset,7),'inkHeightMeters':round(height,6),'frontRayToRecessMeters':round(distance,7)})
+    wp.rotation_euler.x=0
+bpy.context.view_layer.update()
+with open(ART+'/geometry-qa.json','w')as f:json.dump({'manufacturedParts':len(parts),'triangles':totaltri,'issues':issues,'closedBoundsThree':closed_bounds,'hingeSweep':sweep,'wheelDetents':wheel_detents,'flatMetalNormalLoopsVerified':flat_normal_loops,'note':'All render components including all forty engraved numeral solids are checked for manifold edges. Both shells are closed solids surrounding a genuinely hollow interior.'},f,indent=2)
 if any(s['shellTriangleIntersections'] for s in sweep):issues.append({'hingeSweepIntersections':sweep})
 if issues:raise RuntimeError('Geometry QA failed: '+str(issues[:5]))
 
@@ -383,7 +442,7 @@ def sheet(name,angles,scale=1.43,target=(0,0,.04),res=640):
     print('SHEET_READY '+name,flush=True)
 # Save source with setup, closed case and cameras. All source pieces remain individually editable.
 camera_view((1.2,-1.5,1.15));
-for im in [baseim,ormim,normim]+[n.image for n in numbermat.node_tree.nodes if n.type=='TEX_IMAGE']:im.pack()
+for im in [baseim,ormim,normim]:im.pack()
 bpy.ops.wm.save_as_mainfile(filepath=ART+'/restore-retro-briefcase.blend')
 if not args.skip_renders:
     sheet('briefcase',[(1.2,-1.5,1.15),(-1.2,-1.5,.85),(-1.2,1.5,1.1),(1.2,1.5,.65)])
@@ -391,14 +450,13 @@ if not args.skip_renders:
     render(ART+'/renders/briefcase-open.png',(1.3,-1.8,1.7),(0,.01,.26),1.6,1024)
     lid.rotation_euler.x=0;latchL.rotation_euler.x=0;latchR.rotation_euler.x=0
     # Exploded assembly illustration uses actual separated source pieces, with exaggerated spacing.
-    saved={ob:ob.location.copy() for ob in parts}; empty_saved={ob:ob.location.copy()for ob in [lid,handle,latchL,latchR]}
-    lid.location.z+=.44;handle.location.y-=.28;latchL.location.y-=.16;latchR.location.y-=.16
+    saved={ob:ob.location.copy() for ob in parts}; empty_saved={ob:ob.location.copy()for ob in [lid,latchL,latchR]}
+    lid.location.z+=.44;latchL.location.y-=.16;latchR.location.y-=.16
     for ob in parts:
         grp=ob['part_group']
         if ob.parent==root:
             if grp=='hinge':ob.location.y+=.16
             elif grp=='lock':ob.location.y-=.15
-            elif grp=='handle-bracket':ob.location.y-=.11
             elif grp=='clasp':ob.location.y-=.09
             elif int(ob['atlas_quadrant'])==1:ob.location.z+=.12
     for ob in COL.objects:
@@ -413,8 +471,7 @@ if not args.skip_renders:
       'lid-liner':lambda o:o.parent==lid,
       'hinge':lambda o:o['part_group']=='hinge' and o.matrix_world.translation.x<0 or o.parent==lid and 'hinge' in o.name.lower() and o.matrix_world.translation.x<0,
       'clasp':lambda o:o.parent==latchR or o['part_group']=='clasp' and o.matrix_world.translation.x>0,
-      'handle':lambda o:o.parent==handle or o['part_group']=='handle-bracket',
-      'combination-lock':lambda o:o['part_group']in ['lock','wheel','display']}
+      'combination-lock':lambda o:o['part_group']in ['lock','wheel','numerals']}
     for name,predicate in groups.items():
         keep=[ob for ob in parts if predicate(ob)]
         for ob in parts:ob.hide_render=ob not in keep
@@ -424,6 +481,29 @@ if not args.skip_renders:
         ground.hide_render=True
         offsets=[(1,-1,1),(-1,-1,.7),(-1,1,1),(1,1,-.6)]
         sheet(name,[center+Vector(v)*size*2 for v in offsets],scale,center,512)
+    for ob in parts:ob.hide_render=False
+    ground.hide_render=False
+    # Four close views of the complete physical lock, in reading order 4-1-7-2.
+    # A front softbox makes this a readable engraving inspection, rather than a
+    # metallic reflection of the unlit studio horizon hiding the selected row.
+    data=bpy.data.lights.new('Wheel inspection front softbox','AREA');data.energy=25;data.shape='DISK';data.size=1.4
+    ob=bpy.data.objects.new('Wheel inspection front softbox',data);studio.objects.link(ob);ob.location=(0,-1.5,.12)
+    ob.rotation_euler=(Vector((0,-.38,.01))-ob.location).to_track_quat('-Z','Y').to_euler()
+    for i,digit in enumerate([4,1,7,2]):bpy.data.objects['Wheel_'+str(i)].rotation_euler.x=-digit*WHEEL_STEP
+    camera_view((0,-1,.085),(0,-.38,.01),.65);scene.render.resolution_x=1280;scene.render.resolution_y=512
+    scene.render.filepath=ART+'/renders/numbered-wheels-front.png';bpy.ops.render.render(write_still=True)
+    sheet('numbered-wheels',[(.35,-1,.18),(-.40,-1,.30),(.30,-1,.015),(-.2,-.75,.58)],.66,(0,-.38,.015),768)
+    for i in range(4):bpy.data.objects['Wheel_'+str(i)].rotation_euler.x=0
+    # Each column is the SAME wheel turned through one of its ten real detents.
+    keep=[ob for ob in parts if ob.parent==bpy.data.objects['Wheel_0']]
+    for ob in parts:ob.hide_render=ob not in keep
+    ground.hide_render=True; strip=np.ones((320,3200,4),np.float32)
+    wheel=bpy.data.objects['Wheel_0'];center=wheel.location.copy();center.y-=WHEEL_APOTHEM
+    for digit in range(10):
+        wheel.rotation_euler.x=-digit*WHEEL_STEP;bpy.context.view_layer.update()
+        path=ART+'/renders/wheel-detent-'+str(digit)+'.png';render(path,center+Vector((0,-1,0)),center,.088,320)
+        im=bpy.data.images.load(path,check_existing=False);strip[:,digit*320:(digit+1)*320]=np.array(im.pixels[:],np.float32).reshape((320,320,4));bpy.data.images.remove(im);os.remove(path)
+    image_write('Ten engraved wheel detents',strip,ART+'/renders/wheel-all-ten-detents.png','sRGB');wheel.rotation_euler.x=0
     for ob in parts:ob.hide_render=False
     ground.hide_render=False
     print('ALL_RENDERS_READY',flush=True)

@@ -221,8 +221,6 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   }
   const latch = target(box(caseRoot, [.11, .13, .075], [.365, .02, .362], brass), 'case-latch');
   const leftLatch = target(box(caseRoot, [.11, .13, .075], [-.365, .02, .362], brass), 'case-latch-left');
-  box(caseRoot, [.30, .035, .05], [0, -.073, .397], leather);
-  for (const x of [-.16, .16]) box(caseRoot, [.025, .10, .035], [x, -.035, .395], metal);
   const caseFallbackMeshes = [];
   caseRoot.traverse(object => { if (object.isMesh) caseFallbackMeshes.push(object); });
 
@@ -476,8 +474,8 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
       if (held.prop.body) { driveGrabbedBody(world, held.prop.body, held.goal, handRotation, dt, { maxSpeed: 2.5, acceleration: 18 }); held.speed = new THREE.Vector3().copy(held.prop.body.linvel()).length(); }
       else { held.speed = held.prop.group.position.distanceTo(held.goal) * 8; held.prop.group.position.lerp(held.goal, blend); }
     }
-    redrawWheels();
-    briefcaseAsset?.update({ lidAngle: lid.rotation.x, digits: state.wheels, open: state.caseOpen, maps: wheels.map(({ digit }) => digit.material.map), dt });
+    if (!briefcaseAsset) redrawWheels();
+    briefcaseAsset?.update({ lidAngle: lid.rotation.x, digits: state.wheels, open: state.caseOpen, dt });
     root.updateMatrixWorld(true);
   }
   function getGrabState() {
@@ -499,7 +497,7 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
       if (briefcaseLoading) return briefcaseLoading;
       briefcaseLoading = (async () => {
         try {
-          const asset = await loadBriefcaseAsset({ url, digitMaps: wheels.map(({ digit }) => digit.material.map) });
+          const asset = await loadBriefcaseAsset({ url });
           if (disposed) { asset.dispose(); return false; }
           // Render the Blender meshes while preserving the exact ray and contact
           // proxies. Material visibility does not disable Three.js raycasting.
@@ -511,7 +509,7 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
           }
           briefcaseAsset = asset; briefcaseState = { ...asset.state };
           caseRoot.add(asset.root);
-          asset.update({ lidAngle: lid.rotation.x, digits: state.wheels, open: state.caseOpen, maps: wheels.map(({ digit }) => digit.material.map), immediate: true });
+          asset.update({ lidAngle: lid.rotation.x, digits: state.wheels, open: state.caseOpen, immediate: true });
           root.updateMatrixWorld(true);
           return true;
         } catch (error) {

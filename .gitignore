@@ -16,3 +16,4 @@ __pycache__/
 # Blender retains local backups and individual render frames beside review sheets.
 art/briefcase/*.blend1
 art/briefcase/renders/*-[1-4].png
+art/briefcase/renders/wheel-detent-*.png
