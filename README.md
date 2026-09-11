@@ -1,5 +1,9 @@
 # Restore
 
+## Briefcase art pass (0.6.1)
+
+The office briefcase now uses a separately articulated Blender model with aged PBR textures, real shell thickness, a lined interior, hinges, twin clasps and a leather handle. The original combination and photograph interactions still work. See the [quality pass, source model and render sheets](docs/BRIEFCASE-QUALITY.md). Open `/briefcase-review.html` on the running server to orbit the exported model, open its lid and inspect the exploded assemblies.
+
 A Three.js / WebXR playground for collecting, breaking, and restoring objects. The original bright-room demo is preserved at Git tag **restore-demo-v1** and on `main`. The default **warehouse** branch extends it into an enclosed artifact storehouse.
 
 ## Opening discovery prototype 0.6.0

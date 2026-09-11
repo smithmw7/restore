@@ -1,6 +1,6 @@
 {
   "name": "restore",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -48,7 +48,10 @@
     "test:asset-paths": "node scripts/asset-path-check.mjs",
     "test:opening": "node scripts/opening-puzzles-check.mjs && node scripts/opening-assembly-check.mjs",
     "test:opening-browser": "node scripts/opening-browser.mjs",
-    "test:opening-audio": "node scripts/opening-audio-check.mjs"
+    "test:opening-audio": "node scripts/opening-audio-check.mjs",
+    "test:briefcase-asset": "node scripts/briefcase-asset-check.mjs",
+    "test:briefcase-browser": "node scripts/briefcase-browser.mjs",
+    "test:briefcase-review": "node scripts/briefcase-review-check.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

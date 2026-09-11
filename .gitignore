@@ -12,3 +12,7 @@ output/
 *.key
 __pycache__/
 *.pyc
+
+# Blender retains local backups and individual render frames beside review sheets.
+art/briefcase/*.blend1
+art/briefcase/renders/*-[1-4].png

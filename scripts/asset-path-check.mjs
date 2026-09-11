@@ -15,7 +15,7 @@ const contentTypes = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.wav': 'audio/wav',
   '.json': 'application/json', '.webmanifest': 'application/manifest+json',
-  '.wasm': 'application/wasm',
+  '.wasm': 'application/wasm', '.glb': 'model/gltf-binary',
 };
 const checks = [];
 let browser;
@@ -71,6 +71,8 @@ try {
       });
       assert.ok(result.closedCrates > 140 && result.closedCrates < 176, `${base} did not initialize the warehouse with clear opening approaches`);
       assert.equal(result.opening.caseUnlocked,false);
+      assert.equal(result.opening.briefcase?.loaded,true, `${base} Blender briefcase did not load`);
+      assert.ok(requests.has(`${base}models/briefcase/briefcase.glb`), `${base} briefcase model route not requested`);
       assert.equal(result.mechanism.total,24);
       assert.equal(result.audio.loaded, 48);
       assert.equal(result.audio.loaded, result.audio.expected, `${base} left undecoded audio`);

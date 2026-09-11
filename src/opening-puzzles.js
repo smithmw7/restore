@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { driveGrabbedBody, releaseGrabbedBody } from './physical-drag.js';
+import { loadBriefcaseAsset, BRIEFCASE_ASSET_URL } from './briefcase-asset.js';
 
 export const OPENING_SAVE_KEY = 'restore.opening.v1';
 export const OPENING_CODE = '4172';
@@ -8,9 +9,9 @@ const HOME = {
   cutters: [-6.7, 1.13, 10.5],
   'glove-left': [10.30, 1.30, 10.97],
   'glove-right': [10.83, 1.30, 10.97],
-  'photo-0': [5.94, 1.175, 8.15],
-  'photo-1': [6.15, 1.181, 8.15],
-  'photo-2': [6.36, 1.187, 8.15],
+  'photo-0': [5.94, 1.017, 8.15],
+  'photo-1': [6.15, 1.023, 8.15],
+  'photo-2': [6.36, 1.029, 8.15],
 };
 const clone = value => JSON.parse(JSON.stringify(value));
 const initial = () => ({ version: 1, code: OPENING_CODE, wheels: [0, 0, 0, 0], drawerOpen: false,
@@ -140,6 +141,8 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   const items = new Map(), targetList = [], obstacleMeshes = [], props = new Map(), hands = new Map();
   const v = new THREE.Vector3(), q = new THREE.Quaternion();
   let held = null, equippedCutters = null, carriedRelocationPending = false, disposed = false, cutTime = 0;
+  let briefcaseAsset = null, briefcaseLoading = null;
+  let briefcaseState = { loaded: false, error: null, url: BRIEFCASE_ASSET_URL, version: null, meshes: 0, triangles: 0, materials: 0, textures: 0 };
   const mat = (color, roughness = .7, metalness = 0) => { const m = new THREE.MeshStandardMaterial({ color, roughness, metalness }); materials.add(m); return m; };
   const metal = mat('#62695f', .68, .68), dark = mat('#222925', .88, .4), brass = mat('#96754d', .49, .72), ivory = mat('#c6c4ab', .53, .22);
   const leather = mat('#55463a', .92), paper = mat('#d3c8a7', .92), red = mat('#824a31', .79);
@@ -192,15 +195,23 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   }));
   note.visible = state.notebookOpen;
 
-  const caseRoot = new THREE.Group(); caseRoot.position.set(6.15, 1.03, 8.15); root.add(caseRoot);
-  const caseBody = box(caseRoot, [.96, .20, .63], [0, 0, 0], metal);
-  obstacle(caseBody, [.96, .20, .63]);
-  box(caseRoot, [.84, .025, .52], [0, .105, 0], dark);
+  const caseRoot = new THREE.Group(); caseRoot.name = 'Office briefcase'; caseRoot.position.set(6.15, 1.06, 8.15); root.add(caseRoot);
+  // One hollow shell serves both the authored asset and the fallback. A solid
+  // box would block photo selection and eject a photo as soon as it is picked up.
+  for (const [size, position] of [
+    [[.96, .026, .63], [0, -.087, 0]],
+    [[.018, .187, .63], [-.471, .0065, 0]], [[.018, .187, .63], [.471, .0065, 0]],
+    [[.924, .187, .018], [0, .0065, -.306]], [[.924, .187, .018], [0, .0065, .306]],
+  ]) obstacle(box(caseRoot, size, position, metal), size);
+  box(caseRoot, [.91, .017, .576], [0, -.065, 0], dark);
   for (const x of [-.48, .48]) box(caseRoot, [.025, .22, .65], [x, .005, 0], brass);
   const lid = new THREE.Group(); lid.position.set(0, .12, -.315); caseRoot.add(lid);
-  const lidPanel = box(lid, [.99, .065, .65], [0, 0, .325], metal);
+  // Enclose the exported shell, rolled rim and corner caps in the same hinge
+  // space. The lid's local Y bounds are -.014 through .083 meters.
+  const lidSize = [.98, .098, .662];
+  const lidPanel = box(lid, lidSize, [0, .0345, .3134], metal, 'Briefcase lid collision proxy');
   box(lid, [.86, .025, .51], [0, -.043, .325], leather);
-  movingObstacles.push(obstacle(lidPanel, [.99, .065, .65]));
+  movingObstacles.push(obstacle(lidPanel, lidSize));
   const wheels = [];
   for (let index = 0; index < 4; index++) {
     const wheel = target(cylinder(caseRoot, .057, .08, [(index - 1.5) * .132, .01, .358], brass, true), `wheel-${index}`, { eligible: () => !state.caseUnlocked });
@@ -209,8 +220,11 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
     wheels.push({ wheel, digit, digitValue: -1 });
   }
   const latch = target(box(caseRoot, [.11, .13, .075], [.365, .02, .362], brass), 'case-latch');
+  const leftLatch = target(box(caseRoot, [.11, .13, .075], [-.365, .02, .362], brass), 'case-latch-left');
   box(caseRoot, [.30, .035, .05], [0, -.073, .397], leather);
   for (const x of [-.16, .16]) box(caseRoot, [.025, .10, .035], [x, -.035, .395], metal);
+  const caseFallbackMeshes = [];
+  caseRoot.traverse(object => { if (object.isMesh) caseFallbackMeshes.push(object); });
 
   const locker = new THREE.Group(); locker.position.set(10.6, 0, 10.9); root.add(locker);
   for (const [size, pos] of [ [[1.3, .05, .65], [0, .025, 0]], [[1.3, .05, .65], [0, 2.175, 0]], [[.045, 2.2, .65], [-.63, 1.1, 0]], [[.045, 2.2, .65], [.63, 1.1, 0]], [[1.3, 2.2, .035], [0, 1.1, -.31]], [[1.26, .035, .59], [0, 1.12, 0]] ]) obstacle(box(locker, size, pos, metal), size);
@@ -331,8 +345,9 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
     const entry = entryOf(mesh);
     if (disposed || !entry || !visible(entry) || !reachable(mesh, options)) return false;
     const { id } = entry;
-    if (id === 'drawer' || id === 'notebook' || id === 'locker' || id === 'case-latch') {
-      const success = act(id, {}, mesh); if (!success && id === 'case-latch') emit('locked', mesh); return true;
+    if (id === 'drawer' || id === 'notebook' || id === 'locker' || id === 'case-latch' || id === 'case-latch-left') {
+      const action = id === 'case-latch-left' ? 'case-latch' : id;
+      const success = act(action, {}, mesh); if (!success && action === 'case-latch') emit('locked', mesh); return true;
     }
     if (id.startsWith('wheel-')) { act('wheel', { index: Number(id.at(-1)), direction: options.direction === -1 ? -1 : 1 }, mesh); return true; }
     if (id.startsWith('glove-')) {
@@ -399,7 +414,12 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
     wheels.forEach(({ digit, digitValue }, index) => {
       if (digitValue === state.wheels[index]) return;
       const old = digit.material.map;
-      const map = texture((ctx, w, h) => { ctx.fillStyle = '#d4cbaa'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#252c28'; ctx.font = 'bold 390px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(state.wheels[index]), w / 2, h * .54); });
+      const map = texture((ctx, w, h) => {
+        const shade = ctx.createLinearGradient(0, 0, 0, h);
+        shade.addColorStop(0, '#9b9889'); shade.addColorStop(.32, '#e0dbc9'); shade.addColorStop(.68, '#d1cbb7'); shade.addColorStop(1, '#999586');
+        ctx.fillStyle = shade; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#222720'; ctx.font = 'bold 285px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(state.wheels[index]), w / 2, h * .53);
+      }, 256, 384);
       maps.add(map); digit.material.map = map; digit.material.needsUpdate = true; old?.dispose(); maps.delete(old); wheels[index].digitValue = state.wheels[index];
     });
   }
@@ -416,7 +436,7 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
     if (disposed) return;
     dt = Math.min(.05, Math.max(0, dt)); const blend = 1 - Math.exp(-8 * dt);
     drawer.position.z = THREE.MathUtils.lerp(drawer.position.z, state.drawerOpen ? 8.94 : 8.48, blend);
-    notebook.position.set(state.noteSeen ? 7.03 : 7, state.noteSeen ? 1.024 : .68, state.noteSeen ? 8.20 : drawer.position.z - .035);
+    notebook.position.set(state.noteSeen ? 7.35 : 7, state.noteSeen ? 1.024 : .68, state.noteSeen ? 8.20 : drawer.position.z - .035);
     cover.rotation.z = THREE.MathUtils.lerp(cover.rotation.z, state.notebookOpen ? Math.PI * .95 : 0, blend);
     note.visible = state.notebookOpen;
     lid.rotation.x = THREE.MathUtils.lerp(lid.rotation.x, state.caseOpen ? -1.75 : 0, blend);
@@ -456,7 +476,9 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
       if (held.prop.body) { driveGrabbedBody(world, held.prop.body, held.goal, handRotation, dt, { maxSpeed: 2.5, acceleration: 18 }); held.speed = new THREE.Vector3().copy(held.prop.body.linvel()).length(); }
       else { held.speed = held.prop.group.position.distanceTo(held.goal) * 8; held.prop.group.position.lerp(held.goal, blend); }
     }
-    redrawWheels(); root.updateMatrixWorld(true);
+    redrawWheels();
+    briefcaseAsset?.update({ lidAngle: lid.rotation.x, digits: state.wheels, open: state.caseOpen, maps: wheels.map(({ digit }) => digit.material.map), dt });
+    root.updateMatrixWorld(true);
   }
   function getGrabState() {
     if (!held) return { active: false, handId: null, objectId: null, heldMesh: null, anchor: null, radius: 0, speed: 0, goal: null, canDock: false };
@@ -471,6 +493,35 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   step(0);
   return {
     root, progression,
+    async loadBriefcase(url = BRIEFCASE_ASSET_URL) {
+      if (typeof document === 'undefined' || disposed) return false;
+      if (briefcaseAsset) return true;
+      if (briefcaseLoading) return briefcaseLoading;
+      briefcaseLoading = (async () => {
+        try {
+          const asset = await loadBriefcaseAsset({ url, digitMaps: wheels.map(({ digit }) => digit.material.map) });
+          if (disposed) { asset.dispose(); return false; }
+          // Render the Blender meshes while preserving the exact ray and contact
+          // proxies. Material visibility does not disable Three.js raycasting.
+          const proxyMaterial = new THREE.MeshBasicMaterial({ visible: false }); materials.add(proxyMaterial);
+          const digits = new Set(wheels.map(({ digit }) => digit));
+          for (const mesh of caseFallbackMeshes) {
+            if (digits.has(mesh)) mesh.visible = false;
+            else mesh.material = proxyMaterial;
+          }
+          briefcaseAsset = asset; briefcaseState = { ...asset.state };
+          caseRoot.add(asset.root);
+          asset.update({ lidAngle: lid.rotation.x, digits: state.wheels, open: state.caseOpen, maps: wheels.map(({ digit }) => digit.material.map), immediate: true });
+          root.updateMatrixWorld(true);
+          return true;
+        } catch (error) {
+          briefcaseState = { ...briefcaseState, url, error: error.message };
+          console.warn('The authored briefcase could not load. The interactive fallback remains available.', error);
+          return false;
+        } finally { briefcaseLoading = null; }
+      })();
+      return briefcaseLoading;
+    },
     async loadPhotos(url = `${import.meta.env?.BASE_URL || '/'}textures/opening/archive-photos.png`) {
       if (typeof document === 'undefined' || disposed) return false;
       const atlas = await new THREE.TextureLoader().loadAsync(url);
@@ -490,7 +541,7 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
     canPower: handedness => state.gloves[handedness] === true,
     getObstacles: () => { root.updateMatrixWorld(true); return obstacleMeshes.map(mesh => new THREE.Box3().setFromObject(mesh)); },
     getState() {
-      return { ...progression.getState(), equippedCutters, carriedRelocationPending, containerDoorAngle: Math.abs(doors[0].hinge.rotation.y), containerLightIntensity: interiorLight.intensity,
+      return { ...progression.getState(), briefcase: { ...briefcaseState }, equippedCutters, carriedRelocationPending, containerDoorAngle: Math.abs(doors[0].hinge.rotation.y), containerLightIntensity: interiorLight.intensity,
         targets: targetList.filter(visible).map(({ id, mesh, grab }) => ({ id, grab, position: mesh.getWorldPosition(new THREE.Vector3()).toArray() })),
         props: [...props.values()].map(prop => ({ id: prop.id, active: prop.active, visible: prop.group.visible, position: prop.group.position.toArray() })),
         physics: { bodies: bodies.length, colliders: colliders.length, activeProps: [...props.values()].filter(prop => prop.active).length } };
@@ -507,6 +558,7 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
       if (held) endGrab(held.handId, { cancelled: true });
       if (cutters.body) releaseGrabbedBody(cutters.body);
       for (const body of bodies) world?.removeRigidBody(body);
+      briefcaseAsset?.dispose();
       root.removeFromParent(); for (const geometry of geometries) geometry.dispose(); for (const material of materials) material.dispose(); for (const map of maps) map.dispose(); disposed = true;
     },
   };

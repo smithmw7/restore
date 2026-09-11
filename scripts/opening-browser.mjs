@@ -50,7 +50,16 @@ try {
   assert.equal((await read()).state.opening.noteSeen, true);
   assert.equal((await read()).state.opening.notebookOpen, true);
   await page.screenshot({ path: `${out}/02-notebook-combination.png` });
-  check('drawer and notebook open through pointer taps and reveal the combination');
+  const notebookClear = await page.evaluate(() => {
+    const { opening } = window.__restoreOpening;
+    const notebook = opening.targets.find(mesh => mesh.userData.openingId === 'notebook').parent;
+    notebook.updateWorldMatrix(true,true);
+    let minX = Infinity;
+    notebook.traverse(mesh => { if (!mesh.isMesh) return; const p = mesh.geometry.attributes.position; for(let i=0;i<p.count;i++) minX=Math.min(minX,mesh.position.clone().fromBufferAttribute(p,i).applyMatrix4(mesh.matrixWorld).x); });
+    return minX > 6.65;
+  });
+  assert.equal(notebookClear,true,'opened notebook cover clears the physical case');
+  check('drawer and notebook open through pointer taps, reveal the combination and clear the case');
 
   await view([6.15, 0, 9.55], [6.15, 1.05, 8.45]);
   for (const [index, count] of [4, 1, 7, 2].entries()) {
@@ -66,6 +75,8 @@ try {
   assert.equal(unlocked.gloves.left || unlocked.gloves.right, false);
   await page.screenshot({ path: `${out}/04-photographs-unlocked.png` });
   check('4172 opens the briefcase before any glove is equipped');
+  // The photos now sit inside a hollow case. Step closer to look over its real front rim.
+  await view([6.15, 0, 9.30], [6.15, 1.03, 8.15]);
   for (const id of ['photo-2', 'photo-1', 'photo-0']) await tap(id);
   assert.equal((await read()).state.opening.photosViewed.length, 3);
   check('three grainy photograph clues can be inspected');

@@ -1,0 +1,57 @@
+{
+  "assetVersion": "1.0.4",
+  "importedGLB": "briefcase.glb",
+  "triangles": 34236,
+  "renderMeshes": 20,
+  "embeddedImages": [
+    {
+      "name": "briefcase-basecolor-final",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "name": "briefcase-digit-0",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "name": "briefcase-normal",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "name": "briefcase-orm",
+      "width": 1024,
+      "height": 1024
+    }
+  ],
+  "hingeSweep": [
+    {
+      "lidAngle": 0,
+      "paintedShellTriangleIntersections": 0
+    },
+    {
+      "lidAngle": -0.35,
+      "paintedShellTriangleIntersections": 0
+    },
+    {
+      "lidAngle": -0.8,
+      "paintedShellTriangleIntersections": 0
+    },
+    {
+      "lidAngle": -1.3,
+      "paintedShellTriangleIntersections": 0
+    },
+    {
+      "lidAngle": -1.75,
+      "paintedShellTriangleIntersections": 0
+    }
+  ],
+  "checks": [
+    "GLB self contained with four embedded textures",
+    "Twenty render meshes, matching exported geometry, below 35,000 triangles",
+    "Positive transforms, finite coordinates, complete UV layers",
+    "Five imported hinge poses without painted shell intersections",
+    "Four actual imported GLB Blender studio renders"
+  ]
+}

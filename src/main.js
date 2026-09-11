@@ -332,7 +332,7 @@ function update(dt,time,frame){
 renderer.setAnimationLoop((time,frame)=>{frameDelta=lastTime?Math.min((time-lastTime)/1000,.05):1/72;lastTime=time;update(frameDelta,time,frame);renderer.info.reset();postprocessing.render(scene,camera);});
 window.advanceTime=ms=>{for(let i=0;i<Math.max(1,Math.round(ms/(1000/72)));i++)update(1/72,performance.now());renderer.info.reset();postprocessing.render(scene,camera);};
 function project(mesh){const p=mesh.getWorldPosition(new THREE.Vector3()),screen=p.clone().project(camera);return {id:mesh.userData.labObject||mesh.userData.openingId||mesh.name,uuid:mesh.uuid,kind:mesh.userData.kind,position:p.toArray(),screen:{x:Math.round((screen.x*.5+.5)*innerWidth),y:Math.round((-screen.y*.5+.5)*innerHeight)}};}
-window.render_game_to_text=()=>JSON.stringify({app:'Restore',version:'warehouse',ready,coordinateSystem:'Meters, +Y up, -Z forward.',mode:renderer.xr.isPresenting?'immersive-vr':'desktop',...lab?.getState(),objectStates:lab?.getState().objects,objects:(lab?.targets||[]).filter(x=>x.visible).map(project),pieces:(lab?.grabTargets||[]).filter(x=>x.visible).map(project),locomotion:locomotion?.getState(),warehouse:warehouse?.stats,postprocessing:postprocessing.getState(),mode:renderer.xr.isPresenting?'immersive-vr':'desktop',xr:{supported:xrSupported,presenting:renderer.xr.isPresenting,frames:xrFrames,selectCount,contactCount,lastInput,visibility:sessionVisibility,error:sessionError,frameMs:Math.round(frameDelta*1000),sources:inputs.filter(x=>x.source).map(x=>({kind:x.kind,handedness:x.source.handedness,tracked:x.controller.visible}))}});
+window.render_game_to_text=()=>JSON.stringify({app:'Restore',version:'warehouse',coordinateSystem:'Meters, +Y up, -Z forward.',mode:renderer.xr.isPresenting?'immersive-vr':'desktop',...lab?.getState(),ready,objectStates:lab?.getState().objects,objects:(lab?.targets||[]).filter(x=>x.visible).map(project),pieces:(lab?.grabTargets||[]).filter(x=>x.visible).map(project),locomotion:locomotion?.getState(),warehouse:warehouse?.stats,postprocessing:postprocessing.getState(),mode:renderer.xr.isPresenting?'immersive-vr':'desktop',xr:{supported:xrSupported,presenting:renderer.xr.isPresenting,frames:xrFrames,selectCount,contactCount,lastInput,visibility:sessionVisibility,error:sessionError,frameMs:Math.round(frameDelta*1000),sources:inputs.filter(x=>x.source).map(x=>({kind:x.kind,handedness:x.source.handedness,tracked:x.controller.visible}))}});
 window.__restoreDiagnostics=()=>({secureContext:isSecureContext,webxr:!!navigator.xr,state:JSON.parse(window.render_game_to_text()),audio:audio.getState(),input:{lastTap,desktopGrab:desktopGrab?{point:desktopGrab.point.toArray(),normal:dragPlane.normal.toArray(),constant:dragPlane.constant}:null,camera:{position:camera.getWorldPosition(new THREE.Vector3()).toArray(),quaternion:camera.getWorldQuaternion(new THREE.Quaternion()).toArray(),fov:camera.fov,aspect:camera.aspect}},drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries});
 try{
   await refreshXR();
@@ -357,7 +357,7 @@ try{
   if(openingEnabled){
     const world=lab.physicsWorld;
     opening=createOpeningPuzzles({scene,world,storage:saveStorage,onEvent:handleEvent});
-    await opening.loadPhotos?.();
+    await Promise.all([opening.loadPhotos?.(), opening.loadBriefcase?.()]);
     assembly=createOpeningAssembly({scene,world,materials,storage:saveStorage,onEvent:handleEvent,containerOpen:()=>opening.doorOpen});
   }
   lab=createSceneInteractions(lab,warehouse.hangingLights);
