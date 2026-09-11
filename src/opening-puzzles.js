@@ -2,10 +2,16 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { driveGrabbedBody, releaseGrabbedBody } from './physical-drag.js';
 import { loadBriefcaseAsset, BRIEFCASE_ASSET_URL } from './briefcase-asset.js';
+import { loadOfficeAssets, OFFICE_ASSET_URL } from './office-assets.js';
+import { OFFICE_PROPS, OFFICE_LOCKERS } from './office-props.js';
+import { createOfficeWheelDrag } from './office-wheel-drag.js';
+import { createContactAudioProbe, setContactSurface } from './contact-audio.js';
 
 export const OPENING_SAVE_KEY = 'restore.opening.v1';
-export const OPENING_CODE = '4172';
+export const OPENING_CODE = '1942';
 const HOME = {
+  ...Object.fromEntries(OFFICE_PROPS.map(prop => [prop.id, prop.home])),
+  notebook: [7, .68, 8.445],
   cutters: [-6.7, 1.13, 10.5],
   'glove-left': [10.30, 1.30, 10.97],
   'glove-right': [10.83, 1.30, 10.97],
@@ -15,7 +21,7 @@ const HOME = {
 };
 const clone = value => JSON.parse(JSON.stringify(value));
 const initial = () => ({ version: 1, code: OPENING_CODE, wheels: [0, 0, 0, 0], drawerOpen: false,
-  notebookOpen: false, noteSeen: false, lockerOpen: false, caseUnlocked: false, caseOpen: false,
+  notebookOpen: false, noteSeen: false, lockerOpen: false, lockers: { left: false, center: false, right: false }, caseUnlocked: false, caseOpen: false,
   gloves: { left: false, right: false }, cuttersFound: false, containerCut: false, containerOpen: false,
   photosViewed: [], propPoses: {}, milestones: [] });
 
@@ -31,13 +37,17 @@ export function createOpeningProgression(storage) {
       }
       state.wheels = Array.isArray(loaded.wheels) && loaded.wheels.length === 4
         ? loaded.wheels.map(n => Number.isInteger(n) && n >= 0 && n <= 9 ? n : 0) : [0, 0, 0, 0];
+      // Existing discoveries survive the changed combination. An unlocked old
+      // case displays its new correct code; an unsolved case keeps its digits.
+      if (state.caseUnlocked && loaded.code !== OPENING_CODE) state.wheels = [...OPENING_CODE].map(Number);
+      state.lockers = { left: loaded.lockers?.left === true, center: state.lockerOpen, right: loaded.lockers?.right === true };
       state.gloves = { left: loaded.gloves?.left === true, right: loaded.gloves?.right === true };
       state.photosViewed = [...new Set((Array.isArray(loaded.photosViewed) ? loaded.photosViewed : []).filter(n => Number.isInteger(n) && n >= 0 && n < 3))];
       state.milestones = [...new Set((Array.isArray(loaded.milestones) ? loaded.milestones : []).filter(n => typeof n === 'string'))];
       for (const [id, pose] of Object.entries(loaded.propPoses || {})) {
         if (HOME[id] && Array.isArray(pose?.position) && pose.position.length === 3 && pose.position.every(Number.isFinite)
           && Array.isArray(pose?.quaternion) && pose.quaternion.length === 4 && pose.quaternion.every(Number.isFinite)
-          && Math.abs(pose.position[0]) < 90 && Math.abs(pose.position[2]) < 90 && pose.position[1] >= .02 && pose.position[1] < 6) state.propPoses[id] = clone(pose);
+          && Math.abs(pose.position[0]) < 90 && Math.abs(pose.position[2]) < 90 && pose.position[1] >= .002 && pose.position[1] < 6) state.propPoses[id] = clone(pose);
       }
       state.caseOpen &&= state.caseUnlocked;
       state.containerOpen &&= state.containerCut;
@@ -53,15 +63,22 @@ export function createOpeningProgression(storage) {
     switch (action) {
       case 'drawer': state.drawerOpen = !state.drawerOpen; break;
       case 'notebook':
-        if (!state.drawerOpen && !state.noteSeen) return false;
+        if (!state.drawerOpen && !state.noteSeen && !data.loose) return false;
         state.notebookOpen = !state.notebookOpen;
         if (state.notebookOpen) { state.noteSeen = true; milestone('combination-found'); }
         break;
-      case 'locker': state.lockerOpen = !state.lockerOpen; break;
+      case 'locker': state.lockerOpen = !state.lockerOpen; state.lockers.center = state.lockerOpen; break;
+      case 'locker-door':
+        if (!['left', 'right'].includes(data.id)) return false;
+        state.lockers[data.id] = !state.lockers[data.id]; break;
       case 'wheel':
         if (state.caseUnlocked || !Number.isInteger(data.index) || data.index < 0 || data.index > 3) return false;
         state.wheels[data.index] = (state.wheels[data.index] + (data.direction === -1 ? 9 : 1)) % 10;
         break;
+      case 'wheel-set':
+        if (state.caseUnlocked || !Number.isInteger(data.index) || data.index < 0 || data.index > 3
+          || !Number.isInteger(data.digit) || data.digit < 0 || data.digit > 9) return false;
+        state.wheels[data.index] = data.digit; break;
       case 'case-latch':
         if (!state.caseUnlocked && state.wheels.join('') !== state.code) return false;
         state.caseUnlocked = true; state.caseOpen = !state.caseOpen; milestone('photographs-unlocked'); break;
@@ -142,10 +159,15 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   const v = new THREE.Vector3(), q = new THREE.Quaternion();
   let held = null, equippedCutters = null, carriedRelocationPending = false, disposed = false, cutTime = 0;
   let briefcaseAsset = null, briefcaseLoading = null;
+  let officeAssets = null, officeLoading = null, officeState = { loaded: false, url: OFFICE_ASSET_URL, error: null };
+  let authoredCover = null;
+  const readContact = world ? createContactAudioProbe(world) : null;
   let briefcaseState = { loaded: false, error: null, url: BRIEFCASE_ASSET_URL, version: null, meshes: 0, triangles: 0, materials: 0, textures: 0 };
   const mat = (color, roughness = .7, metalness = 0) => { const m = new THREE.MeshStandardMaterial({ color, roughness, metalness }); materials.add(m); return m; };
   const metal = mat('#62695f', .68, .68), dark = mat('#222925', .88, .4), brass = mat('#96754d', .49, .72), ivory = mat('#c6c4ab', .53, .22);
   const leather = mat('#55463a', .92), paper = mat('#d3c8a7', .92), red = mat('#824a31', .79);
+  const wood = mat('#503320', .79), upholstery = mat('#4b211e', .83);
+  const proxyMaterial = new THREE.MeshBasicMaterial({ visible: false }); materials.add(proxyMaterial);
   const glow = mat('#799f92', .38, .35); glow.emissive.set('#67b6a1'); glow.emissiveIntensity = .35;
   function box(parent, size, position, material = metal, name = '') {
     const geometry = new THREE.BoxGeometry(...size); geometries.add(geometry);
@@ -163,31 +185,63 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
     mesh.userData = { ...mesh.userData, kind: 'opening-puzzle', labObject: id, openingId: id, soundId: 'tablet' };
     const entry = { mesh, id, grab, eligible }; items.set(mesh, entry); targetList.push(entry); return mesh;
   }
-  function rigid(mesh, size, dynamic = false) {
+  function rigid(mesh, size, dynamic = false, { mass, parts, fixed = false, surface = 'metal' } = {}) {
     if (!world) return null;
     mesh.updateWorldMatrix(true, false); mesh.getWorldPosition(v); mesh.getWorldQuaternion(q);
-    const desc = (dynamic ? RAPIER.RigidBodyDesc.dynamic() : RAPIER.RigidBodyDesc.kinematicPositionBased()).setTranslation(v.x, v.y, v.z).setRotation(q);
+    const desc = (dynamic ? RAPIER.RigidBodyDesc.dynamic() : fixed ? RAPIER.RigidBodyDesc.fixed() : RAPIER.RigidBodyDesc.kinematicPositionBased()).setTranslation(v.x, v.y, v.z).setRotation(q);
     if (dynamic) desc.setLinearDamping(2.2).setAngularDamping(3).setCcdEnabled(true).setCanSleep(true);
     const body = world.createRigidBody(desc); bodies.push(body);
-    const collider = world.createCollider(RAPIER.ColliderDesc.cuboid(...size.map(n => n / 2)).setFriction(.85).setRestitution(0).setDensity(dynamic ? 130 : 500), body); colliders.push(collider);
+    const shapes = parts || [{ size, position: [0, 0, 0] }];
+    for (const part of shapes) {
+      const descriptor = RAPIER.ColliderDesc.cuboid(...part.size.map(n => n / 2)).setTranslation(...part.position).setFriction(.85).setRestitution(0).setDensity(dynamic ? 130 : 500);
+      if (mass) descriptor.setMass(mass / shapes.length);
+      const collider = setContactSurface(world.createCollider(descriptor, body), surface); colliders.push(collider);
+    }
     return body;
   }
   function obstacle(mesh, size) { obstacleMeshes.push(mesh); const body = rigid(mesh, size); return { mesh, body }; }
   const movingObstacles = [];
 
+  function fixture(parent, parts, material, moving = false) {
+    for (const part of parts) obstacleMeshes.push(box(parent, part.size, part.position, material));
+    const body = rigid(parent, null, false, { parts, fixed: !moving, surface: material === wood ? 'wood' : 'metal' });
+    if (moving) movingObstacles.push({ mesh: parent, body });
+    return body;
+  }
+  const desk = new THREE.Group(); desk.name = 'Office fixed desk'; desk.position.set(7, 0, 8.1); root.add(desk);
+  fixture(desk, [
+    { size: [2.6, .12, .95], position: [0, .9, 0] },
+    { size: [.62, .009, .35], position: [.42, .965, -.14] },
+    { size: [2.36, .27, .08], position: [0, .69, -.36] },
+    ...[-1.16, 1.16].flatMap(x => [-.35, .35].map(z => ({ size: [.13, .84, .13], position: [x, .42, z] }))),
+    ...[-1.06, 1.06].map(x => ({ size: [.07, .25, .72], position: [x, .71, 0] })),
+  ], wood);
+
   // Drawer starts under the existing desk. The notebook moves onto the desktop
   // after discovery so the note and the lock can be inspected side by side.
   const drawer = new THREE.Group(); drawer.position.set(7, .70, 8.48); root.add(drawer);
-  box(drawer, [1.03, .035, .50], [0, -.09, -.06], dark);
-  const drawerFront = target(box(drawer, [1.1, .23, .07], [0, 0, .14], leather), 'drawer');
+  const drawerParts = [
+    { size: [1.1, .23, .07], position: [0, 0, .14] },
+    { size: [1.03, .035, .50], position: [0, -.09, -.06] },
+    { size: [.035, .19, .50], position: [-.50, -.01, -.06] },
+    { size: [.035, .19, .50], position: [.50, -.01, -.06] },
+    { size: [1.03, .19, .035], position: [0, -.01, -.30] },
+  ];
+  fixture(drawer, drawerParts, wood, true);
+  const drawerFront = target(drawer.children[0], 'drawer');
   box(drawer, [.30, .028, .045], [0, 0, .19], brass);
-  movingObstacles.push(obstacle(drawerFront, [1.1, .23, .07]));
-  const notebook = new THREE.Group(); root.add(notebook);
-  const notebookBody = target(box(notebook, [.43, .055, .31], [0, 0, 0], leather), 'notebook', { eligible: () => drawer.position.z > 8.73 || state.noteSeen });
-  box(notebook, [.39, .04, .28], [0, .021, 0], paper);
-  const cover = new THREE.Group(); cover.position.set(-.215, .05, 0); notebook.add(cover);
+  const notebookProp = makeProp('notebook', [.43, .065, .31], HOME.notebook, group => {
+    box(group, [.43, .045, .31], [0, -.009, 0], leather);
+    box(group, [.39, .037, .28], [0, .001, 0], paper);
+  }, () => notebookProp.active || drawer.position.z > 8.73 || state.noteSeen, { mass: .38, pickup: 'paper-pickup', soundId: 'cube' });
+  const notebook = notebookProp.group, notebookBody = notebookProp.proxy;
+  const cover = new THREE.Group(); cover.position.set(-.215, .0225, 0); notebook.add(cover);
   box(cover, [.43, .015, .31], [.215, 0, 0], leather);
-  const note = surface(notebook, [.25, .19], [.045, .047, .01], texture((ctx, w, h) => {
+  const notebookCoverCollider = world ? setContactSurface(world.createCollider(
+    RAPIER.ColliderDesc.cuboid(.215, .0045, .155).setTranslation(0, .0225, 0).setMass(.06).setFriction(.8), notebookProp.body), 'wood') : null;
+  if (notebookCoverCollider) colliders.push(notebookCoverCollider);
+  let coverCollisionAngle = null;
+  const note = surface(notebook, [.25, .19], [.045, .030, .01], texture((ctx, w, h) => {
     ctx.fillStyle = '#d3bd68'; ctx.fillRect(0, 0, w, h); ctx.strokeStyle = '#443b2e'; ctx.lineWidth = 9;
     ctx.strokeRect(176, 65, 155, 71); ctx.beginPath(); ctx.moveTo(220, 65); ctx.lineTo(220, 42); ctx.lineTo(278, 42); ctx.lineTo(278, 65); ctx.stroke();
     ctx.fillStyle = '#352e26'; ctx.font = 'bold 130px Georgia'; ctx.textAlign = 'center'; ctx.fillText(OPENING_CODE, w / 2, 325);
@@ -214,7 +268,8 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   movingObstacles.push(obstacle(lidPanel, lidSize));
   const wheels = [];
   for (let index = 0; index < 4; index++) {
-    const wheel = target(cylinder(caseRoot, .057, .08, [(index - 1.5) * .132, .01, .358], brass, true), `wheel-${index}`, { eligible: () => !state.caseUnlocked });
+    const wheel = target(cylinder(caseRoot, .057, .08, [(index - 1.5) * .132, .01, .358], brass, true), `wheel-${index}`, { grab: true, eligible: () => !state.caseUnlocked });
+    wheel.userData.openingWheel = true;
     const digit = surface(wheel, [.071, .096], [0, .046, 0], texture(() => {}), -Math.PI / 2);
     digit.rotation.x = -Math.PI / 2;
     wheels.push({ wheel, digit, digitValue: -1 });
@@ -224,25 +279,48 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   const caseFallbackMeshes = [];
   caseRoot.traverse(object => { if (object.isMesh) caseFallbackMeshes.push(object); });
 
-  const locker = new THREE.Group(); locker.position.set(10.6, 0, 10.9); root.add(locker);
-  for (const [size, pos] of [ [[1.3, .05, .65], [0, .025, 0]], [[1.3, .05, .65], [0, 2.175, 0]], [[.045, 2.2, .65], [-.63, 1.1, 0]], [[.045, 2.2, .65], [.63, 1.1, 0]], [[1.3, 2.2, .035], [0, 1.1, -.31]], [[1.26, .035, .59], [0, 1.12, 0]] ]) obstacle(box(locker, size, pos, metal), size);
-  const lockerHinge = new THREE.Group(); lockerHinge.position.set(-.65, 0, .345); locker.add(lockerHinge);
-  const lockerDoor = target(box(lockerHinge, [1.3, 2.14, .045], [.65, 1.10, 0], metal), 'locker');
-  box(lockerHinge, [.045, .24, .065], [1.15, 1.12, .06], brass);
-  for (let i = 0; i < 5; i++) box(lockerHinge, [.7, .018, .01], [.65, 1.72 + i * .045, .03], dark);
-  movingObstacles.push(obstacle(lockerDoor, [1.3, 2.14, .045]));
+  const lockers = OFFICE_LOCKERS.map(config => {
+    const { width } = config;
+    const group = new THREE.Group(); group.name = `Office locker ${config.id}`; group.position.set(config.x, 0, 10.9); root.add(group);
+    const shell = new THREE.Group(); group.add(shell);
+    fixture(shell, [
+      { size: [width, .05, .65], position: [0, .025, 0] },
+      { size: [width, .05, .65], position: [0, 2.175, 0] },
+      ...[-1, 1].map(sign => ({ size: [.045, 2.2, .65], position: [sign * (width / 2 - .0225), 1.1, 0] })),
+      { size: [width, 2.2, .035], position: [0, 1.1, -.31] },
+      ...[1.12, 1.86].map(y => ({ size: [1.228 * width / 1.3, .026, .602], position: [0, y, 0] })),
+      { size: [1.04 * width / 1.3, .024, .024], position: [0, 1.72, -.11] },
+    ], metal);
+    const hinge = new THREE.Group(); hinge.position.set(-width / 2, 0, .345); group.add(hinge);
+    const door = target(box(hinge, [width, 2.14, .045], [width / 2, 1.10, 0], metal), config.targetId);
+    box(hinge, [.045, .24, .065], [width - .15, 1.12, .06], brass);
+    for (let i = 0; i < 5; i++) box(hinge, [width * .54, .018, .01], [width / 2, 1.72 + i * .045, .03], dark);
+    movingObstacles.push(obstacle(door, [width, 2.14, .045]));
+    return { ...config, group, shell, hinge, door };
+  });
+  const lockerHinge = lockers.find(locker => locker.id === 'center').hinge;
 
-  function makeProp(id, size, home, build, eligible) {
-    const group = new THREE.Group(); group.position.fromArray(home); root.add(group);
-    const proxyMaterial = new THREE.MeshBasicMaterial({ visible: false }); materials.add(proxyMaterial);
-    const proxy = target(box(group, size, [0, 0, 0], proxyMaterial), id, { grab: true, eligible });
-    build(group);
-    const body = rigid(group, size, true);
-    const prop = { id, group, proxy, body, size, home: new THREE.Vector3(...home), active: false, equipped: false, saved: false };
-    props.set(id, prop);
-    if (body) { body.setEnabled(false); body.sleep(); }
-    return prop;
+  function makeProp(id, size, home, build, eligible, options = {}) {
+    const group = new THREE.Group(); group.name = `Office prop / ${id}`; group.position.fromArray(home); root.add(group);
+    // Tiny writing tools get a forgiving selection area, while their physics
+    // retains the actual diameter so they can rest on a surface naturally.
+    const pickSize = options.model === 'Pen' || options.model === 'Pencil' ? [size[0], .036, .036] : size;
+    const proxy = target(box(group, pickSize, [0, 0, 0], proxyMaterial), id, { grab: true, eligible });
+    proxy.userData.soundId = options.soundId || 'tablet';
+    const visual = new THREE.Group(); group.add(visual); build(visual);
+    const body = rigid(group, size, true, { surface: options.soundId === 'cube' ? 'wood' : 'metal', ...options });
+    const prop = { ...options, id, group, visual, proxy, body, size, home: new THREE.Vector3(...home), active: false, equipped: false, saved: false,
+      restTime: 0, contactIds: new Set(), previousSpeed: 0, contactCooldown: 0, savedPosition: null, savedQuaternion: null };
+    body?.setEnabled(false); body?.sleep(); props.set(id, prop); return prop;
   }
+  const officeProps = OFFICE_PROPS.map(config => {
+    const prop = makeProp(config.id, config.size, config.home, visual => {
+      if (config.parts) for (const part of config.parts) box(visual, part.size, part.position, part.size[1] > .3 ? wood : upholstery);
+      else box(visual, config.size, [0, 0, 0], config.model === 'Logbook' ? leather : config.model === 'Pen' ? brass : wood);
+    }, () => prop.active || !config.locker || lockers.find(locker => locker.id === config.locker).hinge.rotation.y < -1, config);
+    return prop;
+  });
+
   const gauntlets = {};
   for (const side of ['left', 'right']) {
     gauntlets[side] = makeProp(`glove-${side}`, [.21, .20, .34], HOME[`glove-${side}`], group => {
@@ -292,9 +370,13 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   const strip = box(container, [1.3, .045, .14], [0, 2.72, 1.35], stripMaterial);
   const interiorLight = new THREE.PointLight('#ffd09a', 0, 6.2, 2); interiorLight.position.set(0, 2.38, .6); container.add(interiorLight);
 
-  const soundActions = { wheel: 'dial', 'case-latch': 'case-open', 'equip-glove': 'equip', cutters: 'cutter-pickup', 'tool-equip': 'cutter-pickup', locked: 'dial' };
-  function emit(action, mesh, extra = {}) { onEvent({ type: 'puzzle', action: soundActions[action] || action, interaction: action, kind: 'opening-puzzle', objectId: mesh?.userData.openingId || action, soundId: 'tablet', position: mesh?.getWorldPosition(new THREE.Vector3()) || new THREE.Vector3(), strength: .35, ...extra }); }
+  const soundActions = { wheel: 'dial', 'locker-door': 'locker', pickup: 'small-pickup', 'case-latch': 'case-open', 'equip-glove': 'equip', cutters: 'cutter-pickup', 'tool-equip': 'cutter-pickup', locked: 'dial' };
+  function emit(action, mesh, extra = {}) { onEvent({ type: 'puzzle', action: soundActions[action] || action, interaction: action, kind: 'opening-puzzle', objectId: mesh?.userData.openingId || action, soundId: mesh?.userData.soundId || 'tablet', position: mesh?.getWorldPosition(new THREE.Vector3()) || new THREE.Vector3(), strength: .35, ...extra }); }
   function act(action, data, mesh) { const success = progression.dispatch(action, data); state = progression.getState(); if (success) emit(action, mesh, data); return success; }
+  const wheelDrag = createOfficeWheelDrag({ digits: state.wheels,
+    onCommit(index, digit) { progression.dispatch('wheel-set', { index, digit }); state = progression.getState(); },
+    onDetent(index) { emit('wheel', wheels[index].wheel); },
+  });
   function visible(entry) { if (!entry.eligible()) return false; for (let p = entry.mesh; p; p = p.parent) if (!p.visible) return false; return true; }
   function entryOf(mesh) { for (let p = mesh; p; p = p.parent) if (items.has(p)) return items.get(p); return null; }
   function handFor(id, handedness) { return hands.get(id) || [...hands.values()].find(hand => hand.handedness === handedness); }
@@ -302,13 +384,22 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   function enable(prop) {
     if (prop.active) return;
     prop.active = true; prop.group.visible = true;
+    prop.restTime = 0;
+    // The notebook follows its drawer until picked up. Start its body at the
+    // visible pose, not at the original position inside the closed drawer.
+    if (prop.body && !prop.body.isEnabled()) {
+      prop.body.setTranslation(prop.group.position, false); prop.body.setRotation(prop.group.quaternion, false);
+    }
     prop.body?.setEnabled(true); prop.body?.wakeUp();
   }
   function setPropPose(prop, position, quaternion) {
     prop.group.position.copy(position); if (quaternion) prop.group.quaternion.copy(quaternion);
     prop.body?.setTranslation(prop.group.position, true); prop.body?.setRotation(prop.group.quaternion, true); prop.body?.setLinvel({ x: 0, y: 0, z: 0 }, true); prop.body?.setAngvel({ x: 0, y: 0, z: 0 }, true);
   }
-  function saveProp(prop) { progression.dispatch('prop-pose', { id: prop.id, position: prop.group.position.toArray(), quaternion: prop.group.quaternion.toArray() }); state = progression.getState(); }
+  function saveProp(prop) {
+    progression.dispatch('prop-pose', { id: prop.id, position: prop.group.position.toArray(), quaternion: prop.group.quaternion.toArray() }); state = progression.getState();
+    prop.savedPosition = prop.group.position.clone(); prop.savedQuaternion = prop.group.quaternion.clone();
+  }
   function equipGlove(side, mesh) {
     if (!act('equip-glove', { handedness: side, loose: gauntlets[side].active }, mesh)) return false;
     const prop = gauntlets[side]; prop.body?.setEnabled(false); prop.active = false; prop.equipped = true;
@@ -345,9 +436,11 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
     const { id } = entry;
     if (id === 'drawer' || id === 'notebook' || id === 'locker' || id === 'case-latch' || id === 'case-latch-left') {
       const action = id === 'case-latch-left' ? 'case-latch' : id;
-      const success = act(action, {}, mesh); if (!success && action === 'case-latch') emit('locked', mesh); return true;
+      if (action === 'case-latch' && !state.caseUnlocked && !wheelDrag.getState().settled) { emit('locked', mesh); return true; }
+      const success = act(action, action === 'notebook' ? { loose: notebookProp.active } : {}, mesh); if (!success && action === 'case-latch') emit('locked', mesh); return true;
     }
-    if (id.startsWith('wheel-')) { act('wheel', { index: Number(id.at(-1)), direction: options.direction === -1 ? -1 : 1 }, mesh); return true; }
+    if (id === 'locker-left' || id === 'locker-right') { act('locker-door', { id: id.slice(7) }, mesh); return true; }
+    if (id.startsWith('wheel-')) return wheelDrag.tap(Number(id.at(-1)), options.direction === -1 ? -1 : 1);
     if (id.startsWith('glove-')) {
       const side = id.slice(6);
       if (options.kind === 'controller' || options.kind === 'hand' || options.xr) {
@@ -374,6 +467,10 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   }
   function beginGrab(mesh, point, handId = 'pointer', options = {}) {
     const entry = entryOf(mesh); const prop = props.get(entry?.id);
+    if (!disposed && !held && entry?.id.startsWith('wheel-') && visible(entry) && reachable(mesh, options)) {
+      return wheelDrag.begin(Number(entry.id.at(-1)), entry.mesh, point, handId, { axisWorld: new THREE.Vector3(0, 1, 0).applyQuaternion(caseRoot.getWorldQuaternion(new THREE.Quaternion())) });
+    }
+    if (wheelDrag.getGrabState().active) return false;
     if (disposed || held || !prop || !visible(entry) || !point?.isVector3 || !Number.isFinite(point.x + point.y + point.z)) return false;
     const hand = hands.get(handId);
     const origin = options.viewerPosition || hand?.position;
@@ -383,10 +480,13 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
     if (prop.id === 'cutters') act('cutters', {}, mesh);
     if (prop.id.startsWith('photo-')) act('photo', { index: Number(prop.id.at(-1)) }, mesh);
     held = { prop, handId, goal: prop.group.position.clone(), offset: prop.group.position.clone().sub(point), speed: 0 };
-    emit('pickup', mesh); return true;
+    emit(prop.pickup || 'pickup', mesh);
+    if (prop.id === 'chair') emit('drag', mesh, { type: 'office-drag', kind: 'office-chair' });
+    return true;
   }
-  function moveGrab(point, handId = 'pointer') { if (!held || held.handId !== handId || !point?.isVector3 || !Number.isFinite(point.x + point.y + point.z)) return false; held.goal.copy(point).add(held.offset); return true; }
+  function moveGrab(point, handId = 'pointer') { if (wheelDrag.getGrabState().active) return wheelDrag.move(point, handId); if (!held || held.handId !== handId || !point?.isVector3 || !Number.isFinite(point.x + point.y + point.z)) return false; held.goal.copy(point).add(held.offset); return true; }
   function endGrab(handId = 'pointer', { cancelled = false } = {}) {
+    if (wheelDrag.getGrabState().active) return wheelDrag.end(handId, { cancelled });
     if (!held || held.handId !== handId) return false;
     const { prop } = held;
     if (!cancelled && prop.id.startsWith('glove-')) {
@@ -394,7 +494,8 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
       if (wrist && prop.group.position.distanceTo(wrist.position) < .38) { equipGlove(side, prop.proxy); held = null; return true; }
     }
     if (prop.body) releaseGrabbedBody(prop.body);
-    held = null; saveProp(prop); emit(cancelled ? 'release' : 'drop', prop.proxy, { cancelled }); return true;
+    if (prop.id === 'chair') emit('release', prop.proxy, { type: 'enddrag', reason: cancelled ? 'cancel' : 'release' });
+    held = null; saveProp(prop); emit(cancelled ? 'release' : prop.mass && prop.mass < 1 ? 'small-drop' : 'drop', prop.proxy, { cancelled }); return true;
   }
   function updateHands(poses = []) {
     const previousToolHand = equippedCutters ? hands.get(equippedCutters) : null;
@@ -426,19 +527,28 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
       const pose = state.propPoses[prop.id];
       setPropPose(prop, pose ? new THREE.Vector3(...pose.position) : prop.home, pose ? new THREE.Quaternion(...pose.quaternion).normalize() : new THREE.Quaternion());
       prop.active = false; prop.body?.setEnabled(false);
+      prop.savedPosition = null; prop.savedQuaternion = null; prop.restTime = 0; prop.contactIds.clear(); prop.previousSpeed = 0;
       const worn=prop.id.startsWith('glove-')&&state.gloves[prop.id.slice(6)];
-      if (pose && !worn && (!prop.id.startsWith('photo-') || state.caseUnlocked)) enable(prop);
+      if ((pose || prop.model) && !worn && (!prop.id.startsWith('photo-') || state.caseUnlocked)) enable(prop);
     }
   }
   function step(dt = 1 / 60) {
     if (disposed) return;
     dt = Math.min(.05, Math.max(0, dt)); const blend = 1 - Math.exp(-8 * dt);
     drawer.position.z = THREE.MathUtils.lerp(drawer.position.z, state.drawerOpen ? 8.94 : 8.48, blend);
-    notebook.position.set(state.noteSeen ? 7.35 : 7, state.noteSeen ? 1.024 : .68, state.noteSeen ? 8.20 : drawer.position.z - .035);
+    if (!notebookProp.active) notebook.position.set(state.noteSeen ? 7.35 : 7, state.noteSeen ? 1.004 : .68, state.noteSeen ? 8.20 : drawer.position.z - .035);
     cover.rotation.z = THREE.MathUtils.lerp(cover.rotation.z, state.notebookOpen ? Math.PI * .95 : 0, blend);
+    if (authoredCover) authoredCover.rotation.z = cover.rotation.z;
+    if (notebookCoverCollider && coverCollisionAngle !== cover.rotation.z) {
+      const angle = cover.rotation.z;
+      notebookCoverCollider.setTranslationWrtParent({ x: -.215 + .215 * Math.cos(angle), y: .0225 + .215 * Math.sin(angle), z: 0 });
+      notebookCoverCollider.setRotationWrtParent({ x: 0, y: 0, z: Math.sin(angle / 2), w: Math.cos(angle / 2) });
+      if (notebookProp.active) notebookProp.body.wakeUp();
+      coverCollisionAngle = angle;
+    }
     note.visible = state.notebookOpen;
     lid.rotation.x = THREE.MathUtils.lerp(lid.rotation.x, state.caseOpen ? -1.75 : 0, blend);
-    lockerHinge.rotation.y = THREE.MathUtils.lerp(lockerHinge.rotation.y, state.lockerOpen ? -2.0 : 0, blend);
+    for (const locker of lockers) locker.hinge.rotation.y = THREE.MathUtils.lerp(locker.hinge.rotation.y, state.lockers[locker.id] ? -2 : 0, blend);
     doors.forEach(({ hinge, sign }) => { hinge.rotation.y = THREE.MathUtils.lerp(hinge.rotation.y, state.containerOpen ? sign * 1.80 : 0, blend * .65); });
     interiorLight.intensity = THREE.MathUtils.lerp(interiorLight.intensity, state.containerOpen ? 34 : 0, blend * .65);
     stripMaterial.emissiveIntensity = .12 + interiorLight.intensity / 34 * .88;
@@ -459,6 +569,26 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
       if (!prop.active || prop.equipped) continue;
       if (prop.body) { prop.group.position.copy(prop.body.translation()); prop.group.quaternion.copy(prop.body.rotation()); }
       if (prop.group.position.y < -.5 || Math.abs(prop.group.position.x) > 80 || Math.abs(prop.group.position.z) > 90) { setPropPose(prop, prop.home, new THREE.Quaternion()); saveProp(prop); }
+      if (prop.body && held?.prop !== prop && !(prop === cutters && equippedCutters)) {
+        const velocity = prop.body.linvel(), angular = prop.body.angvel();
+        const speed = Math.hypot(velocity.x, velocity.y, velocity.z), turn = Math.hypot(angular.x, angular.y, angular.z);
+        const contacts = new Set();
+        for (let i = 0; i < prop.body.numColliders(); i++) world.contactPairsWith(prop.body.collider(i), other => {
+          if (other.isSensor() || other.parent()?.handle === prop.body.handle) return;
+          world.contactPair(prop.body.collider(i), other, manifold => { if (manifold.numSolverContacts()) contacts.add(other.handle); });
+        });
+        prop.contactCooldown = Math.max(0, prop.contactCooldown - dt);
+        if (prop.previousSpeed > .18 && !prop.contactCooldown && [...contacts].some(id => !prop.contactIds.has(id))) {
+          emit('impact', prop.proxy, { type: 'collision', strength: Math.min(.8, prop.previousSpeed * Math.sqrt(prop.mass || .4) * .23) });
+          prop.contactCooldown = .18;
+        }
+        prop.contactIds = contacts; prop.previousSpeed = speed;
+        prop.restTime = contacts.size && speed < .04 && turn < .12 ? prop.restTime + dt : 0;
+        if (prop.restTime > .7 || prop.body.isSleeping()) {
+          prop.body.sleep();
+          if (!prop.savedPosition || prop.savedPosition.distanceToSquared(prop.group.position) > .000004 || prop.savedQuaternion.angleTo(prop.group.quaternion) > .006) saveProp(prop);
+        }
+      }
     }
     if (equippedCutters) {
       const hand = hands.get(equippedCutters);
@@ -474,23 +604,57 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
       if (held.prop.body) { driveGrabbedBody(world, held.prop.body, held.goal, handRotation, dt, { maxSpeed: 2.5, acceleration: 18 }); held.speed = new THREE.Vector3().copy(held.prop.body.linvel()).length(); }
       else { held.speed = held.prop.group.position.distanceTo(held.goal) * 8; held.prop.group.position.lerp(held.goal, blend); }
     }
+    wheelDrag.step(dt);
     if (!briefcaseAsset) redrawWheels();
-    briefcaseAsset?.update({ lidAngle: lid.rotation.x, digits: state.wheels, open: state.caseOpen, dt });
+    briefcaseAsset?.update({ lidAngle: lid.rotation.x, digits: state.wheels, wheelPositions: wheelDrag.getState().positions, open: state.caseOpen, dt });
     root.updateMatrixWorld(true);
   }
   function getGrabState() {
+    if (wheelDrag.getGrabState().active) return wheelDrag.getGrabState();
     if (!held) return { active: false, handId: null, objectId: null, heldMesh: null, anchor: null, radius: 0, speed: 0, goal: null, canDock: false };
+    const contact = held.prop.id === 'chair' && readContact ? readContact(held.prop.body, held.goal) : {};
     return { active: true, handId: held.handId, objectId: held.prop.id, heldMesh: held.prop.proxy, anchor: held.prop.group.position.toArray(), radius: 0,
-      speed: held.speed, goal: held.goal.toArray(), canDock: false, assembled: 1, total: 1, complete: true, whole: true, kind: 'opening-puzzle', soundId: 'tablet' };
+      speed: held.speed, goal: held.goal.toArray(), canDock: false, assembled: 1, total: 1, complete: true, whole: true, kind: held.prop.id === 'chair' ? 'office-chair' : 'opening-puzzle', soundId: held.prop.soundId || 'tablet', ...contact };
   }
   restoreProps();
   drawer.position.z = state.drawerOpen ? 8.94 : 8.48;
-  lockerHinge.rotation.y = state.lockerOpen ? -2 : 0;
+  for (const locker of lockers) locker.hinge.rotation.y = state.lockers[locker.id] ? -2 : 0;
   lid.rotation.x = state.caseOpen ? -1.75 : 0;
   doors.forEach(({ hinge, sign }) => { hinge.rotation.y = state.containerOpen ? sign * 1.80 : 0; });
   step(0);
   return {
     root, progression,
+    async loadOfficeAssets(url = OFFICE_ASSET_URL) {
+      if (typeof document === 'undefined' || disposed) return false;
+      if (officeAssets) return true;
+      if (officeLoading) return officeLoading;
+      officeLoading = (async () => {
+        try {
+          const asset = await loadOfficeAssets({ url });
+          if (disposed) { asset.dispose(); return false; }
+          const hideFallback = group => group.traverse(mesh => { if (mesh.isMesh) mesh.material = proxyMaterial; });
+          const replace = (parent, model, position = [0, 0, 0], scale = [1, 1, 1]) => {
+            hideFallback(parent); const instance = asset.create(model); instance.position.fromArray(position); instance.scale.fromArray(scale); parent.add(instance); return instance;
+          };
+          replace(desk, 'Desk');
+          replace(drawer, 'Drawer', [0, 0, .14]);
+          replace(notebookProp.visual, 'Notebook', [0, -.0325, 0]);
+          hideFallback(cover);
+          authoredCover = notebookProp.visual.getObjectByName('NotebookCover');
+          authoredCover.rotation.z = cover.rotation.z;
+          for (const locker of lockers) {
+            replace(locker.shell, 'LockerShell', [0, 0, 0], [locker.width / 1.3, 1, 1]);
+            replace(locker.hinge, 'LockerDoor', [0, 0, 0], [locker.width / 1.3, 1, 1]);
+          }
+          for (const prop of officeProps) replace(prop.visual, prop.model);
+          officeAssets = asset; officeState = { ...asset.state }; root.updateMatrixWorld(true); return true;
+        } catch (error) {
+          officeState = { ...officeState, url, error: error.message };
+          console.warn('The office models could not load. Interactive fallback props remain available.', error); return false;
+        } finally { officeLoading = null; }
+      })();
+      return officeLoading;
+    },
     async loadBriefcase(url = BRIEFCASE_ASSET_URL) {
       if (typeof document === 'undefined' || disposed) return false;
       if (briefcaseAsset) return true;
@@ -537,17 +701,19 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
     get doorOpen() { return state.containerOpen && Math.abs(doors[0].hinge.rotation.y) > 1.35; },
     owns: mesh => !!entryOf(mesh), tap, beginGrab, moveGrab, endGrab, getGrabState, updateHands, releaseTool, step,
     canPower: handedness => state.gloves[handedness] === true,
-    getObstacles: () => { root.updateMatrixWorld(true); return obstacleMeshes.map(mesh => new THREE.Box3().setFromObject(mesh)); },
+    getObstacles: () => { root.updateMatrixWorld(true); return [...obstacleMeshes, ...officeProps.filter(prop => prop.navigation).map(prop => prop.proxy)].map(mesh => new THREE.Box3().setFromObject(mesh)); },
     getState() {
-      return { ...progression.getState(), briefcase: { ...briefcaseState }, equippedCutters, carriedRelocationPending, containerDoorAngle: Math.abs(doors[0].hinge.rotation.y), containerLightIntensity: interiorLight.intensity,
+      return { ...progression.getState(), briefcase: { ...briefcaseState }, office: { ...officeState }, wheelDrag: wheelDrag.getState(), lockerDoors: lockers.map(locker => ({ id: locker.id, angle: locker.hinge.rotation.y })), equippedCutters, carriedRelocationPending, containerDoorAngle: Math.abs(doors[0].hinge.rotation.y), containerLightIntensity: interiorLight.intensity,
         targets: targetList.filter(visible).map(({ id, mesh, grab }) => ({ id, grab, position: mesh.getWorldPosition(new THREE.Vector3()).toArray() })),
-        props: [...props.values()].map(prop => ({ id: prop.id, active: prop.active, visible: prop.group.visible, position: prop.group.position.toArray() })),
+        props: [...props.values()].map(prop => ({ id: prop.id, active: prop.active, visible: prop.group.visible, position: prop.group.position.toArray(), sleeping: prop.body?.isSleeping() || false, mass: prop.body?.mass() || 0, velocity: prop.body ? Object.values(prop.body.linvel()) : [0, 0, 0] })),
         physics: { bodies: bodies.length, colliders: colliders.length, activeProps: [...props.values()].filter(prop => prop.active).length } };
     },
     reset(options = {}) {
+      if (wheelDrag.getGrabState().active) wheelDrag.end(wheelDrag.getGrabState().handId, { cancelled: true });
       if (held) endGrab(held.handId, { cancelled: true });
       if (cutters.body) releaseGrabbedBody(cutters.body);
       equippedCutters = null; carriedRelocationPending = false; state = progression.reset(options); restoreProps();
+      wheelDrag.reset(state.wheels);
       for (const side of ['left', 'right']) gauntlets[side].equipped = state.gloves[side];
       link.position.y = 1.3; link.rotation.z = 0; cutTime = 0; step(0);
     },
@@ -556,7 +722,9 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
       if (held) endGrab(held.handId, { cancelled: true });
       if (cutters.body) releaseGrabbedBody(cutters.body);
       for (const body of bodies) world?.removeRigidBody(body);
+      for (const prop of props.values()) prop.body = null;
       briefcaseAsset?.dispose();
+      officeAssets?.dispose(); wheelDrag.reset(state.wheels);
       root.removeFromParent(); for (const geometry of geometries) geometry.dispose(); for (const material of materials) material.dispose(); for (const map of maps) map.dispose(); disposed = true;
     },
   };

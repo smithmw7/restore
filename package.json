@@ -1,6 +1,6 @@
 {
   "name": "restore",
-  "version": "0.6.4",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -51,7 +51,11 @@
     "test:opening-audio": "node scripts/opening-audio-check.mjs",
     "test:briefcase-asset": "node scripts/briefcase-asset-check.mjs",
     "test:briefcase-browser": "node scripts/briefcase-browser.mjs",
-    "test:briefcase-review": "node scripts/briefcase-review-check.mjs"
+    "test:briefcase-review": "node scripts/briefcase-review-check.mjs",
+    "test:office": "node scripts/office-props-check.mjs && node scripts/office-wheel-drag-check.mjs && node scripts/office-asset-check.mjs",
+    "test:office-browser": "node scripts/office-props-browser.mjs",
+    "test:office-review": "node scripts/office-review-check.mjs",
+    "test:office-asset": "node scripts/office-asset-check.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

@@ -1,5 +1,13 @@
 # Restore
 
+## Interactive office (0.7.0)
+
+The office now uses nine Blender-authored templates with worn walnut, leather, green enamel, brass and paper materials. Every locker door opens independently. Pens, pencils, logbooks, the notebook and chair can be picked up and dropped; the desk and room furniture stay fixed. The chair has a compound physical shape, the notebook cover has collision while open, and both locker shelves support loose objects. Small props come to rest, and their resting poses and locker door states survive reload.
+
+Drag the briefcase wheels continuously and release to snap to a digit. The office clue and lock now both use **1942**; previously unlocked saves keep their discoveries. Paper and tool pickups are quiet, the chair creaks on pickup and scrapes only during physical contact, and release stops its loop.
+
+Open `/office-review.html` to inspect all nine models from four angles and preview their articulation. [Office source, textures and Blender render proofs](docs/OFFICE-QUALITY.md) document the complete asset pass. Run `npm run test:office`, `npm run test:office-browser` (dev5211) and `npm run test:office-review` (dev5211) for the new checks. The 0.7.0 build is on `opening-discovery`; the public Pages release still follows `warehouse`.
+
 ## Interactive case study (0.6.3)
 
 The office case now has a clean handle-free silhouette and four real combination drums. Each drum carries ten evenly spaced, black inlaid 3D numerals with a separator groove between digits. The numerals turn with the metal wheel, including a smooth 9-to-0 transition. Aged PBR surfaces, hollow shells, lining, hinges, twin clasps and the photograph puzzle remain. See the [quality pass, source model and render sheets](docs/BRIEFCASE-QUALITY.md). Open `/briefcase-review.html` to drag the actual wheels and release them into their nearest numbered detent. In this review, **1942** releases the clasps; tap either moving latch or Open case to lift the lid. Reset lock returns to 0000. Drag the body to orbit, and use Explode assemblies to inspect construction. Mouse and touch share the same input path, with quiet detent and latch sounds.

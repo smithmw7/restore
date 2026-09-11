@@ -1,0 +1,62 @@
+import assert from 'node:assert/strict';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { chromium } from 'playwright';
+const out='output/office/gameplay'; await mkdir(out,{recursive:true});
+const browser=await chromium.launch({headless:true,channel:'chrome',args:['--mute-audio']});
+const page=await browser.newPage({viewport:{width:1440,height:1000}}), errors=[],checks=[];
+page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+const read=()=>page.evaluate(()=>window.__restoreDiagnostics().state);
+const audio=()=>page.evaluate(()=>window.__restoreDiagnostics().audio);
+const wait=ms=>page.waitForTimeout(ms);
+const prop=async id=>(await read()).opening.props.find(p=>p.id===id);
+const item=async id=>(await read()).objects.find(p=>p.id===id);
+const view=async(position,target)=>{assert.ok(await page.evaluate(({position,target})=>window.__restoreOpening.view(position,target),{position,target}));await wait(200);};
+const tap=async id=>{const p=await item(id);assert.ok(p,id);await page.mouse.click(p.screen.x,p.screen.y,{delay:30});await wait(250);};
+const pass=name=>{checks.push(name);console.log(`PASS: ${name}`);};
+const settle=()=>page.evaluate(()=>window.advanceTime(5000));
+try{
+ await page.goto(process.env.RESTORE_URL||'http://127.0.0.1:5211/',{waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>window.__restoreDiagnostics?.().state.ready,null,{timeout:90000});
+ assert.equal((await read()).opening.office.loaded,true);await settle();
+ await page.screenshot({path:`${out}/office-arrival.png`});
+ pass('authored office kit loads in the actual game');
+ for(const [id,x] of [['locker-left',9.28],['locker',10.6],['locker-right',11.65]]){
+   await view([Math.min(x,11.35),0,12.35],[x,1.25,10.95]);await tap(id);
+   const key=id==='locker'?'center':id.slice(7);
+   await page.waitForFunction(key=>window.__restoreDiagnostics().state.opening.lockerDoors.find(d=>d.id===key).angle< -1.9,key);
+   assert.equal((await read()).opening.lockers[key],true);
+   await page.screenshot({path:`${out}/${id}-open.png`});
+ }
+ pass('actual pointer input opens all three locker doors');
+ await view([9.02,0,9.85],[9.02,.6,8.63]);
+ let p=await item('chair');let before=await prop('chair');
+ await page.mouse.move(p.screen.x,p.screen.y);await page.mouse.down();
+ await page.mouse.move(p.screen.x,p.screen.y-180,{steps:16});
+ await page.waitForFunction(()=>window.__restoreDiagnostics().state.grab.objectId==='chair');
+ await wait(1000);let held=await prop('chair');assert.ok(held.position[1]>before.position[1]+.10,JSON.stringify({before,held}));
+ await page.screenshot({path:`${out}/chair-held.png`});
+ await page.mouse.up();await settle();
+ assert.equal((await read()).grab.active,false);assert.equal((await prop('chair')).sleeping,true);
+ assert.equal((await audio()).loopActive,false,'chair release stops its quiet sliding loop');
+ await page.screenshot({path:`${out}/chair-resting.png`});
+ pass('chair picks up with pointer dragging and settles after release');
+ await view([7.75,0,9.25],[7.73,.98,8.34]);
+ p=await item('pen-brass');before=await prop('pen-brass');
+ await page.mouse.move(p.screen.x,p.screen.y);await page.mouse.down();await page.mouse.move(p.screen.x-75,p.screen.y-110,{steps:15});
+ await page.waitForFunction(()=>window.__restoreDiagnostics().state.grab.objectId==='pen-brass');
+ await wait(800);held=await prop('pen-brass');assert.ok(Math.hypot(...held.position.map((n,i)=>n-before.position[i]))>.08);
+ await page.screenshot({path:`${out}/pen-held.png`});
+ await page.mouse.up();await settle();assert.equal((await prop('pen-brass')).sleeping,true);
+ assert.equal((await audio()).loopActive,false,'small prop release leaves no dragging audio loop');
+ await page.screenshot({path:`${out}/desk-final.png`});
+ pass('small pen has a usable pickup target and physically rests after release');
+ const saved={chair:await prop('chair'),pen:await prop('pen-brass'),lockers:(await read()).opening.lockers};
+ await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__restoreDiagnostics?.().state.ready,null,{timeout:90000});await settle();
+ const after={chair:await prop('chair'),pen:await prop('pen-brass'),lockers:(await read()).opening.lockers};
+ assert.deepEqual(after.lockers,saved.lockers);
+ for(const id of ['chair','pen'])assert.ok(Math.hypot(...after[id].position.map((n,i)=>n-saved[id].position[i]))<.04);
+ pass('all locker door states and resting prop poses survive reload');
+ assert.deepEqual(errors,[]);
+ await writeFile(`${out}/report.json`,JSON.stringify({passed:checks.length,checks,errors,saved,after},null,2));
+}catch(error){await page.screenshot({path:`${out}/failure.png`});await writeFile(`${out}/failure.json`,JSON.stringify({message:error.message,errors,state:await read()},null,2));throw error;}
+finally{await browser.close();}

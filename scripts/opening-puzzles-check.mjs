@@ -89,6 +89,7 @@ try {
   check('four physical wheels unlock three photographs only when the lid is open', () => {
     tap('case-latch'); assert.equal(puzzles.getState().caseOpen, false);
     [...OPENING_CODE].forEach((digit, index) => { for (let n = 0; n < +digit; n++) tap(`wheel-${index}`); });
+    advance(.7);
     tap('case-latch'); assert.equal(puzzles.getState().caseOpen, true); assert.equal(target('photo-0'), undefined);
     advance(1); assert.ok(target('photo-0')); assert.ok(target('photo-1')); assert.ok(target('photo-2'));
     assert.equal(puzzles.targets.filter(mesh => mesh.userData.openingId.startsWith('wheel-')).length, 0);
@@ -156,13 +157,13 @@ try {
     assert.ok(target('glove-right'));assert.equal(tap('glove-right'),true);assert.equal(puzzles.canPower('right'),true);
   });
   check('physical shell stays bounded and meaningful events identify the action for sound', () => {
-    assert.ok(puzzles.getState().physics.bodies < 35);
+    assert.ok(puzzles.getState().physics.bodies < 50);
     assert.ok(events.some(event => event.action === 'cut' && event.type === 'puzzle'));
     assert.ok(events.some(event => event.action === 'equip' && event.interaction === 'equip-glove'));
     assert.ok(events.some(event => event.action === 'dial' && event.interaction === 'locked'));
     const before = world.bodies.len(); puzzles.dispose(); assert.equal(world.bodies.len(), before - puzzles.getState().physics.bodies);
     assert.equal(scene.children.length, 0);
   });
-} finally { puzzles.dispose(); world.free(); }
+} catch (error) { console.error(error.stack); throw error; } finally { puzzles.dispose(); world.free(); }
 function HOME_CUTTERS() { return [-6.7, 1.23, 10.6]; }
 console.log(JSON.stringify({ passed: checks.length, checks }, null, 2));

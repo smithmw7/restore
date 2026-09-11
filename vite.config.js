@@ -3,4 +3,5 @@ import { fileURLToPath } from 'node:url';
 export default defineConfig({build:{rollupOptions:{input:{
   main:fileURLToPath(new URL('./index.html',import.meta.url)),
   briefcase:fileURLToPath(new URL('./briefcase-review.html',import.meta.url)),
+  office:fileURLToPath(new URL('./office-review.html',import.meta.url)),
 }}}});

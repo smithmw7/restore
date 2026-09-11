@@ -51,6 +51,7 @@ function handleEvent(event){
   const {type,position,strength=1}=event,id=event.soundId||event.objectId,spatial=renderer.xr.isPresenting;
   if(type==='puzzle'){audio.unlock();if(event.action==='drop')audio.playDrop(id||'tablet',position,spatial);else audio.playPuzzle?.(event.action,position,spatial);return;}
   if(type==='pickup'){audio.unlock();audio.playPickup(id,position,spatial);if(!event.complete||event.whole)audio.startDrag(id,position,spatial,{kind:event.kind});}
+  if(type==='office-drag')audio.startDrag(id,position,spatial,{kind:event.kind});
   if(type==='break')audio.playBreak(id,position,spatial);
   if(type==='enddrag')audio.stopDrag({immediate:event.reason!=='release'});
   if(type==='drop')audio.playDrop(id,position,spatial);
@@ -72,7 +73,7 @@ function clearHover(){
 }
 function setHover(hit){
   if(hovered===hit?.object)return;clearHover();if(!hit)return;
-  hovered=hit.object;canvas.style.cursor='grab';
+  hovered=hit.object;canvas.style.cursor=hit.object.userData.openingWheel?'ns-resize':'grab';
 }
 function targets(){return ready?[...new Set([...lab.targets,...lab.grabTargets])].filter(mesh=>mesh.visible):[];}
 function intersect(){
@@ -164,7 +165,7 @@ for(let i=0;i<2;i++){
     if(locomotion.isAiming(input))return;
     const hit=chooseHit(input);
     if(hit){
-      if(['fragment','crate-piece','mechanism-part'].includes(hit.object.userData.kind)||Number.isInteger(hit.object.userData.fragmentIndex))startGrab(input,hit);
+      if(hit.object.userData.openingWheel||['fragment','crate-piece','mechanism-part'].includes(hit.object.userData.kind)||Number.isInteger(hit.object.userData.fragmentIndex))startGrab(input,hit);
       else input.pending={hit,time:performance.now()};
     }else if(input.source?.hand)locomotion.beginAim(input);
   });
@@ -203,6 +204,7 @@ function updateXRInputs(time,frame,dt){
     if(input.grabbing){
       beam.visible=false;
       if(input.near){if(input.contactValid)lab.moveGrab(input.contactPoint,input.id);else{lab.endGrab(input.id,{cancelled:true});input.grabbing=false;}}
+      else if(lab.getGrabState().constrained){raycaster.ray.at(input.grabDistance,point);lab.moveGrab(point,input.id);}
       else{
         let manual=false;
         if(source.hand&&input.contactValid){
@@ -240,13 +242,14 @@ function beginDesktopGrab(hit,event){
 }
 canvas.addEventListener('contextmenu',event=>event.preventDefault());
 canvas.addEventListener('pointerdown',event=>{
-  if(!ready||renderer.xr.isPresenting)return;audio.unlock();pointerRay(event);const hit=intersect();
+  if(!ready||renderer.xr.isPresenting||desktopGrab||pointerState)return;audio.unlock();pointerRay(event);const hit=intersect();
   pointerState={x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,button:event.button,time:performance.now(),hit,pointerId:event.pointerId};canvas.setPointerCapture(event.pointerId);
-  if(event.button===0&&hit&&(['fragment','crate-piece','mechanism-part'].includes(hit.object.userData.kind)||Number.isInteger(hit.object.userData.fragmentIndex)))beginDesktopGrab(hit,event);
+  if(event.button===0&&hit&&(hit.object.userData.openingWheel||['fragment','crate-piece','mechanism-part'].includes(hit.object.userData.kind)||Number.isInteger(hit.object.userData.fragmentIndex)))beginDesktopGrab(hit,event);
   if(event.button===0&&event.shiftKey){const ground=new THREE.Plane(new THREE.Vector3(0,1,0),0);if(raycaster.ray.intersectPlane(ground,point))locomotion.teleportTo(point);pointerState=null;}
 });
 canvas.addEventListener('pointermove',event=>{
   if(renderer.xr.isPresenting||!ready)return;
+  if((desktopGrab&&desktopGrab.id!==event.pointerId)||(pointerState&&pointerState.pointerId!==event.pointerId))return;
   pointerRay(event);
   if(desktopGrab){if(raycaster.ray.intersectPlane(dragPlane,point)){desktopGrab.point.copy(point);lab.moveGrab(point,'pointer');}return;}
   if(pointerState){
@@ -259,13 +262,14 @@ canvas.addEventListener('pointermove',event=>{
 });
 canvas.addEventListener('pointerup',event=>{
   if(renderer.xr.isPresenting)return;
+  if((desktopGrab&&desktopGrab.id!==event.pointerId)||(pointerState&&pointerState.pointerId!==event.pointerId))return;
   if(desktopGrab){lab.endGrab('pointer');desktopGrab=null;clearHover();}
   else if(pointerState?.button===0&&pointerState.hit){pointerRay(event);tapHit(pointerState.hit);}
   else if(pointerState?.button===2&&Math.hypot(event.clientX-pointerState.x,event.clientY-pointerState.y)<6)opening?.releaseTool('pointer');
   pointerState=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
 });
 canvas.addEventListener('wheel',event=>{
-  if(!desktopGrab)return;event.preventDefault();desktopGrab.holdPull.elapsed=0;camera.getWorldDirection(direction);desktopGrab.point.addScaledVector(direction,THREE.MathUtils.clamp(event.deltaY*.002,-.2,.2));dragPlane.setFromNormalAndCoplanarPoint(direction,desktopGrab.point);lab.moveGrab(desktopGrab.point,'pointer');
+  if(!desktopGrab)return;event.preventDefault();if(lab.getGrabState().constrained)return;desktopGrab.holdPull.elapsed=0;camera.getWorldDirection(direction);desktopGrab.point.addScaledVector(direction,THREE.MathUtils.clamp(event.deltaY*.002,-.2,.2));dragPlane.setFromNormalAndCoplanarPoint(direction,desktopGrab.point);lab.moveGrab(desktopGrab.point,'pointer');
 },{passive:false});
 canvas.addEventListener('pointercancel',cancelInteractions);canvas.addEventListener('lostpointercapture',()=>{if(desktopGrab)cancelInteractions();});canvas.addEventListener('pointerleave',()=>{if(!desktopGrab)clearHover();});
 const DESKTOP_MOVE_SPEED = 5;
@@ -295,7 +299,7 @@ addEventListener('keyup',event=>keys.delete(event.code));addEventListener('blur'
 function updateDesktop(dt,time){
   if(desktopGrab&&!lab.getGrabState().active){desktopGrab=null;pointerState=null;clearHover();}
   if(pointerState?.button===0&&pointerState.hit&&!desktopGrab&&time-pointerState.time>190)beginDesktopGrab(pointerState.hit,pointerState);
-  if(desktopGrab){
+  if(desktopGrab&&!lab.getGrabState().constrained){
     camera.getWorldPosition(viewerPosition);direction.copy(desktopGrab.point).sub(viewerPosition);const distance=direction.length();direction.normalize();
     const pulled=stepHoldPull(desktopGrab.holdPull,dt,{origin:viewerPosition,direction,distance,viewer:viewerPosition});
     if(pulled<distance){desktopGrab.point.copy(viewerPosition).addScaledVector(direction,pulled);dragPlane.setFromNormalAndCoplanarPoint(dragPlane.normal,desktopGrab.point);lab.moveGrab(desktopGrab.point,'pointer');}
@@ -312,7 +316,7 @@ function updateDesktop(dt,time){
     point.add(step);if(!locomotion.isValidPosition(point))break;
     rig.position.add(step);moved.add(step);
   }
-  if(desktopGrab&&moved.lengthSq()>0){desktopGrab.point.add(moved);dragPlane.setFromNormalAndCoplanarPoint(dragPlane.normal,desktopGrab.point);lab.moveGrab(desktopGrab.point,'pointer');}
+  if(desktopGrab&&!lab.getGrabState().constrained&&moved.lengthSq()>0){desktopGrab.point.add(moved);dragPlane.setFromNormalAndCoplanarPoint(dragPlane.normal,desktopGrab.point);lab.moveGrab(desktopGrab.point,'pointer');}
 }
 ui.sound.addEventListener('click',()=>{muted=!muted;audio.setMuted(muted);ui.sound.classList.toggle('muted',muted);ui.sound.setAttribute('aria-pressed',String(!muted));});
 ui.reset.addEventListener('click',restoreAll);
@@ -383,7 +387,7 @@ try{
   if(openingEnabled){
     const world=lab.physicsWorld;
     opening=createOpeningPuzzles({scene,world,storage:saveStorage,onEvent:handleEvent});
-    await Promise.all([opening.loadPhotos?.(), opening.loadBriefcase?.()]);
+    await Promise.all([opening.loadPhotos?.(), opening.loadBriefcase?.(), opening.loadOfficeAssets?.()]);
     assembly=createOpeningAssembly({scene,world,materials,storage:saveStorage,onEvent:handleEvent,containerOpen:()=>opening.doorOpen});
   }
   lab=createSceneInteractions(lab,warehouse.hangingLights);

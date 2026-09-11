@@ -20,6 +20,10 @@ const PUZZLE_SOUNDS = Object.freeze({
   cut: { family: 'cut', gain: .8, priority: 3 },
   'container-door': { family: 'hinge', gain: .78 },
   photo: { family: 'paper', gain: .42 },
+  'paper-pickup': { family: 'paper', gain: .34 },
+  'small-pickup': { family: 'tool', gain: .18 },
+  'chair-pickup': { folder: 'actions', family: 'wood-creak', gain: .26, variants: 2 },
+  'small-drop': { family: 'tool', gain: .15 },
   align: { folder: 'repair', family: 'hit-metal-light', gain: .16, variants: 2, cooldown: .28 },
   install: { family: 'latch', gain: .88, priority: 3 },
 });
@@ -42,7 +46,7 @@ const DRAG_FAMILIES = Object.freeze({
   // a held prop; retain an audible creak after positional attenuation.
   'metal-creak': { folder: 'actions', family: 'metal-creak', gain: .22 },
 });
-const isWoodProp = kind => kind === 'crate' || kind === 'crate-piece';
+const isWoodProp = kind => kind === 'crate' || kind === 'crate-piece' || kind === 'office-chair';
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 function clipUrl(folder, family, variant) {
   return `${ASSET_BASE}audio/${folder}/${family}-${String(variant).padStart(2, '0')}.wav`;

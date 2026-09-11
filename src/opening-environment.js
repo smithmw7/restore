@@ -171,17 +171,7 @@ export function createOpeningEnvironment({ scene, materials = {} }) {
 
   // Desk puzzle mounts are deliberately clear: notebook at (7,.99,8.1),
   // briefcase at (6.15,1,8.15), and the movable drawer at (7,.7,8.62).
-  solid(wood, [7, .9, 8.1], [2.6, .12, .95], 'wood');
-  box(darkWood, [7, .84, 8.1], [2.65, .025, .98]);
-  for (const x of [5.84, 8.16]) for (const z of [7.75, 8.45]) {
-    solid(darkWood, [x, .415, z], [.13, .83, .13], 'wood');
-    box(brass, [x, .095, z], [.14, .14, .14]);
-  }
-  solid(wood, [7, .69, 7.74], [2.36, .27, .08], 'wood');
-  for (const x of [5.94, 8.06]) solid(wood, [x, .71, 8.1], [.07, .25, .72], 'wood');
-  // The drawer is owned by the puzzle module. No decorative drawer face or
-  // invisible full-desk collider can occlude its open/closed movement.
-  box(leather, [7.37, .965, 7.95], [.6, .009, .34]);
+  // The authored desk includes its leather blotter.
 
   function book(x, y, z, width, height, depth, index, rotation = 0) {
     const cover = bookMaterials[index % bookMaterials.length];
@@ -200,7 +190,7 @@ export function createOpeningEnvironment({ scene, materials = {} }) {
       elevation += height;
     }
   }
-  stack(8.02, .963, 8.23, 3, 2);
+  // Tabletop logbooks are independent physical props in opening-puzzles.
 
   // Shelving reads as records, with no readable print or solution photographs.
   function bookshelf(x, z, width, count = 4) {
@@ -227,29 +217,7 @@ export function createOpeningEnvironment({ scene, materials = {} }) {
   }
   for (let i = 0; i < 3; i++) stack(6.5 + i * .65, 1.24, 12.9, 3 + i, i + 2, 1.15);
 
-  // Closed companion lockers frame the interactive gauntlet locker. Its exact
-  // reserved volume x=9.95..11.25,z=10.575..11.225 contains no static geometry.
-  function closedLocker(x, width) {
-    solid(greenPaint, [x, 1.1, 10.9], [width, 2.2, .65]);
-    box(iron, [x, 1.08, 11.237], [width - .05, 2.1, .018]);
-    box(workshopPaint, [x, 1.09, 11.252], [width - .075, 2.06, .018]);
-    for (let row = 0; row < 5; row++) {
-      box(iron, [x, 1.87 - row * .047, 11.265], [width * .48, .013, .007]);
-      box(iron, [x, .3 + row * .047, 11.265], [width * .48, .013, .007]);
-    }
-    rod(brass, [x - width * .29, .98, 11.298], [x - width * .29, 1.15, 11.298], .016);
-    for (const y of [.4, 1.73]) box(wornSteel, [x + width * .44, y, 11.27], [.04, .11, .03]);
-    box(iron, [x, .04, 10.9], [width - .05, .08, .62]);
-  }
-  closedLocker(9.28, .76);
-  closedLocker(11.65, .61);
-
-  // An empty chair off the player's approach line, with recognisable metal legs.
-  solid(leather, [9.02, .49, 8.63], [.53, .11, .49], 'wood');
-  solid(leather, [9.02, .88, 8.83], [.53, .59, .08], 'wood');
-  for (const x of [8.81, 9.23]) for (const z of [8.44, 8.82]) rod(wornSteel, [x, .04, z], [x, .47, z], .022);
-  rod(wornSteel, [8.82, .25, 8.45], [9.22, .25, 8.45], .016);
-  rod(wornSteel, [8.82, .25, 8.8], [9.22, .25, 8.8], .016);
+  // Lockers and the movable chair are owned by opening-puzzles.
 
   // A banker-style practical points into the usable right-hand desk corner.
   disc(brass, [8.02, .982, 7.89], .12, .032);

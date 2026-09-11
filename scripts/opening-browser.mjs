@@ -62,10 +62,11 @@ try {
   check('drawer and notebook open through pointer taps, reveal the combination and clear the case');
 
   await view([6.15, 0, 9.55], [6.15, 1.05, 8.45]);
-  for (const [index, count] of [4, 1, 7, 2].entries()) {
+  for (const [index, count] of [1, 9, 4, 2].entries()) {
     for (let tick = 0; tick < count; tick++) await tap(`wheel-${index}`);
     assert.equal((await read()).state.opening.wheels[index], count, `wheel ${index} advanced once per tap`);
   }
+  await page.waitForFunction(() => window.__restoreDiagnostics().state.opening.wheelDrag.settled);
   await page.screenshot({ path: `${out}/03-combination-set.png` });
   await tap('case-latch');
   await pause(700);
@@ -74,7 +75,7 @@ try {
   assert.equal(unlocked.caseOpen, true);
   assert.equal(unlocked.gloves.left || unlocked.gloves.right, false);
   await page.screenshot({ path: `${out}/04-photographs-unlocked.png` });
-  check('4172 opens the briefcase before any glove is equipped');
+  check('1942 opens the briefcase before any glove is equipped');
   // The photos now sit inside a hollow case. Step closer to look over its real front rim.
   await view([6.15, 0, 9.30], [6.15, 1.03, 8.15]);
   for (const id of ['photo-2', 'photo-1', 'photo-0']) await tap(id);
@@ -150,7 +151,7 @@ try {
   for (const field of ['noteSeen', 'caseUnlocked', 'caseOpen', 'cuttersFound', 'containerCut', 'containerOpen']) assert.equal(restored[field], beforeReload[field], `${field} persists across reload`);
   assert.deepEqual(restored.gloves, beforeReload.gloves);
   assert.deepEqual(restored.photosViewed, beforeReload.photosViewed);
-  assert.deepEqual(restored.wheels, [4, 1, 7, 2]);
+  assert.deepEqual(restored.wheels, [1, 9, 4, 2]);
   check('equipment, knowledge, photographs and unlocked container survive reload');
   assert.deepEqual(errors, []);
   check('no browser or console errors');

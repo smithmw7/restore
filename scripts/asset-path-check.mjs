@@ -73,6 +73,8 @@ try {
       assert.equal(result.opening.caseUnlocked,false);
       assert.equal(result.opening.briefcase?.loaded,true, `${base} Blender briefcase did not load`);
       assert.ok(requests.has(`${base}models/briefcase/briefcase.glb`), `${base} briefcase model route not requested`);
+      assert.equal(result.opening.office?.loaded, true, `${base} authored office kit did not load`);
+      assert.ok(requests.has(`${base}models/office/office-kit.glb`), `${base} office model route not requested`);
       assert.equal(result.mechanism.total,24);
       assert.equal(result.audio.loaded, 48);
       assert.equal(result.audio.loaded, result.audio.expected, `${base} left undecoded audio`);

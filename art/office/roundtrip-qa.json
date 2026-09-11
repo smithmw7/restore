@@ -1,0 +1,192 @@
+{
+  "assetVersion": "1.0.0",
+  "glbSha256": "c09b949699b85a68c90ec50e7e8b64fe68ce3f4a1d77d57d2c074d915a1abc79",
+  "triangles": 40170,
+  "renderMeshes": 32,
+  "embeddedImages": [
+    {
+      "name": "office-basecolor-final",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "office-orm",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    {
+      "name": "office-normal",
+      "size": [
+        1536,
+        1024
+      ]
+    }
+  ],
+  "models": {
+    "Desk": {
+      "boundsMin": [
+        -1.2999999523162842,
+        0.0,
+        -0.4749999940395355
+      ],
+      "boundsMax": [
+        1.2999999523162842,
+        0.9725000262260437,
+        0.4749999940395355
+      ],
+      "triangles": 5484
+    },
+    "Drawer": {
+      "boundsMin": [
+        -0.550000011920929,
+        -0.11500000208616257,
+        -0.49000000953674316
+      ],
+      "boundsMax": [
+        0.550000011920929,
+        0.11500000208616257,
+        0.07700000703334808
+      ],
+      "triangles": 3188
+    },
+    "Notebook": {
+      "boundsMin": [
+        -0.21549999713897705,
+        0.0,
+        -0.1550000011920929
+      ],
+      "boundsMax": [
+        0.2150000035762787,
+        0.06175000220537186,
+        0.2070000022649765
+      ],
+      "triangles": 2600
+    },
+    "LockerShell": {
+      "boundsMin": [
+        -0.6545000076293945,
+        0.0,
+        -0.32500001788139343
+      ],
+      "boundsMax": [
+        0.6545000076293945,
+        2.1999998092651367,
+        0.343500018119812
+      ],
+      "triangles": 4616
+    },
+    "LockerDoor": {
+      "boundsMin": [
+        -0.006000000052154064,
+        0.046000003814697266,
+        -0.045500002801418304
+      ],
+      "boundsMax": [
+        1.2820000648498535,
+        2.1540000438690186,
+        0.07050000131130219
+      ],
+      "triangles": 5964
+    },
+    "Chair": {
+      "boundsMin": [
+        -0.26499998569488525,
+        -0.5899999737739563,
+        -0.2529999911785126
+      ],
+      "boundsMax": [
+        0.26499998569488525,
+        0.5739494562149048,
+        0.2931937873363495
+      ],
+      "triangles": 10684
+    },
+    "Pen": {
+      "boundsMin": [
+        -0.08799999952316284,
+        -0.007400000002235174,
+        -0.007400000002235174
+      ],
+      "boundsMax": [
+        0.07899999618530273,
+        0.009400001727044582,
+        0.007400000002235174
+      ],
+      "triangles": 3202
+    },
+    "Pencil": {
+      "boundsMin": [
+        -0.08999999612569809,
+        -0.004900000058114529,
+        -0.004900000058114529
+      ],
+      "boundsMax": [
+        0.08799999952316284,
+        0.004900000058114529,
+        0.004900000058114529
+      ],
+      "triangles": 2192
+    },
+    "Logbook": {
+      "boundsMin": [
+        -0.15399999916553497,
+        -0.02800000086426735,
+        -0.10999999940395355
+      ],
+      "boundsMax": [
+        0.15000000596046448,
+        0.02850000001490116,
+        0.13750000298023224
+      ],
+      "triangles": 2240
+    }
+  },
+  "articulation": [
+    {
+      "notebookAngle": 0,
+      "coverHighestY": 0.06175000220537186
+    },
+    {
+      "notebookAngle": 0.5,
+      "coverHighestY": 0.2635122835636139
+    },
+    {
+      "notebookAngle": 1.2,
+      "coverHighestY": 0.45595797896385193
+    },
+    {
+      "notebookAngle": 2.15,
+      "coverHighestY": 0.4157077968120575
+    },
+    {
+      "lockerAngle": 0,
+      "farEdgeForwardZ": -0.0
+    },
+    {
+      "lockerAngle": -0.5,
+      "farEdgeForwardZ": 0.5753107070922852
+    },
+    {
+      "lockerAngle": -1.0,
+      "farEdgeForwardZ": 1.0097651481628418
+    },
+    {
+      "lockerAngle": -1.65,
+      "farEdgeForwardZ": 1.1962380409240723
+    }
+  ],
+  "checks": [
+    "Nine independent identity-transform templates and articulated notebook cover",
+    "Finite geometry, positive transforms, complete UVs and normals",
+    "Three embedded texture atlas images, no external image request",
+    "Geometry bounds and triangle counts match editable Blender source",
+    "Locker hollow center reaches inner rear wall",
+    "Drawer hollow center reaches inner bottom panel",
+    "Notebook spine and locker hinge pose sweeps",
+    "Four actual reimported-GLB Blender renders for each model"
+  ]
+}

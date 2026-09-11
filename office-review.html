@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Restore · Office object studies</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#242826;color:#eee6d5;font:14px/1.5 system-ui,sans-serif}canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:grab}header{position:absolute;top:30px;left:34px;pointer-events:none}header small{color:#a5b0a6;letter-spacing:.17em;text-transform:uppercase;font-size:10px}h1{font-size:27px;font-weight:450;letter-spacing:-.03em;margin:5px 0}header p{font-size:12px;color:#a8b1a9;margin:0}.panel{position:absolute;left:34px;bottom:30px;max-width:calc(100vw - 68px);background:#171d19e8;border:1px solid #ffffff16;border-radius:12px;padding:16px 18px;backdrop-filter:blur(12px)}.row{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.row:first-child{margin-top:0}button,select{border:1px solid #59645a;border-radius:5px;background:#202923;color:#d8e0d7;padding:7px 12px;cursor:pointer;font:inherit;font-size:12px}button:hover,button[aria-pressed=true]{background:#c5ac7d;color:#202622;border-color:#c5ac7d}button:disabled{opacity:.35;cursor:default}select{min-width:200px}a{color:#c4ae83}.hint{margin-top:12px;color:#98a59a;font-size:11px}#status{position:absolute;right:32px;bottom:30px;color:#a4b1a9;font-size:11px;text-align:right;pointer-events:none}#error{position:absolute;inset:42% 12% auto;text-align:center;color:#e6b89e}#error:empty{display:none}@media(max-width:640px){header{top:18px;left:20px}.panel{left:20px;bottom:18px;max-width:calc(100vw - 40px);padding:12px}#status{top:22px;right:20px;bottom:auto;max-width:110px}h1{font-size:22px}.hint{display:none}}
+  </style>
+</head>
+<body>
+  <canvas id="study" aria-label="Office object 3D study"></canvas>
+  <header><small>Restore / Office collection</small><h1 id="model-title">The archive desk</h1><p>Worn timber · enamel · brass · paper</p></header>
+  <section class="panel" aria-label="Office model inspection controls">
+    <div class="row"><select id="model" aria-label="Office model" disabled></select><button id="pose" aria-pressed="false" disabled>Open</button></div>
+    <div class="row"><button data-angle="front" aria-pressed="true">Front</button><button data-angle="rear" aria-pressed="false">Rear</button><button data-angle="above" aria-pressed="false">Above</button><button data-angle="under" aria-pressed="false">Underside</button></div>
+    <div class="hint">Drag to orbit · scroll to inspect · <a href="./">Return to the office</a></div>
+  </section>
+  <div id="status" role="status" aria-live="polite">Loading collection…</div>
+  <div id="error" role="alert"></div>
+  <script type="module" src="/src/office-review.js"></script>
+</body>
+</html>

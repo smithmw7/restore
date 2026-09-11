@@ -51,7 +51,7 @@ try {
       await audio.load(); audio.unlock(); await wait(50);
       const decoded = audio.getState();
       const actions = ['drawer', 'notebook', 'dial', 'case-open', 'locker', 'equip',
-        'cutter-pickup', 'cut', 'container-door', 'photo', 'align', 'install'];
+        'cutter-pickup', 'cut', 'container-door', 'photo', 'align', 'install', 'paper-pickup', 'small-pickup', 'chair-pickup', 'small-drop'];
       const events = [];
       for (const action of actions) {
         const accepted = audio.playPuzzle(action, position, true);
@@ -93,7 +93,7 @@ try {
   });
   assert.equal(result.beforeLoad, false);
   assert.equal(result.decoded.loaded, 48); assert.equal(result.decoded.expected, 48);
-  const patterns = { equip: /repair\/pickup-0[12]\.wav$/, align: /repair\/hit-metal-light-0[12]\.wav$/,
+  const patterns = { 'paper-pickup': /opening\/paper-01\.wav$/, 'small-pickup': /opening\/tool-01\.wav$/, 'chair-pickup': /actions\/wood-creak-0[12]\.wav$/, 'small-drop': /opening\/tool-01\.wav$/, equip: /repair\/pickup-0[12]\.wav$/, align: /repair\/hit-metal-light-0[12]\.wav$/,
     drawer: /opening\/drawer-01\.wav$/, notebook: /opening\/paper-01\.wav$/, dial: /opening\/dial-01\.wav$/,
     'case-open': /opening\/latch-01\.wav$/, locker: /opening\/locker-01\.wav$/,
     'cutter-pickup': /opening\/tool-01\.wav$/, cut: /opening\/cut-01\.wav$/,
@@ -104,7 +104,7 @@ try {
     assert.match(event.clip, patterns[action]);
     assert.ok(event.gain > 0 && event.gain <= .88);
   }
-  assert.equal(result.positions.length, 12);
+  assert.equal(result.positions.length, 16);
   for (const position of result.positions) assert.deepEqual(position.map(x => +x.toFixed(3)), [2, 1.1, -4]);
   assert.equal(result.unknown, false); assert.equal(result.prototype, false); assert.equal(result.invalidAllocated, 0);
   assert.equal(result.firstAlign, true); assert.equal(result.repeatedAlign, 0); assert.equal(result.resumedAlign, true);
@@ -118,7 +118,7 @@ try {
     decoded: result.decoded.loaded, mappedActions: result.events.length,
     maxBurstVoices: result.burst.activeVoices, settledVoices: result.settled.activeVoices,
     checks: ['measured output hashes and normalization', '48 real browser WAV decodes',
-      '12 action mappings and spatial positions', 'no automatic reveal or chime',
+      '16 action mappings and spatial positions', 'no automatic reveal or chime',
       'bounded alignment and dial events', 'mute and invalid action silence',
       'shared twelve-voice limit and natural source cleanup'],
     scope: 'Silent Chrome WebAudio verification. Physical headset listening is not established.' }, null, 2));
