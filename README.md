@@ -1,8 +1,8 @@
 # Restore
 
-## Engraved combination wheels (0.6.2)
+## Interactive case study (0.6.3)
 
-The office case now has a clean handle-free silhouette and four real combination drums. Each drum carries ten evenly spaced, black inlaid 3D numerals with a separator groove between digits. The numerals turn with the metal wheel, including a smooth 9-to-0 transition. Aged PBR surfaces, hollow shells, lining, hinges, twin clasps and the photograph puzzle remain. See the [quality pass, source model and render sheets](docs/BRIEFCASE-QUALITY.md). Open `/briefcase-review.html` to orbit the exported model, turn all ten wheel positions, open the lid and inspect the exploded assemblies.
+The office case now has a clean handle-free silhouette and four real combination drums. Each drum carries ten evenly spaced, black inlaid 3D numerals with a separator groove between digits. The numerals turn with the metal wheel, including a smooth 9-to-0 transition. Aged PBR surfaces, hollow shells, lining, hinges, twin clasps and the photograph puzzle remain. See the [quality pass, source model and render sheets](docs/BRIEFCASE-QUALITY.md). Open `/briefcase-review.html` to drag the actual wheels and release them into their nearest numbered detent. In this review, **1942** releases the clasps; tap either moving latch or Open case to lift the lid. Reset lock returns to 0000. Drag the body to orbit, and use Explode assemblies to inspect construction. Mouse and touch share the same input path, with quiet detent and latch sounds.
 
 A Three.js / WebXR playground for collecting, breaking, and restoring objects. The original bright-room demo is preserved at Git tag **restore-demo-v1** and on `main`. The default **warehouse** branch extends it into an enclosed artifact storehouse.
 

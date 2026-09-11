@@ -54,11 +54,14 @@ export async function loadBriefcaseAsset({ url = BRIEFCASE_ASSET_URL, loader = n
   };
   return {
     root, state, dispose,
-    update({ lidAngle = 0, digits = lastDigits, open = false, dt = 1 / 60, immediate = false } = {}) {
+    update({ lidAngle = 0, digits = lastDigits, open = false, wheelPositions = null, dt = 1 / 60, immediate = false } = {}) {
       if (disposed) return;
       lid.rotation.x = lidAngle;
       const blend = immediate ? 1 : 1 - Math.exp(-18 * Math.max(0, dt));
       wheels.forEach((wheel, index) => {
+        // Direct continuous detent coordinates let a physical drag own the pose.
+        // Integer puzzle callers retain the existing eased, wrapped motion.
+        if (wheelPositions) { wheel.rotation.x = wheelAngles[index] - wheelPositions[index] * STEP; return; }
         const digit = digits[index];
         if (digit !== lastDigits[index]) {
           let advance = (digit - lastDigits[index] + 10) % 10;

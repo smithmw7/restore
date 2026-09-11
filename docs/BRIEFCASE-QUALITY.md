@@ -1,6 +1,6 @@
 # Briefcase quality pass
 
-Restore 0.6.2 refines the opening office case with a handle-free silhouette and engraved combination wheels on its articulated Blender asset. The existing four-wheel puzzle and photograph chain remain intact.
+Restore 0.6.3 refines the opening office case with a handle-free silhouette and engraved combination wheels on its articulated Blender asset. The existing four-wheel puzzle and photograph chain remain intact.
 
 ## Asset and review files
 
@@ -23,9 +23,19 @@ Planar UV projection uses a shared physical scale on both axes so narrow faces d
 
 ## Interaction integration
 
-The visible Blender meshes replace the procedural case, while invisible touch and collision proxies retain input reach. Both latch targets operate the same lock. The lid, latch tongues and four numbered drums animate independently. Each wheel carries its entire set of numeral geometry as a child mesh. No stationary number displays or dynamically generated numeral textures are used by the imported model. Rotation follows the shortest detent path with easing, and 9-to-0 continues forward by one step. Saved digits restore the matching physical wheel pose immediately. The model inspection page uses the same articulation code as gameplay. A short-range warm bounce light in the office illuminates the front reading row without adding a shadow map; a studio fill serves the same purpose in the inspection page.
+The visible Blender meshes replace the procedural case, while invisible touch and collision proxies retain input reach. Both latch targets operate the same lock. The lid, latch tongues and four numbered drums animate independently. Each wheel carries its entire set of numeral geometry as a child mesh. No stationary number displays or dynamically generated numeral textures are used by the imported model. Rotation follows the shortest detent path with easing, and 9-to-0 continues forward by one step. Saved digits restore the matching physical wheel pose immediately. The model inspection page uses the same articulation code as gameplay, with optional continuous wheel poses for direct manipulation. A short-range warm bounce light in the office illuminates the front reading row without adding a shadow map; a studio fill serves the same purpose in the inspection page.
 
 The case rests on the desk, and the opened notebook sits beside it with clearance for its cover. Its collision shell is hollow, and the photographs start inside the lining instead of floating above a solid box. The lid collider encloses the exported lid, caps and hinge parts. Loading failure retains the functional procedural fallback. Existing save progress, reset behavior, sound and glove rules remain in place.
+
+## Interactive review lock
+
+On `/briefcase-review.html`, drag each visible wheel along its screen-projected vertical axis. Its full physical numeral mesh follows continuously; releasing eases to the nearest 36-degree detent. A tap advances one number. Pointer capture gives wheel gestures exclusive control, and dragging the case body still orbits the camera. Cancellation, Escape, focus loss and resizing release the wheel safely.
+
+The review combination is **1942**. Passing through it during a held drag does not release the clasps: every wheel must be released and settled. The correct combination releases both clasps, and tapping either moving latch or Open case opens the lid. An incorrect combination produces a short rattle without opening. Reset lock closes and returns the drums to their nearest 0000 setting. The office gameplay puzzle retains its existing 4172 clue chain; this review is an independent interaction study.
+
+The exploded view disables wheel and latch input while the parts are separated. Four existing normalized Foley recordings load only after user input, with quiet detents, a latch release, an opening creak and a closing contact. Click throttling, four simultaneous voices and a mute control keep the response restrained. No new sound downloads are added to the main game.
+
+Production review checks cover continuous mouse and touch drags, all ten positions, both directions across 0/9, nearest-detent snapping, pointer cancellation, orbit isolation, incorrect/correct combinations, actual latch opening, close/reopen and reset. The standard game client also reads review state and captures its rendered canvas.
 
 ## Rebuild and check
 
