@@ -268,9 +268,27 @@ canvas.addEventListener('wheel',event=>{
   if(!desktopGrab)return;event.preventDefault();desktopGrab.holdPull.elapsed=0;camera.getWorldDirection(direction);desktopGrab.point.addScaledVector(direction,THREE.MathUtils.clamp(event.deltaY*.002,-.2,.2));dragPlane.setFromNormalAndCoplanarPoint(direction,desktopGrab.point);lab.moveGrab(desktopGrab.point,'pointer');
 },{passive:false});
 canvas.addEventListener('pointercancel',cancelInteractions);canvas.addEventListener('lostpointercapture',()=>{if(desktopGrab)cancelInteractions();});canvas.addEventListener('pointerleave',()=>{if(!desktopGrab)clearHover();});
+const DESKTOP_MOVE_SPEED = 5;
+const isTypingTarget = target => target?.isContentEditable || target?.closest?.('input,textarea,select');
+function goToOffice() {
+  if (!ready || renderer.xr.isPresenting || !openingEnvironment) return false;
+  const home = openingEnvironment.spawn.position;
+  const offsets = [[0,0],[-.6,0],[.6,0],[0,-.6],[0,.6],[-1.2,0],[1.2,0],[0,-1.2],[0,1.2],[-1.2,-.6],[1.2,-.6],[-1.8,0],[1.8,0]];
+  const destination = offsets.map(([x,z]) => home.clone().add(new THREE.Vector3(x,0,z))).find(position => locomotion.isValidPosition(position));
+  if (!destination) return false;
+  keys.clear(); cancelInteractions(); locomotion.reset();
+  camera.getWorldPosition(point); point.y = 0;
+  const alreadyThere = point.distanceToSquared(destination) < .0025;
+  if (!alreadyThere && !locomotion.teleportTo(destination)) return false;
+  rig.updateWorldMatrix(true,true); camera.lookAt(openingEnvironment.spawn.lookAt); camera.updateWorldMatrix(true,false);
+  return true;
+}
 addEventListener('keydown',event=>{
-  if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(event.code))event.preventDefault();keys.add(event.code);
-  if(event.repeat)return;if(event.code==='KeyR')restoreAll();if(event.code==='KeyQ'||event.code==='ArrowLeft')locomotion?.turn(-1);if(event.code==='KeyE'||event.code==='ArrowRight')locomotion?.turn(1);
+  if(isTypingTarget(event.target)||event.ctrlKey||event.metaKey||event.altKey)return;
+  if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyO'].includes(event.code))event.preventDefault();keys.add(event.code);
+  if(event.repeat)return;
+  if(event.code==='KeyO'){goToOffice();return;}
+  if(event.code==='KeyR')restoreAll();if(event.code==='KeyQ'||event.code==='ArrowLeft')locomotion?.turn(-1);if(event.code==='KeyE'||event.code==='ArrowRight')locomotion?.turn(1);
   if(event.code==='KeyF'){if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen().catch(()=>{});}
 });
 addEventListener('keyup',event=>keys.delete(event.code));addEventListener('blur',()=>{keys.clear();cancelInteractions();locomotion?.reset();});
@@ -285,8 +303,16 @@ function updateDesktop(dt,time){
   const forward=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0);
   const right=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0);
   if(!forward&&!right)return;
-  camera.getWorldDirection(direction);direction.y=0;direction.normalize();const step=direction.clone().multiplyScalar(forward).add(new THREE.Vector3(-direction.z,0,direction.x).multiplyScalar(right)).normalize().multiplyScalar(dt*2.2);
-  camera.getWorldPosition(point);point.add(step);point.y=0;if(locomotion.isValidPosition(point)){rig.position.add(step);if(desktopGrab){desktopGrab.point.add(step);dragPlane.setFromNormalAndCoplanarPoint(dragPlane.normal,desktopGrab.point);lab.moveGrab(desktopGrab.point,'pointer');}}
+  camera.getWorldDirection(direction);direction.y=0;direction.normalize();
+  const step=direction.clone().multiplyScalar(forward).add(new THREE.Vector3(-direction.z,0,direction.x).multiplyScalar(right)).normalize().multiplyScalar(dt*DESKTOP_MOVE_SPEED);
+  // Check the whole movement in short steps so faster keys still stop at walls.
+  const steps=Math.max(1,Math.ceil(step.length()/.12)), moved=new THREE.Vector3();step.divideScalar(steps);
+  camera.getWorldPosition(point);point.y=0;
+  for(let index=0;index<steps;index++){
+    point.add(step);if(!locomotion.isValidPosition(point))break;
+    rig.position.add(step);moved.add(step);
+  }
+  if(desktopGrab&&moved.lengthSq()>0){desktopGrab.point.add(moved);dragPlane.setFromNormalAndCoplanarPoint(dragPlane.normal,desktopGrab.point);lab.moveGrab(desktopGrab.point,'pointer');}
 }
 ui.sound.addEventListener('click',()=>{muted=!muted;audio.setMuted(muted);ui.sound.classList.toggle('muted',muted);ui.sound.setAttribute('aria-pressed',String(!muted));});
 ui.reset.addEventListener('click',restoreAll);

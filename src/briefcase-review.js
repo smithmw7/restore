@@ -143,7 +143,13 @@ canvas.addEventListener('lostpointercapture', event => {
   if (event.pointerId === drag?.pointerId || event.pointerId === latchPress?.pointerId) endInteraction(true);
 });
 addEventListener('blur', () => endInteraction(true));
-addEventListener('keydown', event => { if (event.key === 'Escape') endInteraction(true); });
+addEventListener('keydown', event => {
+  if (event.key === 'Escape') endInteraction(true);
+  if (event.code === 'KeyO' && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey
+    && !event.target?.isContentEditable && !event.target?.closest?.('input,textarea,select')) {
+    event.preventDefault(); endInteraction(true); location.assign(import.meta.env.BASE_URL);
+  }
+});
 document.querySelectorAll('[data-angle]').forEach(button => button.addEventListener('click', () => angle(button.dataset.angle)));
 document.querySelectorAll('[data-lid]').forEach(button => button.addEventListener('click', () => { audio.resume(); requestOpen(Number(button.dataset.lid)); }));
 document.querySelector('#reset-lock').addEventListener('click', () => { audio.resume(); resetLock(); });
