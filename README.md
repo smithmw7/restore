@@ -1,5 +1,13 @@
 # Restore
 
+## First contact (0.8.0)
+
+Finding a gauntlet now leads directly to a small restoration discovery. A frame and matching strut sit beside the workshop cradle, available before the photograph case or shipping container. The gauntlet makes nearby matching inlays respond. While a compatible piece approaches its real socket, a quiet glass resonance resolves and the inlays brighten; physical contact, distance and alignment determine seating.
+
+The 24-part mechanism develops through first contact, a closed lower ring, a live core and full awakening. Machined collars, copper windings and keyed ceramic panels are generated locally. The last lens produces a restrained four-second field response and powers a nearby test stand. Its specimen really levitates: pluck it out, drop it away from the field, or return it near the stand to suspend it again. Progress survives reload without replaying the reveal. There is no ship silhouette, objective text or global assembly ghost.
+
+Run `npm run test:field` for physical discovery, presentation and sound checks, and `npm run test:field-browser` against dev5211 for real pointer play. See [the priority and implementation notes](docs/FIRST-CONTACT.md). The local preview is **5212**; this checkpoint stays on `opening-discovery`, separate from the public `warehouse` release.
+
 ## Interactive office (0.7.0)
 
 The office now uses nine Blender-authored templates with worn walnut, leather, green enamel, brass and paper materials. Every locker door opens independently. Pens, pencils, logbooks, the notebook and chair can be picked up and dropped; the desk and room furniture stay fixed. The chair has a compound physical shape, the notebook cover has collision while open, and both locker shelves support loose objects. Small props come to rest, and their resting poses and locker door states survive reload.
@@ -18,7 +26,7 @@ A Three.js / WebXR playground for collecting, breaking, and restoring objects. T
 
 The `opening-discovery` branch adds the first playable office and workshop. Start in the office, explore the desk and lockers, and follow any of the three leads: a notebook and locked photograph case, wearable lifting gauntlets, or workshop bolt cutters and a large shipping container. The case contains three grainy component photographs. The handwritten note and physical lock numerals are the only required puzzle text.
 
-The gauntlets enable the existing warehouse pull, break and repair interactions. Sixteen small procedural mechanism parts sit on the workshop sorting table; eight larger frame sections are prepared when the shipping-container doors open. Bring compatible parts to the neutral work cradle to build a 24-part field mechanism. Physical supports determine the construction order, including placing the core before closing its upper lens. Local light and latch sounds acknowledge successful seating. This prototype does not reveal or implement the full 240-part saucer.
+The gauntlets enable the existing warehouse pull, break and repair interactions. Seventeen procedural mechanism parts are accessible initially, including the first matching pair beside the cradle. Seven additional frame sections receive physical bodies when the shipping-container doors open. Bring compatible parts to the neutral work cradle to build a 24-part field mechanism. Physical supports determine the construction order, including placing the core before closing its upper lens. Local inlays, resonance and latch sounds acknowledge fit; four persistent stages culminate in a working levitation experiment. This prototype does not reveal or implement the full 240-part saucer.
 
 Opening access, equipment, clue discoveries and mechanism installation save locally in the browser. The ordinary restore button recovers loose props and resets the sandbox collection while keeping earned opening/assembly progress. `?sandbox` starts the earlier warehouse interaction layout with all 176 crates and unrestricted powers. A separate new-game UI and deliberate disassembly of installed mechanism parts remain later work.
 

@@ -1,6 +1,6 @@
 # Opening discovery: playable checkpoint
 
-Version 0.6.0, branch `opening-discovery`. This branch starts from the published warehouse code and preserves the earlier uncommitted ceramic experiments in their original checkout. The public site still follows `warehouse` until this work is merged and deployed.
+Current checkpoint 0.8.0, branch `opening-discovery`. This branch starts from the published warehouse code and preserves the earlier uncommitted ceramic experiments in their original checkout. The public site still follows `warehouse` until this work is merged and deployed. The office uses the Blender asset kit documented in [the office quality pass](OFFICE-QUALITY.md).
 
 ## Implemented
 
@@ -8,7 +8,7 @@ Version 0.6.0, branch `opening-discovery`. This branch starts from the published
 - The complete drawer, notebook, sticky-note combination, four-wheel metal case and photograph chain. Correct code entry works before discovering the clue. Photos can be picked up and turned using hand/controller orientation.
 - Two gauntlets, nearby physical pickup and wrist donning, desktop equip assistance and hand-specific powered manipulation. Existing locomotion remains available without them.
 - Reusable bolt cutters, a distinct cuttable keeper, opening shipping-container doors and a warm interior light. Held tools use the shared Rapier world, have collision-aware teleport relocation and can be released.
-- A procedural 24-component anonymous field mechanism, with canonical assembled poses and physical prerequisite rules. Sixteen small pieces start on a sorting table. Eight larger frame sections become available when the container opens. Their geometry is procedural and built at initialization; their physical bodies are created on opening. Collision-constrained pulling, local alignment light/tone, assisted seating, latches and final core light/motion provide the first assembly payoff.
+- A procedural 24-component anonymous field mechanism, with canonical assembled poses and physical prerequisite rules. A frame and matching strut are available beside the cradle, with fifteen further pieces on the sorting table. Seven larger frame sections become available when the container opens. Their geometry is procedural and built at initialization; their physical bodies are created on opening. Actual-body alignment, clear socket paths, local inlays, assisted seating, latches and quiet resonance connect the physical fit to feedback. Four persistent stages culminate in a contained field and a repeatable physical levitation experiment. See [First contact](FIRST-CONTACT.md).
 - Persistent opening equipment/access, clue knowledge and installed mechanism state. Ordinary reset preserves earned access and assembly, while recovering loose objects. Unreachable essential props have recovery paths.
 - Eight normalized local Foley recordings added to the existing shared audio system. The 48 recordings retain bounded voices, mute, fades and positional playback. New mechanism parts use existing pickup, quiet dragging and Heavy Kick drop feedback.
 
@@ -16,7 +16,7 @@ The photograph atlas was generated with the built-in image tool. It shows compon
 
 ## Deliberately still a prototype
 
-The full saucer, 240-component blueprint, broader records-room content, multiple container puzzles, deliberate removal of installed mechanism parts and a separate new-game interface are not implemented. The first mechanism establishes the assembly system; it is not presented as a finished ship module model. Tool and furniture meshes are procedural prototype geometry.
+The full saucer, 240-component blueprint, broader records-room content, multiple container puzzles, deliberate removal of installed mechanism parts and a separate new-game interface are not implemented. The first mechanism establishes the assembly system; it is not presented as a finished ship module model. Gauntlets, cutters and the remaining room dressing still use procedural prototype geometry; the desk, chair, lockers, books, writing tools and case have Blender quality passes.
 
 Photographs and sound are authored assets; ordinary room geometry, tool models, mechanism pieces and basic surface variations are procedural. The saved world currently restores exact mechanism installation and opening progress, rather than every loose legacy warehouse artifact.
 

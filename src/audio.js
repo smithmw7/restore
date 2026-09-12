@@ -38,6 +38,11 @@ const MAX_DRAG_GAIN = 0.12;
 const MAX_LOOP_VOICES = 2;
 const REVEAL_DURATION = 1.16;
 const REVEAL_GAIN = .66;
+const FIELD_GAIN = .065;
+const FIELD_FADE = .03;
+const FIELD_LOOP_DURATION = 4;
+const FIELD_MILESTONE_DURATIONS = [0, 1.55, 2.1, 2.8, 4.2];
+const FIELD_MILESTONE_GAINS = [0, .34, .4, .46, .52];
 const DRAG_FAMILIES = Object.freeze({
   'stone-drag': { folder: 'repair', family: 'drag', gain: MAX_DRAG_GAIN },
   'scrape-wood-concrete': { folder: 'actions', family: 'scrape-wood-concrete', gain: MAX_DRAG_GAIN },
@@ -60,6 +65,9 @@ export function createRestoreAudio() {
   const revealVoices = new Set();
   const eventCounts = {}, lastEvents = [], lastObjectContact = new Map(), retiringDrags = new Set();
   const lastPuzzle = new Map();
+  let field = null, fieldBuffer = null, fieldRetryAt = 0;
+  const retiringFields = new Set(), fieldMilestoneVoices = new Set(), fieldMilestones = new Set();
+  const fieldMilestoneBuffers = new Map();
 
   function getContext() {
     if (context) return context;
@@ -87,6 +95,8 @@ export function createRestoreAudio() {
       // Build this once during loading, keeping synthesis off the first
       // completed-repair frame in VR. playComplete still supports lazy use.
       getRevealBuffer();
+      getFieldBuffer();
+      for (let stage = 1; stage <= 4; stage++) getFieldMilestoneBuffer(stage);
       await Promise.all(ALL_CLIPS.map(async url => {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Could not load ${url}: ${response.status}`);
@@ -139,9 +149,11 @@ export function createRestoreAudio() {
     if (voices.size < MAX_VOICES) return true;
     const candidate = [...voices].sort((a, b) => a.priority - b.priority)[0];
     if (candidate.priority > priority) return false;
+    candidate.onEvict?.();
     candidate.source.stop();
     voices.delete(candidate);
     revealVoices.delete(candidate);
+    fieldMilestoneVoices.delete(candidate);
     return true;
   }
 
@@ -211,6 +223,10 @@ export function createRestoreAudio() {
   function playRestore() {
     stopDrag({ immediate: true });
     cancelReveals();
+    stopField();
+    cancelFieldMilestones();
+    fieldMilestones.clear();
+    fieldRetryAt = 0;
     lastPuzzle.clear();
     if (muted) return;
     chime([392, 494, 587, 784], 0.06);
@@ -446,6 +462,177 @@ export function createRestoreAudio() {
     }
   }
 
+
+  function normalizeBuffer(buffer, maxPeak, maxRms) {
+    const data = buffer.getChannelData(0);
+    let peak = 0, energy = 0;
+    for (const value of data) { peak = Math.max(peak, Math.abs(value)); energy += value * value; }
+    const scale = Math.min(maxPeak / Math.max(peak, .0001), maxRms / Math.max(Math.sqrt(energy / data.length), .0001));
+    for (let index = 0; index < data.length; index++) data[index] *= scale;
+    return buffer;
+  }
+
+  function getFieldBuffer() {
+    if (fieldBuffer) return fieldBuffer;
+    fieldBuffer = context.createBuffer(1, Math.round(FIELD_LOOP_DURATION * context.sampleRate), context.sampleRate);
+    const data = fieldBuffer.getChannelData(0);
+    // Every partial and modulation period closes exactly at the four-second
+    // seam. Slow beating in a low, hollow glass tone suggests a physical field,
+    // without a repeated ping, pulse, random loop join, or new render-frame node.
+    for (let index = 0; index < data.length; index++) {
+      const t = index / context.sampleRate, phase = Math.PI * 2 * t;
+      const breath = .86 + .08 * Math.sin(phase * .25) + .06 * Math.cos(phase * .5);
+      data[index] = breath * (.52 * Math.sin(phase * 110)
+        + .20 * Math.sin(phase * 165) + .16 * Math.sin(phase * 220.25)
+        + .075 * Math.sin(phase * 329.75) + .03 * Math.sin(phase * 660));
+    }
+    return normalizeBuffer(fieldBuffer, .38, .15);
+  }
+
+  function getFieldMilestoneBuffer(stage) {
+    if (fieldMilestoneBuffers.has(stage)) return fieldMilestoneBuffers.get(stage);
+    const duration = FIELD_MILESTONE_DURATIONS[stage], rate = context.sampleRate;
+    const buffer = context.createBuffer(1, Math.ceil(duration * rate), rate), data = buffer.getChannelData(0);
+    const frequencies = stage === 1 ? [165, 220, 330] : stage === 2 ? [110, 165, 220, 330]
+      : stage === 3 ? [55, 110, 165, 220, 440] : [55, 82.5, 110, 165, 220, 330];
+    let random = 1942 + stage, air = 0, softAir = 0;
+    for (let index = 0; index < data.length; index++) {
+      const t = index / rate, phase = Math.PI * 2 * t;
+      const attack = Math.sin(Math.PI * .5 * clamp(t / .075, 0, 1)) ** 2;
+      const tail = Math.sin(Math.PI * .5 * clamp((duration - t) / .36, 0, 1)) ** 2;
+      const bodyDecay = Math.exp(-t * (stage === 4 ? .88 : 1.7));
+      // Resonant bearings settle into a shared harmonic body. This does not
+      // duplicate the separately recorded latch, or use a UI arpeggio.
+      let body = 0;
+      for (let partial = 0; partial < frequencies.length; partial++) {
+        const frequency = frequencies[partial], weight = 1 / (1 + partial * .72);
+        const drift = .012 * Math.exp(-t * 2.8) * Math.sin(phase * 1.75);
+        body += weight * Math.sin(phase * frequency + drift);
+      }
+      const bearing = Math.exp(-t * 6.5) * (.11 * Math.sin(phase * 443.75) + .065 * Math.sin(phase * 711.25));
+      random = (Math.imul(random, 1664525) + 1013904223) | 0;
+      const noise = (random >>> 0) / 2147483648 - 1;
+      air += (noise - air) * .07;
+      softAir += (air - softAir) * .012;
+      const swellTime = stage === 4 ? 1.0 : .42;
+      const swell = Math.sin(Math.PI * .5 * clamp(t / swellTime, 0, 1)) ** 2 * Math.exp(-t / (duration * .26));
+      const uplift = stage === 4 ? .15 * Math.sin(phase * 440) * swell : .065 * Math.sin(phase * 440) * swell;
+      data[index] = attack * tail * (.38 * body * bodyDecay + bearing + uplift
+        + (air - softAir) * swell * (stage === 4 ? .95 : .52));
+    }
+    normalizeBuffer(buffer, .58, .115);
+    fieldMilestoneBuffers.set(stage, buffer);
+    return buffer;
+  }
+
+  function holdGain(param, now) {
+    if (param.cancelAndHoldAtTime) param.cancelAndHoldAtTime(now);
+    else {
+      const value = param.value;
+      param.cancelScheduledValues(now);
+      param.setValueAtTime(value, now);
+    }
+  }
+
+  function disposeField(voice) {
+    if (field === voice) field = null;
+    retiringFields.delete(voice); voices.delete(voice);
+    voice.source.disconnect(); voice.filter.disconnect(); voice.gain.disconnect(); voice.panner?.disconnect();
+  }
+
+  /** One restrained local resonance, driven only by a physically valid fit. */
+  function updateField({ active = false, signal = 0, position, spatial = false, stage = 0 } = {}) {
+    const strength = clamp(Number(signal) || 0, 0, 1);
+    if (!active || strength <= 0 || muted || !context || context.state === 'closed') {
+      stopField();
+      return false;
+    }
+    const now = context.currentTime;
+    if (field && field.spatial !== Boolean(spatial)) stopField();
+    if (!field) {
+      if (now < fieldRetryAt) return false;
+      // At most one incoming tone and one 30 ms release can coexist. Rapid
+      // cancel/re-grab cannot accumulate inaudible sources or fill the budget.
+      for (const retiring of retiringFields) { retiring.source.stop(); disposeField(retiring); }
+      if (!reserveVoice(1)) { fieldRetryAt = now + .1; return false; }
+      unlock();
+      const source = context.createBufferSource(), filter = context.createBiquadFilter(), gain = context.createGain();
+      source.buffer = getFieldBuffer(); source.loop = true;
+      filter.type = 'lowpass'; filter.frequency.value = 380; filter.Q.value = .55;
+      gain.gain.value = 0;
+      const panner = createPanner(position, spatial);
+      source.connect(filter).connect(gain);
+      if (panner) gain.connect(panner).connect(limiter); else gain.connect(limiter);
+      const voice = { source, filter, gain, panner, priority: 1, spatial: Boolean(spatial), signal: strength, stage,
+        targetGain: 0, onEvict: () => { if (field === voice) field = null; retiringFields.delete(voice); fieldRetryAt = context.currentTime + .1; } };
+      field = voice; voices.add(voice);
+      source.onended = () => disposeField(voice);
+      source.start();
+      record('fieldStart', null, 'synth:assembly-resonance', 0);
+    }
+    field.signal = strength; field.stage = stage;
+    field.targetGain = FIELD_GAIN * strength ** .8;
+    movePanner(field.panner, position);
+    field.gain.gain.setTargetAtTime(field.targetGain, now, .065);
+    field.filter.frequency.setTargetAtTime(380 + 1250 * strength ** 2, now, .12);
+    field.source.playbackRate.setTargetAtTime(.984 + .016 * strength, now, .18);
+    return true;
+  }
+
+  function stopField() {
+    if (!field || !context) return;
+    const voice = field, now = context.currentTime;
+    field = null;
+    voice.targetGain = 0;
+    holdGain(voice.gain.gain, now);
+    voice.gain.gain.linearRampToValueAtTime(0, now + FIELD_FADE);
+    voice.source.stop(now + FIELD_FADE + .001);
+    retiringFields.add(voice);
+    eventCounts.fieldStop = (eventCounts.fieldStop || 0) + 1;
+  }
+
+  function cancelFieldMilestones() {
+    if (!context) return;
+    const now = context.currentTime;
+    for (const voice of fieldMilestoneVoices) {
+      if (voice.cancelled) continue;
+      voice.cancelled = true;
+      holdGain(voice.gain.gain, now);
+      voice.gain.gain.linearRampToValueAtTime(0, now + FIELD_FADE);
+      voice.source.stop(now + FIELD_FADE + .001);
+    }
+  }
+
+  function playFieldMilestone(stage, position, spatial = false) {
+    if (!Number.isInteger(stage) || stage < 1 || stage > 4 || muted || fieldMilestones.has(stage)) return false;
+    unlock();
+    if (context.state === 'closed') return false;
+    stopField();
+    // The core can cross a second checkpoint during a tail, but never stacks
+    // more than two of these cached phrases. Both share the normal voice cap.
+    if (fieldMilestoneVoices.size >= 2) {
+      const oldest = fieldMilestoneVoices.values().next().value;
+      oldest.source.stop(); voices.delete(oldest); fieldMilestoneVoices.delete(oldest);
+    }
+    if (!reserveVoice(3)) return false;
+    const source = context.createBufferSource(), gain = context.createGain();
+    source.buffer = getFieldMilestoneBuffer(stage);
+    gain.gain.value = FIELD_MILESTONE_GAINS[stage];
+    const panner = createPanner(position, spatial);
+    source.connect(gain);
+    if (panner) gain.connect(panner).connect(limiter); else gain.connect(limiter);
+    const voice = { source, gain, priority: 3, cancelled: false };
+    voices.add(voice); fieldMilestoneVoices.add(voice); fieldMilestones.add(stage);
+    source.onended = () => {
+      voices.delete(voice); fieldMilestoneVoices.delete(voice);
+      source.disconnect(); gain.disconnect(); panner?.disconnect();
+    };
+    source.start();
+    quietContactsUntil = context.currentTime + .24;
+    record('fieldMilestone', stage, `synth:assembly-milestone-${stage}`, FIELD_MILESTONE_GAINS[stage]);
+    return true;
+  }
+
   function playDock(objectId, position, spatial = false) {
     stopDrag({ immediate: true });
     const played = playClip('dock', objectId, 'repair', 'pickup', position, spatial, 0.5, 3);
@@ -455,7 +642,7 @@ export function createRestoreAudio() {
 
   function setMuted(value) {
     muted = Boolean(value);
-    if (muted) { stopDrag({ immediate: true }); cancelReveals(); }
+    if (muted) { stopDrag({ immediate: true }); cancelReveals(); stopField(); cancelFieldMilestones(); }
     if (master) master.gain.setTargetAtTime(muted ? 0 : 0.75, context.currentTime, 0.008);
     if (!muted) unlock();
   }
@@ -477,6 +664,11 @@ export function createRestoreAudio() {
     return {
       loaded, expected: ALL_CLIPS.length, muted, playCount, lastClip, activeVoices: voices.size,
       activeReveals: revealVoices.size,
+      fieldActive: Boolean(field), fieldSignal: field?.signal ?? 0,
+      fieldGain: Number((field?.gain.gain.value ?? 0).toFixed(5)),
+      fieldTargetGain: Number((field?.targetGain ?? 0).toFixed(5)), fieldMaxGain: FIELD_GAIN,
+      fieldStage: field?.stage ?? null, fieldVoices: Number(Boolean(field)) + retiringFields.size,
+      activeFieldMilestones: fieldMilestoneVoices.size,
       contextState: context?.state ?? 'uninitialized', loopActive: Boolean(drag),
       loopGain: Number((drag?.loop?.gain.gain.value ?? 0).toFixed(5)),
       loopTargetGain: Number((drag?.loop?.targetGain ?? 0).toFixed(5)), loopMaxGain: drag?.loop?.maxGain ?? MAX_DRAG_GAIN,
@@ -490,5 +682,6 @@ export function createRestoreAudio() {
   return {
     load, unlock, playBreak, playPuzzle, playRestore, setMuted, updateListener, getState,
     playPickup, startDrag, updateDrag, stopDrag, playDrop, playCollision, playNudge, playSnap, playComplete, playDock,
+    updateField, stopField, playFieldMilestone,
   };
 }

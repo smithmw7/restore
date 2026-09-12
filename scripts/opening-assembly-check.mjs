@@ -19,9 +19,11 @@ world.createCollider(RAPIER.ColliderDesc.cuboid(30,.05,30).setTranslation(0,-.05
 const storage={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)};
 let opened=false;
 let assembly=createOpeningAssembly({scene,world,storage,containerOpen:()=>opened,onEvent:e=>events.push(e)});
-assert.equal(assembly.targets.length,16);
-opened=true;assembly.step(1/72);assert.equal(assembly.targets.length,24);
-checks.push('eight large frame sections generate physical bodies only when the container is opened');
+assert.equal(assembly.targets.length,18);
+assert.equal(assembly.getState().parts.filter(p=>p.visible).length,17);
+opened=true;assembly.step(1/72);assert.equal(assembly.targets.length,25);
+assert.equal(blueprint.filter(p=>p.packed).length,7);
+checks.push('17 components and the specimen are accessible initially; opening the container reveals the seven remaining packed frames');
 const first=assembly.targets.find(m=>m.name==='frame-0-0');
 assert.ok(assembly.beginGrab(first,first.position.clone(),'left'));
 assert.equal(assembly.beginGrab(assembly.targets[1],assembly.targets[1].position.clone(),'right'),false);
@@ -40,7 +42,7 @@ assembly.dispose();
 checks.push('ordinary reset and reload retain installed parts and revealed access');
 data.set('restore.opening.mechanism.v1',JSON.stringify({version:1,revealed:true,completed:false,parts:blueprint.map(p=>({id:p.id,installed:p.id!=='field-lens',position:p.id==='field-lens'?[-5,2.9,8.7]:p.goal.toArray()}))}));
 assembly=createOpeningAssembly({scene,world,storage,onEvent:e=>events.push(e),containerOpen:()=>true});
-const core=assembly.targets[0];assert.equal(core.name,'field-lens');
+const core=assembly.targets.find(p=>p.name==='field-lens');assert.ok(core);
 assert.ok(assembly.beginGrab(core,core.position.clone(),'left'));assembly.moveGrab(blueprint.find(p=>p.id==='field-lens').goal,'left');
 for(let i=0;i<800&&assembly.getGrabState().active;i++){world.timestep=1/72;world.step();assembly.step(1/72);}
 assert.equal(assembly.getState().completed,true);assert.equal(assembly.getState().installed,24);
@@ -76,7 +78,7 @@ for(let index=0;index<24;index++){
   const mesh=roomAssembly.targets.find(target=>target.name===spec.id);
   assert.ok(roomAssembly.beginGrab(mesh,mesh.position.clone(),'room-left'),`grab ${spec.id} at its physical location`);
   const start=mesh.position.clone();
-  const route=spec.id.startsWith('frame-')?[
+  const route=spec.id.startsWith('frame-')&&spec.id!=='frame-0-0'?[
     [start.x,1.65,start.z],[start.x,1.65,6.55],[-7,1.65,6.55],
     [-7,1.65,8.7],[-7,2.7,8.7],[spec.goal[0],2.7,spec.goal[2]],spec.goal,
   ]:[
@@ -87,7 +89,19 @@ for(let index=0;index<24;index++){
     stepRoom(1000);
   }
   const result=roomAssembly.getState().parts.find(part=>part.id===spec.id);
-  assert.equal(result.installed,true,`${spec.id} seats after a collision-respecting route through the actual room`);
+  if(!result.installed){
+    const diagnostic=[];
+    roomWorld.forEachRigidBody(body=>{
+      if(new THREE.Vector3().copy(body.translation()).distanceTo(new THREE.Vector3(...result.position))>.01)return;
+      const contacts=[];
+      for(let ci=0;ci<body.numColliders();ci++)roomWorld.contactPairsWith(body.collider(ci),other=>{
+        roomWorld.contactPair(body.collider(ci),other,(m,flipped)=>contacts.push({otherPosition:other.translation(),otherType:other.parent()?.bodyType(),shape:other.shape.constructor.name,normal:m.normal(),flipped,solverDistances:Array.from({length:m.numSolverContacts()},(_,i)=>m.solverContactDist(i))}));
+      });
+      diagnostic.push({mass:body.mass(),sleeping:body.isSleeping(),gravity:body.gravityScale(),velocity:body.linvel(),contacts});
+    });
+    console.error(JSON.stringify({stuckPart:spec.id,diagnostic},null,2));
+  }
+  assert.equal(result.installed,true,`${spec.id} seats after a collision-respecting route through the actual room: ${JSON.stringify({part:result,resonance:roomAssembly.getResonanceState(),grab:roomAssembly.getGrabState().goal})}`);
   assert.equal(roomAssembly.getGrabState().active,false,`${spec.id} releases the shared hand on installation`);
 }
 assert.equal(roomAssembly.getState().completed,true);

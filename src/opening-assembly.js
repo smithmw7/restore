@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { driveGrabbedBody, releaseGrabbedBody } from './physical-drag.js';
+import { createFieldPresentation } from './field-presentation.js';
+import { createFieldSample } from './field-sample.js';
 
 const SAVE_KEY='restore.opening.mechanism.v1';
 const ORIGIN=new THREE.Vector3(-5,1.13,8.7), IDENTITY=new THREE.Quaternion();
@@ -16,7 +18,7 @@ export function createFieldBlueprint(){
   };
   for(let layer=0;layer<2;layer++)for(let i=0;i<4;i++){
     const g=new THREE.TorusGeometry(.74,.065,6,14,Math.PI/2-.1);g.rotateX(Math.PI/2);g.rotateY(i*Math.PI/2+.05);g.translate(0,layer*.95,0);
-    add(`frame-${layer}-${i}`,g,'bronze',layer?[`strut-${i}`]:[],true);
+    add(`frame-${layer}-${i}`,g,'bronze',layer?[`strut-${i}`]:[],!(layer===0&&i===0));
   }
   for(let i=0;i<4;i++){
     const a=-i*Math.PI/2+Math.PI/4;
@@ -33,6 +35,16 @@ export function createFieldBlueprint(){
   add('field-lens',new THREE.CylinderGeometry(.23,.23,.07,24).translate(0,.95,0),'lens',['frame-1-0','frame-1-1','frame-1-2','frame-1-3','core']);
   add('core',new THREE.IcosahedronGeometry(.15,1).translate(0,.48,0),'core',Array.from({length:6},(_,i)=>`emitter-${i}`));
   return parts;
+}
+
+export const FIELD_STAGE_NAMES = ['silent', 'first-contact', 'lower-ring', 'field-core', 'awake'];
+export function fieldStage(installed) {
+  const ids = installed instanceof Set ? installed : new Set(installed);
+  if (ids.size === 24 && ids.has('field-lens')) return 4;
+  if (ids.has('core')) return 3;
+  if ([0,1,2,3].every(i => ids.has(`frame-0-${i}`))) return 2;
+  if ([0,1,2,3].some(i => ids.has(`frame-0-${i}`) && ids.has(`strut-${i}`))) return 1;
+  return 0;
 }
 
 export function createOpeningAssembly({scene,world,materials={},onEvent=()=>{},storage,containerOpen=()=>false}){
@@ -65,40 +77,72 @@ export function createOpeningAssembly({scene,world,materials={},onEvent=()=>{},s
     Object.assign(mesh.userData,{labObject:`mechanism-${spec.id}`,kind:'mechanism-part',openingAssembly:true,soundId:spec.material==='ceramic'?'vase':'orb'});mesh.name=spec.id;root.add(mesh);
     const packing=spec.packed?new THREE.Vector3(-7+(index%2? .7:-.7),.16,4.35-Math.floor(index/2)*1.15):new THREE.Vector3(-11.22+((index-8)%4)*.48,1.015,8.7+Math.floor((index-8)/4)*.4);
     spec.geometry.computeBoundingBox();packing.y-=spec.geometry.boundingBox.min.y;
-    const previous=savedParts.get(spec.id),installed=restoredInstalled.has(spec.id);
+    if(spec.id==='frame-0-0')packing.set(-6.1,1.085,10.55);
+    // Left of the frame, clear of its hull, on the existing workshop bench.
+    if(spec.id==='strut-0')packing.set(-6.69,1.405,10.12);
+    let previous=savedParts.get(spec.id);const installed=restoredInstalled.has(spec.id);
+    if(spec.id==='frame-0-0'&&!saved?.revealed&&saved?.layout!==2&&!installed)previous=null;
     mesh.position.copy(installed?spec.goal:validPosition(previous?.position)?new THREE.Vector3().fromArray(previous.position):packing);
-    const part={...spec,mesh,packing,installed,body:null,collider:null,prepared:installed||!spec.packed||saved?.revealed===true};
+    if(!installed&&Array.isArray(previous?.quaternion)&&previous.quaternion.length===4&&previous.quaternion.every(Number.isFinite))mesh.quaternion.fromArray(previous.quaternion).normalize();
+    const part={...spec,mesh,packing,installed,body:null,collider:null,wasSleeping:false,prepared:installed||!spec.packed||saved?.revealed===true};
     mesh.visible=part.prepared;
     return part;
   });
   let held=null,disposed=false,revealed=saved?.revealed===true||parts.some(p=>p.packed&&p.installed),completed=parts.every(p=>p.installed),elapsed=0,saveDelay=0;
-  const glow=new THREE.PointLight('#71d5c1',0,3,2);glow.position.copy(ORIGIN).add(new THREE.Vector3(0,.5,0));root.add(glow);
+  let stage=fieldStage(restoredInstalled),stageStarted=-100;
+  const milestones=new Set(FIELD_STAGE_NAMES.slice(1,stage+1));
+  let resonance={active:false,signal:0,separation:null,eligible:false,handId:null,position:ORIGIN.toArray(),alignment:0};
+  let viewerPosition=new THREE.Vector3(7,1.65,11.4), gauntletEquipped=false;
+  const path=new THREE.Vector3();
   const seat=new THREE.Mesh(new THREE.TorusGeometry(.74,.018,5,32),new THREE.MeshStandardMaterial({color:'#8a7558',roughness:.6}));seat.rotation.x=Math.PI/2;seat.position.copy(ORIGIN);root.add(seat);
   function createBody(p){
     if(p.body||!p.prepared)return;
     const d=p.installed?RAPIER.RigidBodyDesc.fixed():RAPIER.RigidBodyDesc.dynamic();
-    p.body=world.createRigidBody(d.setTranslation(...p.mesh.position.toArray()).setLinearDamping(1.2).setAngularDamping(2).setCcdEnabled(true));
+    p.body=world.createRigidBody(d.setTranslation(...p.mesh.position.toArray()).setRotation(p.mesh.quaternion).setLinearDamping(1.7).setAngularDamping(2.6).setCcdEnabled(true).setCanSleep(true));
     const desc=RAPIER.ColliderDesc.convexHull(p.geometry.attributes.position.array);
-    p.collider=world.createCollider(desc.setMass(p.packed?6:1.1).setFriction(.85).setRestitution(.02),p.body);
+    p.collider=world.createCollider(desc.setMass(p.id.startsWith('frame-')?6:1.1).setFriction(.85).setRestitution(.02),p.body);
   }
   for(const p of parts)createBody(p);
-  function save(){try{storage?.setItem(SAVE_KEY,JSON.stringify({version:1,revealed,completed,parts:parts.map(p=>({id:p.id,installed:p.installed,position:p.mesh.position.toArray()}))}));}catch{}}
+  const sample=createFieldSample({root,world,onEvent,saved:saved?.sample,onSave:()=>save()});
+  const presentation=createFieldPresentation({root,parts,origin:ORIGIN,seat});
+  function save(){try{storage?.setItem(SAVE_KEY,JSON.stringify({version:1,layout:2,revealed,completed,milestones:[...milestones],sample:sample.snapshot(),parts:parts.map(p=>({id:p.id,installed:p.installed,position:p.mesh.position.toArray(),quaternion:p.mesh.quaternion.toArray()}))}));}catch{}}
+  function updateStage(){
+    const next=fieldStage(parts.filter(p=>p.installed).map(p=>p.id));
+    if(next===stage)return;stage=next;stageStarted=elapsed;
+    for(const name of FIELD_STAGE_NAMES.slice(1,stage+1))milestones.add(name);
+    onEvent({type:'field-milestone',stage,stageName:FIELD_STAGE_NAMES[stage],position:ORIGIN.clone(),objectId:'field-mechanism'});
+  }
   function emit(action,p){onEvent({type:'puzzle',action,position:p.mesh.position.clone(),objectId:p.mesh.userData.labObject});}
   const available=p=>p.requires.every(id=>parts.find(other=>other.id===id)?.installed);
   function beginGrab(mesh,point,handId){
+    if(sample.getGrabState().active||held)return false;
+    if(sample.owns(mesh))return sample.beginGrab(mesh,point,handId);
     const p=parts.find(p=>p.mesh===mesh);
-    if(held||!p||p.installed||!p.prepared||!p.body)return false;
+    if(!point?.isVector3||!Number.isFinite(point.x+point.y+point.z)||!p||p.installed||!p.prepared||!p.body)return false;
     held={p,handId,goal:mesh.position.clone(),offset:mesh.position.clone().sub(point),speed:0,last:mesh.position.clone()};onEvent({type:'pickup',objectId:mesh.userData.labObject,soundId:mesh.userData.soundId,position:mesh.position.clone(),kind:'mechanism-part',whole:true,complete:true});return true;
   }
-  function moveGrab(point,handId){if(!held||held.handId!==handId||!Number.isFinite(point.x+point.y+point.z))return false;held.goal.copy(point).add(held.offset);held.goal.y=Math.max(.05,held.goal.y);return true;}
-  function endGrab(handId,{cancelled=false}={}){if(!held||held.handId!==handId)return false;const p=held.p;releaseGrabbedBody(p.body);if(cancelled){p.body.setLinvel({x:0,y:0,z:0},true);p.body.setAngvel({x:0,y:0,z:0},true);}held=null;onEvent({type:'enddrag',reason:cancelled?'cancelled':'release',position:p.mesh.position.clone()});if(!cancelled)onEvent({type:'drop',objectId:p.mesh.userData.labObject,soundId:p.mesh.userData.soundId,position:p.mesh.position.clone()});saveDelay=.8;save();return true;}
-  function getGrabState(){if(!held)return empty();return {active:true,handId:held.handId,heldMesh:held.p.mesh,objectId:held.p.mesh.userData.labObject,kind:'mechanism-part',anchor:held.p.mesh.position.toArray(),goal:held.goal.toArray(),speed:held.speed,complete:true,whole:true,assembled:1,total:1};}
+  function moveGrab(point,handId){if(sample.getGrabState().active)return sample.moveGrab(point,handId);if(!held||held.handId!==handId||!point?.isVector3||!Number.isFinite(point.x+point.y+point.z))return false;held.goal.copy(point).add(held.offset);held.goal.y=Math.max(.05,held.goal.y);return true;}
+  function endGrab(handId,{cancelled=false}={}){if(sample.getGrabState().active)return sample.endGrab(handId,{cancelled});if(!held||held.handId!==handId)return false;const p=held.p;releaseGrabbedBody(p.body);if(cancelled){p.body.setLinvel({x:0,y:0,z:0},true);p.body.setAngvel({x:0,y:0,z:0},true);}held=null;resonance={...resonance,active:false,signal:0,handId:null};onEvent({type:'enddrag',reason:cancelled?'cancelled':'release',position:p.mesh.position.clone()});if(!cancelled)onEvent({type:'drop',objectId:p.mesh.userData.labObject,soundId:p.mesh.userData.soundId,position:p.mesh.position.clone()});saveDelay=.8;save();return true;}
+  function getGrabState(){if(sample.getGrabState().active)return sample.getGrabState();if(!held)return empty();return {active:true,handId:held.handId,heldMesh:held.p.mesh,objectId:held.p.mesh.userData.labObject,kind:'mechanism-part',anchor:held.p.mesh.position.toArray(),goal:held.goal.toArray(),speed:held.speed,complete:true,whole:true,assembled:1,total:1};}
   function install(p){
-    releaseGrabbedBody(p.body);p.body.setTranslation(p.goal,true);p.body.setRotation(IDENTITY,true);p.body.setLinvel({x:0,y:0,z:0},true);p.body.setAngvel({x:0,y:0,z:0},true);p.body.setBodyType(RAPIER.RigidBodyType.Fixed,true);p.installed=true;p.mesh.position.copy(p.goal);p.mesh.quaternion.identity();held=null;onEvent({type:'enddrag',reason:'install',position:p.mesh.position.clone()});emit('install',p);
-    if(parts.every(x=>x.installed)&&!completed){completed=true;onEvent({type:'complete',objectId:'field-mechanism',soundId:'orb',position:ORIGIN.clone()});}save();
+    releaseGrabbedBody(p.body);p.body.setTranslation(p.goal,true);p.body.setRotation(IDENTITY,true);p.body.setLinvel({x:0,y:0,z:0},true);p.body.setAngvel({x:0,y:0,z:0},true);p.body.setBodyType(RAPIER.RigidBodyType.Fixed,true);p.installed=true;p.mesh.position.copy(p.goal);p.mesh.quaternion.identity();held=null;resonance={...resonance,active:false,signal:0,handId:null};onEvent({type:'enddrag',reason:'install',position:p.mesh.position.clone()});emit('install',p);
+    if(parts.every(x=>x.installed)&&!completed){completed=true;onEvent({type:'complete',objectId:'field-mechanism',soundId:'orb',position:ORIGIN.clone()});}updateStage();save();
+  }
+  function readAlignment(p){
+    const separation=p.mesh.position.distanceTo(p.goal),eligible=available(p);
+    const alignment=THREE.MathUtils.clamp(1-p.mesh.quaternion.angleTo(IDENTITY)/Math.PI,0,1);
+    let clear=true;
+    if(eligible&&separation<1.25&&separation>.012){
+      path.copy(p.goal).sub(p.mesh.position).normalize();
+      const hit=world.castRay(new RAPIER.Ray(p.mesh.position,path),Math.max(0,separation-.035),true,undefined,undefined,p.collider,p.body,c=>!c.isSensor());
+      clear=!hit;
+    }
+    const closeness=THREE.MathUtils.smoothstep(1-separation/1.2,0,1);
+    return {active:eligible&&clear&&separation<1.2,eligible,clear,separation,alignment,
+      signal:eligible&&clear?closeness*(.3+.7*alignment):0,position:p.mesh.position.toArray(),handId:held?.handId||null};
   }
   function step(dt){
-    if(disposed)return;elapsed+=dt;
+    if(disposed)return;dt=Math.min(.05,Math.max(0,dt));elapsed+=dt;
     if(!revealed&&containerOpen()){
       revealed=true;for(const p of parts)if(!p.prepared){p.prepared=true;p.mesh.visible=true;createBody(p);}save();
     }
@@ -107,31 +151,39 @@ export function createOpeningAssembly({scene,world,materials={},onEvent=()=>{},s
       if(!p.installed&&(p.mesh.position.y<-.5||Math.abs(p.mesh.position.x)>46||p.mesh.position.z>13.5||p.mesh.position.z<-165)){
         p.body.setTranslation(p.packing,true);p.body.setRotation(IDENTITY,true);p.body.setLinvel({x:0,y:0,z:0},true);p.body.setAngvel({x:0,y:0,z:0},true);p.mesh.position.copy(p.packing);saveDelay=.7;
       }
-      p.mesh.material.emissive.setHex(0);p.mesh.material.emissiveIntensity=0;
+      // Let Rapier settle the whole contact island. Manually sleeping one
+      // touching frame can invalidate the thin container-deck contacts.
+      const sleeping=p.body.isSleeping();
+      if(!p.installed&&held?.p!==p&&sleeping&&!p.wasSleeping)saveDelay=.15;
+      p.wasSleeping=sleeping;
     }
+    resonance={...resonance,active:false,signal:0,handId:null};
     if(held){
-      const {p}=held;const near=available(p)&&held.goal.distanceTo(p.goal)<.52;
-      if(near){p.mesh.material.emissive.set('#4eb59e');p.mesh.material.emissiveIntensity=.28;seat.material.emissive.set('#4eb59e');seat.material.emissiveIntensity=.3;if(!held.aligned)emit('align',p);}
-      else seat.material.emissiveIntensity=0;
-      held.aligned=near;
+      const {p}=held;resonance=readAlignment(p);
+      // Both the real body and the desired hand pose must approach a clear
+      // socket. A target through a wall cannot pretend the held part is aligned.
+      const near=resonance.eligible&&resonance.clear&&resonance.separation<.55&&held.goal.distanceTo(p.goal)<.65;
       const target=near?p.goal:held.goal;
       driveGrabbedBody(world,p.body,target,IDENTITY,dt,{maxSpeed:2.4,positionGain:near?9:7});
       held.speed=p.mesh.position.distanceTo(held.last)/Math.max(dt,.001);held.last.copy(p.mesh.position);
-      if(near&&p.mesh.position.distanceTo(p.goal)<.055&&p.mesh.quaternion.angleTo(IDENTITY)<.1){
-        // Only the final few centimetres are seated, after the dynamic body
-        // has travelled to the socket through the regular collision solver.
-        const d=p.goal.clone().sub(p.mesh.position);
-        const block=world.castShape(p.mesh.position,IDENTITY,d,p.collider.shape,0,1,true,undefined,undefined,p.collider,p.body);
+      if(near&&resonance.separation<.055&&p.mesh.quaternion.angleTo(IDENTITY)<.1){
+        const displacement=p.goal.clone().sub(p.mesh.position);
+        const block=world.castShape(p.mesh.position,IDENTITY,displacement,p.collider.shape,0,1,true,undefined,undefined,p.collider,p.body);
         if(!block)install(p);
       }
-    }else seat.material.emissiveIntensity=0;
-    if(completed){glow.intensity=1.5;const core=parts.find(p=>p.id==='core');core.mesh.material.emissive.set('#62d5be');core.mesh.material.emissiveIntensity=.8+Math.sin(elapsed*.7)*.15;core.mesh.position.y=core.goal.y+Math.sin(elapsed*.7)*.025;core.mesh.rotation.y=elapsed*.25;}
+    }
+    const stageAge=elapsed-stageStarted;
+    presentation.update({dt,elapsed,heldId:held?.p.id||null,eligible:resonance.active,separation:resonance.separation,
+      alignment:resonance.alignment,signal:resonance.signal,stage,stageAge,completed,activationAge:completed?stageAge:-1,
+      viewerPosition,gauntletEquipped});
+    sample.step(dt,{completed,activationAge:completed?stageAge:-1});
     if(saveDelay>0){saveDelay-=dt;if(saveDelay<=0)save();}
   }
-  function reset(){if(held)endGrab(held.handId,{cancelled:true});for(const p of parts)if(!p.installed&&p.body){p.body.setTranslation(p.packing,true);p.body.setRotation(IDENTITY,true);p.body.setLinvel({x:0,y:0,z:0},true);p.mesh.position.copy(p.packing);}save();}
-  return {root,owns:mesh=>!!mesh?.userData.openingAssembly,get targets(){return parts.filter(p=>p.prepared&&!p.installed).map(p=>p.mesh);},get grabTargets(){return this.targets;},beginGrab,moveGrab,endGrab,getGrabState,step,reset,
-    getState:()=>({total:parts.length,installed:parts.filter(p=>p.installed).length,revealed,completed,parts:parts.map(p=>({id:p.id,installed:p.installed,available:available(p),visible:p.prepared,position:p.mesh.position.toArray(),goal:p.goal.toArray()}))}),
-    getObstacles:()=>[...furniture.map(p=>p.bounds),...parts.filter(p=>p.prepared&&held?.p!==p).map(p=>new THREE.Box3().setFromObject(p.mesh))],
-    dispose(){if(disposed)return;disposed=true;for(const p of parts){releaseGrabbedBody(p.body);if(p.body)world.removeRigidBody(p.body);p.geometry.dispose();p.mesh.material.dispose();}for(const p of furniture)world.removeCollider(p.collider,true);furnitureGeometry.forEach(g=>g.dispose());furnitureMaterial.dispose();Object.values(mats).forEach(m=>m.dispose());seat.geometry.dispose();seat.material.dispose();scene.remove(root);},
+  function reset(){if(sample.getGrabState().active)sample.endGrab(sample.getGrabState().handId,{cancelled:true});sample.reset();if(held)endGrab(held.handId,{cancelled:true});for(const p of parts)if(!p.installed&&p.body){p.body.setTranslation(p.packing,true);p.body.setRotation(IDENTITY,true);p.body.setLinvel({x:0,y:0,z:0},true);p.body.setAngvel({x:0,y:0,z:0},true);p.mesh.position.copy(p.packing);p.mesh.quaternion.identity();}save();}
+  return {root,owns:mesh=>!!mesh?.userData.openingAssembly,get targets(){return [...parts.filter(p=>p.prepared&&!p.installed).map(p=>p.mesh),...sample.targets];},get grabTargets(){return this.targets;},beginGrab,moveGrab,endGrab,getGrabState,step,reset,
+    tap:sample.tap,getResonanceState:()=>({...resonance,stage}),updateViewer(position,powered){if(position?.isVector3)viewerPosition.copy(position);gauntletEquipped=!!powered;},
+    getState:()=>({stage,stageName:FIELD_STAGE_NAMES[stage],milestones:[...milestones],resonance:{...resonance},sample:sample.getState(),presentation:presentation.getState(),total:parts.length,installed:parts.filter(p=>p.installed).length,revealed,completed,parts:parts.map(p=>({id:p.id,installed:p.installed,available:available(p),visible:p.prepared,position:p.mesh.position.toArray(),goal:p.goal.toArray()}))}),
+    getObstacles:()=>[...sample.getObstacles(),...furniture.map(p=>p.bounds),...parts.filter(p=>p.prepared&&held?.p!==p).map(p=>new THREE.Box3().setFromObject(p.mesh))],
+    dispose(){if(disposed)return;if(held)endGrab(held.handId,{cancelled:true});sample.dispose();presentation.dispose();disposed=true;for(const p of parts){releaseGrabbedBody(p.body);if(p.body)world.removeRigidBody(p.body);p.geometry.dispose();p.mesh.material.dispose();}for(const p of furniture)world.removeCollider(p.collider,true);furnitureGeometry.forEach(g=>g.dispose());furnitureMaterial.dispose();Object.values(mats).forEach(m=>m.dispose());seat.geometry.dispose();seat.material.dispose();scene.remove(root);},
   };
 }

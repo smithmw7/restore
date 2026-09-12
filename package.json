@@ -1,6 +1,6 @@
 {
   "name": "restore",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -55,7 +55,9 @@
     "test:office": "node scripts/office-props-check.mjs && node scripts/office-wheel-drag-check.mjs && node scripts/office-asset-check.mjs",
     "test:office-browser": "node scripts/office-props-browser.mjs",
     "test:office-review": "node scripts/office-review-check.mjs",
-    "test:office-asset": "node scripts/office-asset-check.mjs"
+    "test:office-asset": "node scripts/office-asset-check.mjs",
+    "test:field": "node scripts/field-discovery-check.mjs && node scripts/field-presentation-check.mjs && node scripts/field-audio-check.mjs",
+    "test:field-browser": "node scripts/field-discovery-browser.mjs"
   },
   "dependencies": {
     "@dgreenheck/three-pinata": "2.0.1",

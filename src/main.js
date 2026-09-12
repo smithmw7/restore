@@ -40,6 +40,7 @@ let lastTap=null;
 const raycaster=new THREE.Raycaster(),rotation=new THREE.Matrix4(),point=new THREE.Vector3(),direction=new THREE.Vector3();
 const viewerPosition=new THREE.Vector3(),viewerForward=new THREE.Vector3(),viewerUp=new THREE.Vector3();
 const tapViewerPosition=new THREE.Vector3();
+const fieldAudioPosition=new THREE.Vector3();
 const touchBox=new THREE.Box3(),triangle=new THREE.Triangle(),localContact=new THREE.Vector3(),closest=new THREE.Vector3(),inverse=new THREE.Matrix4();
 const inputs=[],keys=new Set(),handFactory=new XRHandModelFactory();
 let desktopGrab=null,pointerState=null,hovered=null;
@@ -50,22 +51,26 @@ function objectAudio(mesh){return mesh?.userData.soundId||mesh?.userData.labObje
 function handleEvent(event){
   const {type,position,strength=1}=event,id=event.soundId||event.objectId,spatial=renderer.xr.isPresenting;
   if(type==='puzzle'){audio.unlock();if(event.action==='drop')audio.playDrop(id||'tablet',position,spatial);else audio.playPuzzle?.(event.action,position,spatial);return;}
+  if(type==='field-milestone'){
+    audio.playFieldMilestone(event.stage,position,spatial);
+    for(const input of inputs)if(input.grabbing)input.source?.gamepad?.hapticActuators?.[0]?.pulse(event.stage===4?.24:.10,event.stage===4?65:28)?.catch(()=>{});
+  }
   if(type==='pickup'){audio.unlock();audio.playPickup(id,position,spatial);if(!event.complete||event.whole)audio.startDrag(id,position,spatial,{kind:event.kind});}
   if(type==='office-drag')audio.startDrag(id,position,spatial,{kind:event.kind});
   if(type==='break')audio.playBreak(id,position,spatial);
-  if(type==='enddrag')audio.stopDrag({immediate:event.reason!=='release'});
+  if(type==='enddrag'){audio.stopDrag({immediate:event.reason!=='release'});audio.stopField();}
   if(type==='drop')audio.playDrop(id,position,spatial);
   if(type==='collision')audio.playCollision(id,position,strength,spatial);
   if(type==='nudge')audio.playNudge(id,position,strength,spatial);
   if(type==='snap')audio.playSnap(id,position,strength,spatial);
-  if(type==='complete')audio.playComplete(event.objectId||id,position,spatial);
+  if(type==='complete'&&event.objectId!=='field-mechanism')audio.playComplete(event.objectId||id,position,spatial);
   if(type==='dock'){audio.playDock(id,position,spatial);for(const input of inputs)input.clearContact=true;}
-  if(type==='snap'||type==='complete'||type==='break')for(const input of inputs)if(input.grabbing)input.source?.gamepad?.hapticActuators?.[0]?.pulse(type==='snap'?.12:.35,type==='snap'?16:45)?.catch(()=>{});
+  if(type==='snap'||(type==='complete'&&event.objectId!=='field-mechanism')||type==='break')for(const input of inputs)if(input.grabbing)input.source?.gamepad?.hapticActuators?.[0]?.pulse(type==='snap'?.12:.35,type==='snap'?16:45)?.catch(()=>{});
 }
 function cancelInteractions(){
   for(const input of inputs){input.pending=null;if(input.grabbing)lab?.endGrab(input.id,{cancelled:true});input.grabbing=false;input.clearContact=true;input.contactId=null;input.hadContact=false;locomotion?.endAim(input,false);}
   if(desktopGrab)lab?.endGrab('pointer',{cancelled:true});
-  desktopGrab=null;pointerState=null;audio.stopDrag({immediate:true});clearHover();
+  desktopGrab=null;pointerState=null;audio.stopDrag({immediate:true});audio.stopField();clearHover();
 }
 function restoreAll(){if(!ready)return;cancelInteractions();lab.restore();audio.playRestore();}
 function clearHover(){
@@ -106,7 +111,8 @@ function tapHit(hit,input){
   const viewer=renderer.xr.isPresenting?renderer.xr.getCamera():camera;
   viewer.getWorldPosition(tapViewerPosition);
   if(opening?.owns(hit.object))return !!opening.tap(hit.object,hit.point,inputContext(input));
-  if(!powerAvailable(input)||assembly?.owns(hit.object))return false;
+  if(!powerAvailable(input))return false;
+  if(assembly?.owns(hit.object))return !!assembly.tap(hit.object,hit.point,inputContext(input));
   const effect=dispatchTap(lab,hit,tapViewerPosition,raycaster.ray.direction);
   if(effect){
     lastTap={...effect,objectId:hit.object.userData.labObject};
@@ -355,7 +361,10 @@ function update(dt,time,frame){
     }
     opening.updateHands(poses);
   }
+  assembly?.updateViewer(viewerPosition,powerAvailable());
   lab.step(dt);warehouse.update(dt,time/1000);
+  const resonance=assembly?.getResonanceState();
+  if(resonance)audio.updateField({...resonance,active:resonance.active&&!document.hidden&&(!renderer.xr.isPresenting||sessionVisibility==='visible'),position:fieldAudioPosition.fromArray(resonance.position),spatial:renderer.xr.isPresenting});
   atmosphere.update(dt,time/1000,viewerPosition);
   const grab=lab.getGrabState();if(grab.active)audio.updateDrag({position:point.fromArray(grab.anchor),speed:grab.speed,kind:grab.kind,surface:grab.surface,scrapeSpeed:grab.scrapeSpeed,load:grab.load});
 }
