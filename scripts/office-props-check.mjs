@@ -59,6 +59,24 @@ try {
     puzzles.endGrab('test'); advance(8);
     assert.ok(state('pen-brass').position[1]>.96); assert.equal(state('pen-brass').sleeping,true);
   });
+  check('a released notebook rests in its tray through long idle and drawer movement without sinking',()=>{
+    tap('drawer'); advance(1);
+    assert.ok(puzzles.beginGrab(target('notebook'),pos('notebook'),'test'));
+    puzzles.endGrab('test'); advance(8);
+    const open=state('notebook');
+    assert.equal(open.sleeping,true);
+    assert.ok(open.position[1]>.648&&open.position[1]<.656,'book rests on the tray floor rather than inside it');
+    advance(30);
+    assert.deepEqual(state('notebook').position,open.position,'stationary tray contact does not drift while idle');
+    tap('drawer'); advance(8);
+    const closed=state('notebook');
+    assert.ok(open.position[2]-closed.position[2]>.20,'closing tray physically carries the loose book inward');
+    assert.ok(Math.abs(closed.position[1]-open.position[1])<.002,'drawer motion preserves support height');
+    assert.equal(closed.sleeping,true);
+    advance(30);
+    assert.deepEqual(state('notebook').position,closed.position,'closed tray remains stable through long idle');
+    assert.deepEqual(createOpeningProgression(storage).getState().propPoses.notebook.position,closed.position,'resting pose is saved after the moving tray settles');
+  });
   check('drawer notebook can be lifted, opened in free space and keeps the 1942 clue',()=>{
     tap('drawer');advance(1); const start=pos('notebook');
     assert.ok(puzzles.beginGrab(target('notebook'),start,'test'));
@@ -71,6 +89,16 @@ try {
     const old={version:1,code:'4172',wheels:[4,1,7,2],caseUnlocked:true,caseOpen:true,noteSeen:true,gloves:{left:true},lockerOpen:true};
     const migrated=createOpeningProgression({getItem:()=>JSON.stringify(old),setItem(){}}).getState();
     assert.deepEqual(migrated.wheels,[1,9,4,2]); assert.equal(migrated.caseOpen,true);assert.equal(migrated.gloves.left,true);assert.equal(migrated.lockers.center,true);
+  });
+  check('reloading an open notebook preserves the separately closed drawer and its clue',()=>{
+    const saved=new Map(), isolated={getItem:key=>saved.get(key),setItem:(key,value)=>saved.set(key,value)};
+    const progress=createOpeningProgression(isolated);
+    progress.dispatch('drawer'); progress.dispatch('notebook'); progress.dispatch('drawer');
+    assert.equal(progress.getState().drawerOpen,false);
+    const reloaded=createOpeningProgression(isolated).getState();
+    assert.equal(reloaded.drawerOpen,false,'notebook cover cannot override the saved drawer pose');
+    assert.equal(reloaded.notebookOpen,true); assert.equal(reloaded.noteSeen,true);
+    assert.equal(reloaded.code,'1942');
   });
   check('ordinary recovery returns props home and retains opened locks',()=>{
     puzzles.reset();advance(3);

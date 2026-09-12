@@ -1,6 +1,6 @@
 {
   "app": "restore",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "runtime": "three-webxr",
   "port": 5212,
   "edition": "opening-discovery"

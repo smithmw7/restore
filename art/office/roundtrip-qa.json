@@ -1,7 +1,7 @@
 {
-  "assetVersion": "1.0.0",
-  "glbSha256": "c09b949699b85a68c90ec50e7e8b64fe68ce3f4a1d77d57d2c074d915a1abc79",
-  "triangles": 40170,
+  "assetVersion": "1.0.1",
+  "glbSha256": "584b3913b6610a7d330ce74be3f1d86bb66ba4b017523acdfbe45b87f8a7ecf6",
+  "triangles": 40670,
   "renderMeshes": 32,
   "embeddedImages": [
     {
@@ -38,7 +38,7 @@
         0.9725000262260437,
         0.4749999940395355
       ],
-      "triangles": 5484
+      "triangles": 5868
     },
     "Drawer": {
       "boundsMin": [
@@ -51,7 +51,7 @@
         0.11500000208616257,
         0.07700000703334808
       ],
-      "triangles": 3188
+      "triangles": 3304
     },
     "Notebook": {
       "boundsMin": [
@@ -145,6 +145,15 @@
       "triangles": 2240
     }
   },
+  "deskWoodMapping": {
+    "planarTriangles": 900,
+    "expectedTexelsPerMetre": 582.4,
+    "minimum": 582.3499605491705,
+    "maximum": 582.4552029539362,
+    "maxError": 0.05520295393625929,
+    "isotropic": true,
+    "extraImages": 0
+  },
   "articulation": [
     {
       "notebookAngle": 0,
@@ -187,6 +196,32 @@
     "Locker hollow center reaches inner rear wall",
     "Drawer hollow center reaches inner bottom panel",
     "Notebook spine and locker hinge pose sweeps",
-    "Four actual reimported-GLB Blender renders for each model"
-  ]
+    "Isotropic desk and drawer metric UV density after GLB export",
+    "Four actual reimported-GLB Blender renders for each requested model"
+  ],
+  "unchangedModels": {
+    "models": {
+      "Notebook": true,
+      "LockerShell": true,
+      "LockerDoor": true,
+      "Chair": true,
+      "Pen": true,
+      "Pencil": true,
+      "Logbook": true
+    },
+    "semanticHashes": {
+      "Notebook": "e87ba43e6e74132df0c8a6f8724a3edfa0919bca7e3e34d11fcd6f1607e7d895",
+      "LockerShell": "a681ae5cca28454c8346cd09823c6db7208d430cdfc812aad7dbcc4570e57934",
+      "LockerDoor": "8030e15fc64e9731ce9a2ffc7462671ddefce83b267b9b6f10ed7af9b487423c",
+      "Chair": "90300cfcc3565a97ae85025866a4e5e1d55bf77b23d330de60d594b0b68e5446",
+      "Pen": "14d3fceb74f16e6e7bced9bd8a26df3aa35e5af62f2818ef7b11a545633c7f32",
+      "Pencil": "20e16ac90421e842fb705a1f1d20ced8c5b1450d63907d8ed57205447017ba3f",
+      "Logbook": "d23d381eb8bf1300163ab9355ee08fa569c73d16f5ee87fc8c22db468914bcf3"
+    },
+    "checks": [
+      "Unchanged vertex, normal, UV and index buffers",
+      "Unchanged template and child transforms",
+      "Unchanged material parameters and exact image bytes"
+    ]
+  }
 }

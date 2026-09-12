@@ -1,5 +1,11 @@
 # Restore
 
+## Desk refinement (0.8.1)
+
+The office desk and drawer now have consistent board-aligned walnut grain, a quieter satin finish and cleaner joinery. A slimmer tabletop sits on a complete support frame; the drawer travels 32 cm along wooden runners and stays supported when open. The notebook remains reachable, loose paper settles in the tray, and a closed drawer stays closed after reloading with the notebook open on the desktop.
+
+The Blender source, exported model and four-angle proof sheets are updated. The other office templates and existing texture images are preserved. See [the desk quality notes](docs/OFFICE-QUALITY.md); run `npm run test:desk-browser` against dev5211 for the focused pointer and reload check. Preview this revision locally at **5212** on `opening-discovery`.
+
 ## First contact (0.8.0)
 
 Finding a gauntlet now leads directly to a small restoration discovery. A frame and matching strut sit beside the workshop cradle, available before the photograph case or shipping container. The gauntlet makes nearby matching inlays respond. While a compatible piece approaches its real socket, a quiet glass resonance resolves and the inlays brighten; physical contact, distance and alignment determine seating.

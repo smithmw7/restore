@@ -1,13 +1,13 @@
 {
-  "assetVersion": "1.0.0",
+  "assetVersion": "1.0.1",
   "kitId": "restore-retro-office",
   "glb": "office-kit.glb",
-  "glbBytes": 7948844,
-  "glbSha256": "c09b949699b85a68c90ec50e7e8b64fe68ce3f4a1d77d57d2c074d915a1abc79",
-  "triangles": 40170,
+  "glbBytes": 7977508,
+  "glbSha256": "584b3913b6610a7d330ce74be3f1d86bb66ba4b017523acdfbe45b87f8a7ecf6",
+  "triangles": 40670,
   "renderMeshes": 32,
-  "editableParts": 255,
-  "materials": 6,
+  "editableParts": 258,
+  "materials": 7,
   "atlasImages": [
     {
       "name": "office-basecolor-final.png",
@@ -45,8 +45,8 @@
         0.9725000262260437,
         0.4749999940395355
       ],
-      "triangles": 5484,
-      "editableParts": 37
+      "triangles": 5868,
+      "editableParts": 40
     },
     "Drawer": {
       "origin": "front face center; cavity extends negative z",
@@ -60,7 +60,7 @@
         0.11500000208616257,
         0.07700000703334808
       ],
-      "triangles": 3188,
+      "triangles": 3304,
       "editableParts": 23
     },
     "Notebook": {
@@ -168,5 +168,451 @@
       "triangles": 2240,
       "editableParts": 20
     }
+  },
+  "deskWoodMapping": {
+    "method": "Board-aligned metric mirrored atlas islands",
+    "tileMetres": 0.8,
+    "texelsPerMetre": 582.4,
+    "isotropicMainFaces": true,
+    "minimumWidthClamp": false,
+    "roughness": 0.73,
+    "boards": [
+      {
+        "board": "Walnut desk slab",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3978534340217,
+        "texelsPerMetreMax": 582.4006642008436,
+        "maximumError": 0.002146565978250692
+      },
+      {
+        "board": "Walnut under-edge bead",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.396835601652,
+        "texelsPerMetreMax": 582.4029245651434,
+        "maximumError": 0.0031643983479625604
+      },
+      {
+        "board": "Walnut under-edge bead.001",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3989998340384,
+        "texelsPerMetreMax": 582.4012705723334,
+        "maximumError": 0.001270572333396558
+      },
+      {
+        "board": "Walnut end-edge bead",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.39913368553,
+        "texelsPerMetreMax": 582.4009199422225,
+        "maximumError": 0.0009199422224810405
+      },
+      {
+        "board": "Walnut end-edge bead.001",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.399280276412,
+        "texelsPerMetreMax": 582.401079387749,
+        "maximumError": 0.001079387748973204
+      },
+      {
+        "board": "Tapered hardwood leg",
+        "grainAxisBlender": 2,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3998452011738,
+        "texelsPerMetreMax": 582.3999934324688,
+        "maximumError": 0.0001547988262018407
+      },
+      {
+        "board": "Tapered hardwood leg.001",
+        "grainAxisBlender": 2,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3998615084969,
+        "texelsPerMetreMax": 582.4001679325048,
+        "maximumError": 0.00016793250483715383
+      },
+      {
+        "board": "Desk joinery peg slotted head",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          2
+        ],
+        "texelsPerMetreMin": 582.3864002039787,
+        "texelsPerMetreMax": 582.4063604951737,
+        "maximumError": 0.013599796021253496
+      },
+      {
+        "board": "Desk joinery peg slotted head.001",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          2
+        ],
+        "texelsPerMetreMin": 582.3948886188023,
+        "texelsPerMetreMax": 582.4085376752973,
+        "maximumError": 0.008537675297361602
+      },
+      {
+        "board": "Side apron",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3994399229895,
+        "texelsPerMetreMax": 582.4000029399792,
+        "maximumError": 0.0005600770105047559
+      },
+      {
+        "board": "Tapered hardwood leg.002",
+        "grainAxisBlender": 2,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3999145587138,
+        "texelsPerMetreMax": 582.4000706890173,
+        "maximumError": 8.54412861599485e-05
+      },
+      {
+        "board": "Tapered hardwood leg.003",
+        "grainAxisBlender": 2,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.399692770279,
+        "texelsPerMetreMax": 582.4002692906475,
+        "maximumError": 0.00030722972098828905
+      },
+      {
+        "board": "Desk joinery peg slotted head.002",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          2
+        ],
+        "texelsPerMetreMin": 582.3925803780994,
+        "texelsPerMetreMax": 582.4085376752973,
+        "maximumError": 0.008537675297361602
+      },
+      {
+        "board": "Desk joinery peg slotted head.003",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          2
+        ],
+        "texelsPerMetreMin": 582.3993027698816,
+        "texelsPerMetreMax": 582.4041234542243,
+        "maximumError": 0.004123454224327361
+      },
+      {
+        "board": "Side apron.001",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3999401616104,
+        "texelsPerMetreMax": 582.4000149595975,
+        "maximumError": 5.9838389574906614e-05
+      },
+      {
+        "board": "Rear walnut apron",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.399671184918,
+        "texelsPerMetreMax": 582.4003740499871,
+        "maximumError": 0.00037404998715828697
+      },
+      {
+        "board": "Front walnut header",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3633111099085,
+        "texelsPerMetreMax": 582.4002762018996,
+        "maximumError": 0.036688890091454596
+      },
+      {
+        "board": "Front walnut drawer cheek",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3999554126306,
+        "texelsPerMetreMax": 582.4001645555715,
+        "maximumError": 0.00016455557147310174
+      },
+      {
+        "board": "Front walnut drawer cheek.001",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3998653636235,
+        "texelsPerMetreMax": 582.4001647360285,
+        "maximumError": 0.0001647360285232935
+      },
+      {
+        "board": "Drawer guide carrier",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3998697163616,
+        "texelsPerMetreMax": 582.4001376135307,
+        "maximumError": 0.0001376135306827564
+      },
+      {
+        "board": "Drawer guide carrier.001",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3998699154771,
+        "texelsPerMetreMax": 582.4001832076623,
+        "maximumError": 0.0001832076623031753
+      },
+      {
+        "board": "Continuous hardwood drawer runner",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3998084960414,
+        "texelsPerMetreMax": 582.4001776602988,
+        "maximumError": 0.00019150395860378921
+      },
+      {
+        "board": "Continuous hardwood drawer runner.001",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3999315507939,
+        "texelsPerMetreMax": 582.4001776602989,
+        "maximumError": 0.00017766029895938118
+      },
+      {
+        "board": "Drawer front",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3990522669612,
+        "texelsPerMetreMax": 582.4008068105393,
+        "maximumError": 0.0009477330387426264
+      },
+      {
+        "board": "Inset raised drawer field",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3979871383408,
+        "texelsPerMetreMax": 582.4012162689567,
+        "maximumError": 0.002012861659181908
+      },
+      {
+        "board": "Drawer plywood bottom",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3989445659694,
+        "texelsPerMetreMax": 582.400236330924,
+        "maximumError": 0.0010554340306043741
+      },
+      {
+        "board": "Dovetail drawer side",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3999370574913,
+        "texelsPerMetreMax": 582.4000896453911,
+        "maximumError": 8.964539108546887e-05
+      },
+      {
+        "board": "Endgrain dovetail",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3991814295099,
+        "texelsPerMetreMax": 582.400423769804,
+        "maximumError": 0.000818570490082493
+      },
+      {
+        "board": "Endgrain dovetail.001",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3994393317838,
+        "texelsPerMetreMax": 582.4001776602989,
+        "maximumError": 0.0005606682161669596
+      },
+      {
+        "board": "Endgrain dovetail.002",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3998581409423,
+        "texelsPerMetreMax": 582.4001776602989,
+        "maximumError": 0.00017766029895938118
+      },
+      {
+        "board": "Endgrain dovetail.003",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3991814295099,
+        "texelsPerMetreMax": 582.4001776602989,
+        "maximumError": 0.000818570490082493
+      },
+      {
+        "board": "Dovetail drawer side.001",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3997004521518,
+        "texelsPerMetreMax": 582.4000759055435,
+        "maximumError": 0.0002995478481579994
+      },
+      {
+        "board": "Endgrain dovetail.004",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3996052847798,
+        "texelsPerMetreMax": 582.4001442432436,
+        "maximumError": 0.00039471522018175165
+      },
+      {
+        "board": "Endgrain dovetail.005",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3999315507939,
+        "texelsPerMetreMax": 582.4008768505898,
+        "maximumError": 0.0008768505898615331
+      },
+      {
+        "board": "Endgrain dovetail.006",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3998581409423,
+        "texelsPerMetreMax": 582.4001776602989,
+        "maximumError": 0.00017766029895938118
+      },
+      {
+        "board": "Endgrain dovetail.007",
+        "grainAxisBlender": 1,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3996052847798,
+        "texelsPerMetreMax": 582.3999930781702,
+        "maximumError": 0.00039471522018175165
+      },
+      {
+        "board": "Drawer back",
+        "grainAxisBlender": 0,
+        "mainFaceAxes": [
+          0,
+          1,
+          2
+        ],
+        "texelsPerMetreMin": 582.3997096867281,
+        "texelsPerMetreMax": 582.4002340726415,
+        "maximumError": 0.00029031327187567513
+      }
+    ]
   }
 }

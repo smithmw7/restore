@@ -9,9 +9,13 @@ import { createContactAudioProbe, setContactSurface } from './contact-audio.js';
 
 export const OPENING_SAVE_KEY = 'restore.opening.v1';
 export const OPENING_CODE = '1942';
+// Drawer origin is its front face, matching the authored tray. The shortened
+// stroke leaves the rear 20 cm engaged beneath the desktop at full extension.
+const DRAWER_CLOSED_Z = 8.54, DRAWER_TRAVEL = .32;
+const NOTEBOOK_TRAY_OFFSET_Z = -.23, NOTEBOOK_TRAY_Y = .653;
 const HOME = {
   ...Object.fromEntries(OFFICE_PROPS.map(prop => [prop.id, prop.home])),
-  notebook: [7, .68, 8.445],
+  notebook: [7, NOTEBOOK_TRAY_Y, DRAWER_CLOSED_Z + NOTEBOOK_TRAY_OFFSET_Z],
   cutters: [-6.7, 1.13, 10.5],
   'glove-left': [10.30, 1.30, 10.97],
   'glove-right': [10.83, 1.30, 10.97],
@@ -51,7 +55,9 @@ export function createOpeningProgression(storage) {
       }
       state.caseOpen &&= state.caseUnlocked;
       state.containerOpen &&= state.containerCut;
-      if (state.notebookOpen) state.drawerOpen = true;
+      // The discovered notebook can remain open on the desk or be carried.
+      // Its cover state must never reopen an independently closed drawer.
+      if (state.notebookOpen) state.noteSeen = true;
     }
   } catch { saveAvailable = false; }
   function save() {
@@ -210,30 +216,36 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   }
   const desk = new THREE.Group(); desk.name = 'Office fixed desk'; desk.position.set(7, 0, 8.1); root.add(desk);
   fixture(desk, [
-    { size: [2.6, .12, .95], position: [0, .9, 0] },
+    { size: [2.6, .06, .95], position: [0, .93, 0] },
+    ...[-.459, .459].map(z => ({ size: [2.556, .014, .016], position: [0, .893, z] })),
+    ...[-1.278, 1.278].map(x => ({ size: [.016, .014, .902], position: [x, .893, 0] })),
     { size: [.62, .009, .35], position: [.42, .965, -.14] },
-    { size: [2.36, .27, .08], position: [0, .69, -.36] },
-    ...[-1.16, 1.16].flatMap(x => [-.35, .35].map(z => ({ size: [.13, .84, .13], position: [x, .42, z] }))),
-    ...[-1.06, 1.06].map(x => ({ size: [.07, .25, .72], position: [x, .71, 0] })),
+    { size: [2.17, .265, .055], position: [0, .7675, -.335] },
+    { size: [2.17, .07, .055], position: [0, .865, .3575] },
+    ...[-.825, .825].map(x => ({ size: [.52, .235, .055], position: [x, .7125, .3575] })),
+    ...[-1.145, 1.145].flatMap(x => [-.335, .335].map(z => ({ size: [.124, .90, .124], position: [x, .45, z] }))),
+    ...[-1.145, 1.145].map(x => ({ size: [.055, .265, .67], position: [x, .7675, 0] })),
+    ...[-.560, .560].map(x => ({ size: [.060, .240, .715], position: [x, .699, .0475] })),
+    ...[-.485, .485].map(x => ({ size: [.065, .032, .718], position: [x, .580, .054] })),
   ], wood);
 
   // Drawer starts under the existing desk. The notebook moves onto the desktop
   // after discovery so the note and the lock can be inspected side by side.
-  const drawer = new THREE.Group(); drawer.position.set(7, .70, 8.48); root.add(drawer);
+  const drawer = new THREE.Group(); drawer.position.set(7, .70, DRAWER_CLOSED_Z); root.add(drawer);
   const drawerParts = [
-    { size: [1.1, .23, .07], position: [0, 0, .14] },
-    { size: [1.03, .035, .50], position: [0, -.09, -.06] },
-    { size: [.035, .19, .50], position: [-.50, -.01, -.06] },
-    { size: [.035, .19, .50], position: [.50, -.01, -.06] },
-    { size: [1.03, .19, .035], position: [0, -.01, -.30] },
+    { size: [1.1, .23, .048], position: [0, 0, 0] },
+    { size: [1.035, .022, .475], position: [0, -.092, -.246] },
+    { size: [.029, .187, .463], position: [-.513, .005, -.249] },
+    { size: [.029, .187, .463], position: [.513, .005, -.249] },
+    { size: [1.038, .187, .028], position: [0, .005, -.476] },
   ];
   fixture(drawer, drawerParts, wood, true);
   const drawerFront = target(drawer.children[0], 'drawer');
-  box(drawer, [.30, .028, .045], [0, 0, .19], brass);
+  box(drawer, [.254, .052, .044], [0, .008, .055], brass);
   const notebookProp = makeProp('notebook', [.43, .065, .31], HOME.notebook, group => {
     box(group, [.43, .045, .31], [0, -.009, 0], leather);
     box(group, [.39, .037, .28], [0, .001, 0], paper);
-  }, () => notebookProp.active || drawer.position.z > 8.73 || state.noteSeen, { mass: .38, pickup: 'paper-pickup', soundId: 'cube' });
+  }, () => notebookProp.active || drawer.position.z > DRAWER_CLOSED_Z + .18 || state.noteSeen, { mass: .38, pickup: 'paper-pickup', soundId: 'cube' });
   const notebook = notebookProp.group, notebookBody = notebookProp.proxy;
   const cover = new THREE.Group(); cover.position.set(-.215, .0225, 0); notebook.add(cover);
   box(cover, [.43, .015, .31], [.215, 0, 0], leather);
@@ -310,7 +322,7 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
     const visual = new THREE.Group(); group.add(visual); build(visual);
     const body = rigid(group, size, true, { surface: options.soundId === 'cube' ? 'wood' : 'metal', ...options });
     const prop = { ...options, id, group, visual, proxy, body, size, home: new THREE.Vector3(...home), active: false, equipped: false, saved: false,
-      restTime: 0, contactIds: new Set(), previousSpeed: 0, contactCooldown: 0, savedPosition: null, savedQuaternion: null };
+      wasSleeping: false, contactIds: new Set(), previousSpeed: 0, contactCooldown: 0, savedPosition: null, savedQuaternion: null };
     body?.setEnabled(false); body?.sleep(); props.set(id, prop); return prop;
   }
   const officeProps = OFFICE_PROPS.map(config => {
@@ -384,7 +396,7 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   function enable(prop) {
     if (prop.active) return;
     prop.active = true; prop.group.visible = true;
-    prop.restTime = 0;
+    prop.wasSleeping = false;
     // The notebook follows its drawer until picked up. Start its body at the
     // visible pose, not at the original position inside the closed drawer.
     if (prop.body && !prop.body.isEnabled()) {
@@ -477,6 +489,7 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
     if (origin && point.distanceTo(origin) > 2) return false;
     if (equippedCutters) releaseTool(equippedCutters);
     enable(prop);
+    prop.wasSleeping = false;
     if (prop.id === 'cutters') act('cutters', {}, mesh);
     if (prop.id.startsWith('photo-')) act('photo', { index: Number(prop.id.at(-1)) }, mesh);
     held = { prop, handId, goal: prop.group.position.clone(), offset: prop.group.position.clone().sub(point), speed: 0 };
@@ -527,7 +540,7 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
       const pose = state.propPoses[prop.id];
       setPropPose(prop, pose ? new THREE.Vector3(...pose.position) : prop.home, pose ? new THREE.Quaternion(...pose.quaternion).normalize() : new THREE.Quaternion());
       prop.active = false; prop.body?.setEnabled(false);
-      prop.savedPosition = null; prop.savedQuaternion = null; prop.restTime = 0; prop.contactIds.clear(); prop.previousSpeed = 0;
+      prop.savedPosition = null; prop.savedQuaternion = null; prop.wasSleeping = false; prop.contactIds.clear(); prop.previousSpeed = 0;
       const worn=prop.id.startsWith('glove-')&&state.gloves[prop.id.slice(6)];
       if ((pose || prop.model) && !worn && (!prop.id.startsWith('photo-') || state.caseUnlocked)) enable(prop);
     }
@@ -535,8 +548,8 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
   function step(dt = 1 / 60) {
     if (disposed) return;
     dt = Math.min(.05, Math.max(0, dt)); const blend = 1 - Math.exp(-8 * dt);
-    drawer.position.z = THREE.MathUtils.lerp(drawer.position.z, state.drawerOpen ? 8.94 : 8.48, blend);
-    if (!notebookProp.active) notebook.position.set(state.noteSeen ? 7.35 : 7, state.noteSeen ? 1.004 : .68, state.noteSeen ? 8.20 : drawer.position.z - .035);
+    drawer.position.z = THREE.MathUtils.lerp(drawer.position.z, DRAWER_CLOSED_Z + (state.drawerOpen ? DRAWER_TRAVEL : 0), blend);
+    if (!notebookProp.active) notebook.position.set(state.noteSeen ? 7.35 : 7, state.noteSeen ? 1.004 : NOTEBOOK_TRAY_Y, state.noteSeen ? 8.20 : drawer.position.z + NOTEBOOK_TRAY_OFFSET_Z);
     cover.rotation.z = THREE.MathUtils.lerp(cover.rotation.z, state.notebookOpen ? Math.PI * .95 : 0, blend);
     if (authoredCover) authoredCover.rotation.z = cover.rotation.z;
     if (notebookCoverCollider && coverCollisionAngle !== cover.rotation.z) {
@@ -564,14 +577,20 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
       } else if (!prop.active) prop.group.visible = state.lockerOpen && lockerHinge.rotation.y < -1;
     }
     root.updateMatrixWorld(true);
-    for (const { mesh, body } of movingObstacles) if (body) { mesh.getWorldPosition(v); mesh.getWorldQuaternion(q); body.setNextKinematicTranslation(v); body.setNextKinematicRotation(q); }
+    for (const { mesh, body } of movingObstacles) if (body) {
+      mesh.getWorldPosition(v); mesh.getWorldQuaternion(q);
+      // Repeatedly submitting an unchanged kinematic pose wakes resting items
+      // in its tray. Let the solver keep their contact island asleep at rest.
+      if (v.distanceToSquared(body.translation()) > 1e-10) body.setNextKinematicTranslation(v);
+      if (q.angleTo(body.rotation()) > 1e-5) body.setNextKinematicRotation(q);
+    }
     for (const prop of props.values()) {
       if (!prop.active || prop.equipped) continue;
       if (prop.body) { prop.group.position.copy(prop.body.translation()); prop.group.quaternion.copy(prop.body.rotation()); }
       if (prop.group.position.y < -.5 || Math.abs(prop.group.position.x) > 80 || Math.abs(prop.group.position.z) > 90) { setPropPose(prop, prop.home, new THREE.Quaternion()); saveProp(prop); }
       if (prop.body && held?.prop !== prop && !(prop === cutters && equippedCutters)) {
-        const velocity = prop.body.linvel(), angular = prop.body.angvel();
-        const speed = Math.hypot(velocity.x, velocity.y, velocity.z), turn = Math.hypot(angular.x, angular.y, angular.z);
+        const velocity = prop.body.linvel();
+        const speed = Math.hypot(velocity.x, velocity.y, velocity.z);
         const contacts = new Set();
         for (let i = 0; i < prop.body.numColliders(); i++) world.contactPairsWith(prop.body.collider(i), other => {
           if (other.isSensor() || other.parent()?.handle === prop.body.handle) return;
@@ -583,11 +602,11 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
           prop.contactCooldown = .18;
         }
         prop.contactIds = contacts; prop.previousSpeed = speed;
-        prop.restTime = contacts.size && speed < .04 && turn < .12 ? prop.restTime + dt : 0;
-        if (prop.restTime > .7 || prop.body.isSleeping()) {
-          prop.body.sleep();
+        const sleeping = prop.body.isSleeping();
+        if (sleeping && !prop.wasSleeping) {
           if (!prop.savedPosition || prop.savedPosition.distanceToSquared(prop.group.position) > .000004 || prop.savedQuaternion.angleTo(prop.group.quaternion) > .006) saveProp(prop);
         }
+        prop.wasSleeping = sleeping;
       }
     }
     if (equippedCutters) {
@@ -617,7 +636,7 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
       speed: held.speed, goal: held.goal.toArray(), canDock: false, assembled: 1, total: 1, complete: true, whole: true, kind: held.prop.id === 'chair' ? 'office-chair' : 'opening-puzzle', soundId: held.prop.soundId || 'tablet', ...contact };
   }
   restoreProps();
-  drawer.position.z = state.drawerOpen ? 8.94 : 8.48;
+  drawer.position.z = DRAWER_CLOSED_Z + (state.drawerOpen ? DRAWER_TRAVEL : 0);
   for (const locker of lockers) locker.hinge.rotation.y = state.lockers[locker.id] ? -2 : 0;
   lid.rotation.x = state.caseOpen ? -1.75 : 0;
   doors.forEach(({ hinge, sign }) => { hinge.rotation.y = state.containerOpen ? sign * 1.80 : 0; });
@@ -637,7 +656,7 @@ export function createOpeningPuzzles({ scene, onEvent = () => {}, storage, world
             hideFallback(parent); const instance = asset.create(model); instance.position.fromArray(position); instance.scale.fromArray(scale); parent.add(instance); return instance;
           };
           replace(desk, 'Desk');
-          replace(drawer, 'Drawer', [0, 0, .14]);
+          replace(drawer, 'Drawer');
           replace(notebookProp.visual, 'Notebook', [0, -.0325, 0]);
           hideFallback(cover);
           authoredCover = notebookProp.visual.getObjectByName('NotebookCover');

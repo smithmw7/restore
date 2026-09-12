@@ -43,12 +43,13 @@ try {
       assert.ok(current.open && current.openAmount > .999, `${name} open pose settles`);
       if (name === 'Notebook') assert.ok(current.articulation.rotation[2] > 2.8, 'notebook swings upward around its spine');
       else if (name.startsWith('Locker')) assert.ok(current.articulation.rotation[1] < -1.7, 'locker door swings outward');
-      else assert.ok(current.articulation.position[2] > .44, 'drawer slides outward');
+      else assert.ok(Math.abs(current.articulation.position[2] - (name === 'Desk' ? .76 : .32)) < .002, 'drawer stops while supported by its runners');
       await page.screenshot({ path: `${out}/${name.toLowerCase()}-open.png` });
       await page.click('#pose');
       await page.evaluate(() => window.advanceTime(1100));
       current = await state();
       assert.ok(!current.open && current.openAmount < .001, `${name} returns closed`);
+      if (name === 'Desk' || name === 'Drawer') assert.ok(Math.abs(current.articulation.position[2] - (name === 'Desk' ? .44 : 0)) < .002, 'drawer returns beneath the tabletop overhang');
     } else assert.equal(await page.locator('#pose').isDisabled(), true, `${name} has no fictitious hinge`);
     checks.push({ name, triangles: current.model.triangles, views, articulation: current.articulation });
   }

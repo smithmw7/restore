@@ -2,12 +2,12 @@
 Run Blender -b --python scripts/blender/office-build.py -- [--final] [--skip-renders].
 Exports independent templates; staged positions never enter the GLB.
 """
-import bpy, math, os, sys, json, argparse, hashlib
+import bpy, bmesh, math, os, sys, json, argparse, hashlib
 import numpy as np
 from mathutils import Vector
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'../..')); ART=ROOT+'/art/office'; OUT=ROOT+'/public/models/office'
 for p in [ART,ART+'/textures',ART+'/renders',OUT]:os.makedirs(p,exist_ok=True)
-parser=argparse.ArgumentParser();parser.add_argument('--final',action='store_true');parser.add_argument('--skip-renders',action='store_true');args=parser.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
+parser=argparse.ArgumentParser();parser.add_argument('--final',action='store_true');parser.add_argument('--skip-renders',action='store_true');parser.add_argument('--render-models',default='',help='Comma-separated source model names to render');args=parser.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
 COL=bpy.data.collections.new('Office editable components');bpy.context.scene.collection.children.link(COL)
 def C(p):return (p[0],-p[2],p[1])
@@ -40,31 +40,87 @@ ormim=bpy.data.images.load(ART+'/textures/office-orm.png');ormim.colorspace_sett
 mats=[]
 for q,name in enumerate(['Worn walnut','Oxblood leather','Aged olive enamel','Antique brass','Ivory paper','Blackened steel']):
  m=bpy.data.materials.new(name);m.use_nodes=True;n=m.node_tree.nodes;l=m.node_tree.links;p=n.get('Principled BSDF');t=n.new('ShaderNodeTexImage');t.image=baseim;l.new(t.outputs['Color'],p.inputs['Base Color']);o=n.new('ShaderNodeTexImage');o.image=ormim;s=n.new('ShaderNodeSeparateColor');l.new(o.outputs['Color'],s.inputs[0]);l.new(s.outputs['Green'],p.inputs['Roughness']);l.new(s.outputs['Blue'],p.inputs['Metallic']);t=n.new('ShaderNodeTexImage');t.image=normim;nm=n.new('ShaderNodeNormalMap');nm.inputs['Strength'].default_value=.45;l.new(t.outputs['Color'],nm.inputs['Color']);l.new(nm.outputs[0],p.inputs['Normal']);m.diffuse_color=(*colors[q],1);mats.append(m)
-kit=bpy.data.objects.new('OfficeKit',None);COL.objects.link(kit);kit['assetVersion']='1.0.0';kit['kitId']='restore-retro-office';kit['coordinateSystem']='meters; x right, y up, z front';kit['atlasMaterials']=6
+# A dedicated satin material leaves the chair and other shared walnut surfaces unchanged.
+deskwood=mats[0].copy();deskwood.name='Satin walnut desk joinery';bs=deskwood.node_tree.nodes.get('Principled BSDF')
+for socket in ['Roughness','Metallic']:
+ for link in list(bs.inputs[socket].links):deskwood.node_tree.links.remove(link)
+bs.inputs['Roughness'].default_value=.73;bs.inputs['Metallic'].default_value=0
+kit=bpy.data.objects.new('OfficeKit',None);COL.objects.link(kit);kit['assetVersion']='1.0.1';kit['kitId']='restore-retro-office';kit['coordinateSystem']='meters; x right, y up, z front';kit['atlasMaterials']=6
 models={};parts=[]
 def empty(name,parent=kit,pos=(0,0,0)):
  o=bpy.data.objects.new(name,None);COL.objects.link(o);o.parent=parent;o.location=C(pos);return o
 for name in ['Desk','Drawer','Notebook','LockerShell','LockerDoor','Chair','Pen','Pencil','Logbook']:models[name]=empty(name)
 cover=empty('NotebookCover',models['Notebook'],(-.215,.055,0))
+# Physical scale is shared across EVERY desk/drawer board. Mirrored atlas reuse is
+# split into real UV islands on mesh boundaries, so no custom shader or extra image
+# is needed and the 512px wood tile is never enlarged to fit a whole board.
+WOOD_TILE_METRES=.80
+WOOD_TILE_MARGIN=.045
+WOOD_TEXELS_PER_METRE=512*(1-2*WOOD_TILE_MARGIN)/WOOD_TILE_METRES
+wood_uv_checks=[]
+def is_desk_wood(o,q):return q==0 and o.parent and o.parent.name in ('Desk','Drawer')
+def wood_phase(o):
+ seed=int(hashlib.sha1(o.name.encode()).hexdigest()[:8],16)
+ return [((seed>>(i*7))&127)/127*.73 for i in range(3)]
+def prepare_wood_uv(o):
+ vs=o.data.vertices;lo=[min(v.co[i]for v in vs)for i in range(3)];hi=[max(v.co[i]for v in vs)for i in range(3)];phase=wood_phase(o)
+ o['woodGrainAxisBlender']=max(range(3),key=lambda i:hi[i]-lo[i]);o['woodTileMetres']=WOOD_TILE_METRES
+ bm=bmesh.new();bm.from_mesh(o.data)
+ # Split only at mirror folds. A face must not interpolate UVs across a wrap.
+ for axis in range(3):
+  first=math.floor(lo[axis]/WOOD_TILE_METRES+phase[axis])+1;last=math.ceil(hi[axis]/WOOD_TILE_METRES+phase[axis])
+  for boundary in range(first,last):
+   point=Vector((0,0,0));point[axis]=(boundary-phase[axis])*WOOD_TILE_METRES;normal=Vector((0,0,0));normal[axis]=1
+   bmesh.ops.bisect_plane(bm,geom=list(bm.verts)+list(bm.edges)+list(bm.faces),dist=1e-7,plane_co=point,plane_no=normal,clear_inner=False,clear_outer=False)
+ bm.normal_update();bm.to_mesh(o.data);bm.free();o.data.update()
+def wood_uv(o):
+ layer=o.data.uv_layers.active.data;grain=int(o['woodGrainAxisBlender']);phase=wood_phase(o);checks=[];axes_seen=set()
+ for f in o.data.polygons:
+  normal_axis=max(range(3),key=lambda i:abs(f.normal[i]));remaining=[i for i in range(3)if i!=normal_axis]
+  a=grain if grain!=normal_axis else remaining[0];b=next(i for i in remaining if i!=a)
+  centers=[sum(o.data.vertices[o.data.loops[li].vertex_index].co[i]for li in f.loop_indices)/len(f.loop_indices)for i in range(3)]
+  cells=[math.floor(centers[i]/WOOD_TILE_METRES+phase[i])for i in range(3)]
+  for li in f.loop_indices:
+   v=o.data.vertices[o.data.loops[li].vertex_index].co;coords=[]
+   for axis in [a,b]:
+    fraction=v[axis]/WOOD_TILE_METRES+phase[axis]-cells[axis]
+    assert -.00002<=fraction<=1.00002,(o.name,f.index,axis,fraction)
+    fraction=min(1,max(0,fraction)) # numerical guard at a split boundary only
+    if cells[axis]%2:fraction=1-fraction
+    coords.append(WOOD_TILE_MARGIN+(1-2*WOOD_TILE_MARGIN)*fraction)
+   layer[li].uv=(coords[0]/3,coords[1]/2)
+  # Main planar faces must keep two equal singular values in texels per metre.
+  if abs(f.normal[normal_axis])>.9999 and f.area>1e-6:
+   loops=list(f.loop_indices);p0=o.data.vertices[o.data.loops[loops[0]].vertex_index].co;uv0=layer[loops[0]].uv
+   for j in range(1,len(loops)-1):
+    e1=o.data.vertices[o.data.loops[loops[j]].vertex_index].co-p0;e2=o.data.vertices[o.data.loops[loops[j+1]].vertex_index].co-p0
+    if e1.cross(e2).length<1e-8:continue
+    physical=np.array([[e1[a],e2[a]],[e1[b],e2[b]]]);u1=layer[loops[j]].uv-uv0;u2=layer[loops[j+1]].uv-uv0;pixels=np.array([[u1.x*1536,u2.x*1536],[u1.y*1024,u2.y*1024]])
+    scales=np.linalg.svd(pixels@np.linalg.inv(physical),compute_uv=False);checks.extend(float(x)for x in scales);axes_seen.add(normal_axis);break
+ if checks:
+  error=max(abs(v-WOOD_TEXELS_PER_METRE)for v in checks);assert error<.12,(o.name,error)
+  wood_uv_checks.append({'board':o.name,'grainAxisBlender':grain,'mainFaceAxes':sorted(axes_seen),'texelsPerMetreMin':min(checks),'texelsPerMetreMax':max(checks),'maximumError':error})
+
 def uv(o,q):
  if not o.data.uv_layers:o.data.uv_layers.new(name='UVMap')
+ if is_desk_wood(o,q):wood_uv(o);return
  vs=o.data.vertices;lo=[min(v.co[i]for v in vs)for i in range(3)];hi=[max(v.co[i]for v in vs)for i in range(3)];span=[hi[i]-lo[i]for i in range(3)]
- # Use an interior tile patch, never the atlas boundary; grain follows the longer edge.
+ # Preserve the established UVs on unaffected office models and non-wood materials.
  seed=int(hashlib.sha1(o.name.encode()).hexdigest()[:8],16);pad=.045;offset=(seed%97)/97*.07
  for f in o.data.polygons:
   axis=max(range(3),key=lambda i:abs(f.normal[i]));axes=sorted([i for i in range(3)if i!=axis],key=lambda i:span[i],reverse=True);a,b=axes
   for li in f.loop_indices:
    v=vs[o.data.loops[li].vertex_index].co;u=(v[a]-lo[a])/max(span[a],1e-8);w=(v[b]-lo[b])/max(span[b],1e-8)
-   # Narrow components sample a proportional strip instead of stretching a whole tile.
    aspect=min(1,max(.025,span[b]/max(span[a],.0001)));uu=pad+u*(1-2*pad);vv=.42+offset+(w-.5)*(.8*aspect)
    o.data.uv_layers.active.data[li].uv=((q%3+uu)/3,(q//3+vv)/2)
 def finish(o,name,q,parent,bevel):
  o.name=name
  for c in list(o.users_collection):c.objects.unlink(o)
- COL.objects.link(o);o.parent=parent;o.data.materials.append(mats[q]);o['materialTile']=q;parts.append(o)
+ COL.objects.link(o);o.parent=parent;o.data.materials.append(deskwood if is_desk_wood(o,q) else mats[q]);o['materialTile']=q;parts.append(o)
  bpy.context.view_layer.objects.active=o
  if bevel:
   mod=o.modifiers.new('Crafted softened edges','BEVEL');mod.width=bevel;mod.segments=3 if bevel>.004 else 2;mod.affect='EDGES';bpy.ops.object.modifier_apply(modifier=mod.name)
+ if is_desk_wood(o,q):prepare_wood_uv(o)
  for f in o.data.polygons:f.use_smooth=True
  mod=o.modifiers.new('Planar weighted normals','WEIGHTED_NORMAL');mod.keep_sharp=True;mod.weight=40
  try:bpy.ops.object.modifier_apply(modifier=mod.name)
@@ -96,29 +152,31 @@ def mesh(name,vertices,faces,q,parent,bevel=0):
  data=bpy.data.meshes.new(name);data.from_pydata([C(v)for v in vertices],[],faces);data.update();o=bpy.data.objects.new(name,data);COL.objects.link(o);bpy.context.view_layer.objects.active=o;o.select_set(True);bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT');bpy.ops.mesh.normals_make_consistent(inside=False);bpy.ops.object.mode_set(mode='OBJECT');return finish(o,name,q,parent,bevel)
 # DESK: solid walnut top with edging, real open knee space, drawer runners and rail joinery.
 p=models['Desk'];p['origin']='floor center';p['fixed']=True
-box('Walnut desk slab',(2.60,.085,.95),(0,.9175,0),0,p,.013)
-box('Ogee lower edge shadow',(2.555,.022,.91),(0,.869,0),5,p,.006)
-box('Walnut desk underframe',(2.535,.034,.9),(0,.842,0),0,p,.006)
+box('Walnut desk slab',(2.60,.06,.95),(0,.93,0),0,p,.006)
+# Narrow applied edging replaces two overlapping full-width secondary slabs.
+for z in [-.459,.459]:box('Walnut under-edge bead',(2.556,.014,.016),(0,.893,z),0,p,.002)
+for x in [-1.278,1.278]:box('Walnut end-edge bead',(.016,.014,.902),(x,.893,0),0,p,.002)
 for x in [-1.145,1.145]:
  for z in [-.335,.335]:
-  box('Tapered hardwood leg',(.12,.812,.12),(x,.406,z),0,p,.007)
+  box('Tapered hardwood leg',(.12,.90,.12),(x,.45,z),0,p,.003)
   box('Brass leg ferrule',(.124,.044,.124),(x,.028,z),3,p,.005)
   box('Leather floor pad',(.116,.008,.116),(x,.004,z),1,p,.003)
- for z in [-.325,.325]:screw('Desk joinery peg',(x,.816,z),p,'Y',.007,0)
- box('Side apron',(.074,.236,.67),(x,.714,0),0,p,.005)
- box('Recessed side apron panel',(.078,.153,.49),(x,.712,0),0,p,.008)
-box('Rear walnut apron',(2.32,.24,.066),(0,.712,-.355),0,p,.005)
-for x in [-.59,.59]:
- box('Drawer guide carrier',(.055,.27,.67),(x,.71,0),0,p,.004)
- box('Waxed drawer guide',(.02,.027,.53),(x,.628,.028),3,p,.002)
+ for z in [-.325,.325]:screw('Desk joinery peg',(x,.895,z),p,'Y',.007,0)
+ box('Side apron',(.055,.265,.67),(x,.7675,0),0,p,.002)
+box('Rear walnut apron',(2.17,.265,.055),(0,.7675,-.335),0,p,.002)
+box('Front walnut header',(2.17,.070,.055),(0,.865,.3575),0,p,.002)
+for x in [-.825,.825]:box('Front walnut drawer cheek',(.520,.235,.055),(x,.7125,.3575),0,p,.002)
+# Clear the drawer front at closed Z=.44 and retain support at the .32m open stroke.
+for x in [-.560,.560]:box('Drawer guide carrier',(.060,.240,.715),(x,.699,.0475),0,p,.0015)
+for x in [-.485,.485]:box('Continuous hardwood drawer runner',(.065,.032,.718),(x,.580,.054),0,p,.0015)
 # Thin desk blotter with folded leather corner pieces.
 box('Leather desk blotter',(.62,.009,.35),(.42,.965,-.14),1,p,.006)
 for x in [.13,.71]:
  for z in [-.293,.013]:box('Blotter leather corner tab',(.055,.003,.026),(x,.971,z),1,p,.003)
 # DRAWER: open wooden tray, dovetailed sides and cast brass cup pull, face center local origin.
 p=models['Drawer'];p['origin']='front face center; cavity extends negative z'
-box('Drawer front', (1.10,.23,.048),(0,0,0),0,p,.006)
-box('Inset raised drawer field',(.98,.153,.009),(0,0,.025),0,p,.005)
+box('Drawer front', (1.10,.23,.048),(0,0,0),0,p,.0025)
+box('Inset raised drawer field',(.98,.153,.009),(0,0,.025),0,p,.0018)
 box('Drawer plywood bottom',(1.035,.022,.475),(0,-.092,-.246),0,p,.002)
 for x in [-.513,.513]:
  box('Dovetail drawer side',(.029,.187,.463),(x,.005,-.249),0,p,.002)
@@ -238,7 +296,7 @@ for y in [-.016,-.011,-.006,-.001,.004,.009,.014]:box('Layered paper signatures'
 for x in [-.125,.125]:box('Gilt cover line',(.0014,.001,.184),(x,.028,0),3,p,.00015)
 for z in [-.092,.092]:box('Gilt cover line',(.252,.001,.0014),(0,.028,z),3,p,.00015)
 box('Woven bookmark tail',(.01,.0012,.039),(.09,.022,.118),2,p,.00025)
-for p in models.values():p['assetVersion']='1.0.0'
+for p in models.values():p['assetVersion']='1.0.1' if p.name in ('Desk','Drawer') else '1.0.0'
 # Export material batches by transform parent, retain editable source pieces in the blend.
 bpy.context.view_layer.update();sourceParts=list(parts);EXPORT=bpy.data.collections.new('Office export batches');bpy.context.scene.collection.children.link(EXPORT);exports=[];parents=[kit,*models.values(),cover]
 clones={}
@@ -264,9 +322,10 @@ bpy.context.view_layer.objects.active=clones[kit]
 for im in [baseim,normim,ormim]:im.pack()
 bpy.ops.export_scene.gltf(filepath=OUT+'/office-kit.glb',export_format='GLB',use_selection=True,export_yup=True,export_apply=False,export_extras=True,export_materials='EXPORT',export_cameras=False,export_lights=False)
 triangles=sum(sum(len(f.vertices)-2 for f in o.data.polygons)for o in exports)
-report={'assetVersion':'1.0.0','kitId':'restore-retro-office','glb':'office-kit.glb','glbBytes':os.path.getsize(OUT+'/office-kit.glb'),'glbSha256':hashlib.sha256(open(OUT+'/office-kit.glb','rb').read()).hexdigest(),'triangles':triangles,'renderMeshes':len(exports),'editableParts':len(sourceParts),'materials':len(mats),'atlasImages':[{'name':im.name,'size':list(im.size)}for im in [baseim,normim,ormim]],'refinedAtlas':args.final,'models':{}}
+report={'assetVersion':'1.0.1','kitId':'restore-retro-office','glb':'office-kit.glb','glbBytes':os.path.getsize(OUT+'/office-kit.glb'),'glbSha256':hashlib.sha256(open(OUT+'/office-kit.glb','rb').read()).hexdigest(),'triangles':triangles,'renderMeshes':len(exports),'editableParts':len(sourceParts),'materials':len({m for o in exports for m in o.data.materials if m}),'atlasImages':[{'name':im.name,'size':list(im.size)}for im in [baseim,normim,ormim]],'refinedAtlas':args.final,'models':{}}
 for p in models.values():
  obs=[o for o in sourceParts if o.parent==p or o.parent.parent==p];points=[o.matrix_world@v.co for o in obs for v in o.data.vertices];lo=[min(v[i]for v in points)for i in range(3)];hi=[max(v[i]for v in points)for i in range(3)];report['models'][oldNames[p]]={'origin':p.get('origin',''),'boundsMin':[lo[0],lo[2],-hi[1]],'boundsMax':[hi[0],hi[2],-lo[1]],'triangles':sum(sum(len(f.vertices)-2 for f in o.data.polygons)for o in obs),'editableParts':len(obs)}
+report['deskWoodMapping']={'method':'Board-aligned metric mirrored atlas islands','tileMetres':WOOD_TILE_METRES,'texelsPerMetre':WOOD_TEXELS_PER_METRE,'isotropicMainFaces':True,'minimumWidthClamp':False,'roughness':.73,'boards':wood_uv_checks}
 with open(ART+'/asset-report.json','w')as f:json.dump(report,f,indent=2)
 for o in list(EXPORT.objects):bpy.data.objects.remove(o,do_unlink=True)
 bpy.data.collections.remove(EXPORT)
@@ -313,7 +372,8 @@ if not args.skip_renders:
  scene.render.resolution_x=1400;scene.render.resolution_y=1000;scene.render.filepath=ART+'/renders/office-kit-overview.png';bpy.ops.render.render(write_still=True);scene.render.resolution_x=512;scene.render.resolution_y=512
  # Restore template orientations for consistent isolated angle sheets.
  models['LockerDoor'].rotation_euler.z=0;models['Notebook'].rotation_euler.z=0
- for name in models:render_sheet(name)
- cover.rotation_euler.y=-2.15;render_sheet('Notebook',True);cover.rotation_euler.y=0
+ for name in (args.render_models.split(',') if args.render_models else models):render_sheet(name)
+ if not args.render_models or 'Notebook' in args.render_models.split(','):
+  cover.rotation_euler.y=-2.15;render_sheet('Notebook',True);cover.rotation_euler.y=0
  for o in sourceParts:o.hide_render=False
  print('OFFICE_ALL_RENDERS_READY',flush=True)

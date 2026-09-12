@@ -31,6 +31,8 @@ scene.add(rim, rim.target, fill, fill.target);
 const titles = { Desk: 'The archive desk', Drawer: 'Desk drawer', Notebook: 'The clue notebook', LockerShell: 'Staff locker', LockerDoor: 'Locker door', Chair: 'Office chair', Pen: 'Fountain pen', Pencil: 'Workshop pencil', Logbook: 'Bound logbook' };
 const directions = { front: [1.15, .58, 1.5], rear: [-1.15, .58, -1.5], above: [.06, 1.8, .24], under: [1.15, -.7, 1.5] };
 const cache = new Map();
+// Match the office installation: front-face origin, supported 32 cm travel.
+const DRAWER_CLOSED_Z = .44, DRAWER_TRAVEL = .32;
 let assets, selected = 'Desk', activeAngle = 'front', openTarget = 0, openAmount = 0;
 let model, articulated, size = 1, center = new THREE.Vector3(), error = null;
 
@@ -74,7 +76,7 @@ function applyPose(amount) {
   if (!articulated) return;
   if (selected === 'Notebook') articulated.rotation.z = Math.PI * .91 * amount;
   else if (selected === 'LockerShell' || selected === 'LockerDoor') articulated.rotation.y = -1.75 * amount;
-  else articulated.position.z = (selected === 'Desk' ? .52 : 0) + .45 * amount;
+  else articulated.position.z = (selected === 'Desk' ? DRAWER_CLOSED_Z : 0) + DRAWER_TRAVEL * amount;
 }
 
 function select(name) {
@@ -87,7 +89,7 @@ function select(name) {
     articulated = instance('LockerDoor'); articulated.position.set(-.65, 0, .345); display.add(articulated);
   } else if (name === 'LockerDoor') articulated = model;
   else if (name === 'Desk') {
-    articulated = instance('Drawer'); articulated.position.set(0, .7, .52); display.add(articulated);
+    articulated = instance('Drawer'); articulated.position.set(0, .7, DRAWER_CLOSED_Z); display.add(articulated);
   } else if (name === 'Drawer') articulated = model;
   picker.value = name; document.querySelector('#model-title').textContent = titles[name];
   let visibleTriangles = 0;
